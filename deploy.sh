@@ -22,10 +22,12 @@ git fetch origin main
 git reset --hard origin/main
 rm -rf "$PROJECT_ROOT/backend/public/admin" "$PROJECT_ROOT/backend/public/knottele/admin"
 
-# Ensure APP_URL and ASSET_URL on VPS strictly use HTTP for IP address host
+# Only set fallback IP address if APP_URL is not configured with a custom domain (e.g. knotelleindia.com)
 if [ -f "$PROJECT_ROOT/backend/.env" ]; then
-    sed -i -E 's|^APP_URL=.*|APP_URL=http://187.127.158.24/knottele|g' "$PROJECT_ROOT/backend/.env"
-    sed -i -E 's|^ASSET_URL=.*|ASSET_URL=http://187.127.158.24/knottele|g' "$PROJECT_ROOT/backend/.env" 2>/dev/null || true
+    if ! grep -qE '^APP_URL=https?://[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}' "$PROJECT_ROOT/backend/.env"; then
+        sed -i -E 's|^APP_URL=.*|APP_URL=http://187.127.158.24/knottele|g' "$PROJECT_ROOT/backend/.env"
+        sed -i -E 's|^ASSET_URL=.*|ASSET_URL=http://187.127.158.24/knottele|g' "$PROJECT_ROOT/backend/.env" 2>/dev/null || true
+    fi
 fi
 
 # 4. Install Composer dependencies
