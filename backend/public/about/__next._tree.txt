@@ -1,3 +1,3 @@
-:HL["/knottele/_next/static/css/fb12778eed0228c5.css","style"]
-:HL["/knottele/_next/static/css/647439f58db2d2f3.css","style"]
-0:{"tree":{"name":"","param":null,"prefetchHints":4112,"slots":{"children":{"name":"about","param":null,"prefetchHints":4160,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":4256,"slots":null}}}}},"staleTime":300,"buildId":"n5rNe46zJ0mMONnwhr4h0"}
+:HL["/knottele/_next/static/css/6960bdd4786a191c.css","style"]
+:HL["/knottele/_next/static/css/af5d8942d2309b70.css","style"]
+0:{"tree":{"name":"","param":null,"prefetchHints":4112,"slots":{"children":{"name":"about","param":null,"prefetchHints":4160,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":4256,"slots":null}}}}},"staleTime":300,"buildId":"TPZ7tL-ZG_QoqcykVBkYl"}

@@ -16,8 +16,6 @@ export function BestSellers() {
   const { media } = useWebsiteMedia();
   const [productsList, setProductsList] = useState<Product[]>(PRODUCTS);
   const [activeTab, setActiveTab] = useState<string>("all");
-  const [startIndex, setStartIndex] = useState<number>(0);
-  const [isFading, setIsFading] = useState<boolean>(false);
 
   useEffect(() => {
     // Safely populate from local cache after mount
@@ -48,8 +46,11 @@ export function BestSellers() {
   }, []);
 
   const bestSellers = useMemo(() => {
-    const list = productsList.filter((p) => p.isBestSeller || p.isFeatured);
-    return list.length > 0 ? list : productsList;
+    const featured = productsList.filter((p) => p.isBestSeller || p.isFeatured);
+    if (featured.length >= 12) return featured;
+    const featuredIds = new Set(featured.map((p) => p.id));
+    const others = productsList.filter((p) => !featuredIds.has(p.id));
+    return [...featured, ...others];
   }, [productsList]);
 
   const categories = useMemo(() => {
@@ -71,35 +72,14 @@ export function BestSellers() {
     );
   }, [activeTab, bestSellers]);
 
-  // Auto-advance products every 2 seconds (2000ms) with smooth transition
-  useEffect(() => {
-    if (filteredProducts.length <= 6) return;
-
-    const timer = setInterval(() => {
-      setIsFading(true);
-      setTimeout(() => {
-        setStartIndex((prev) => (prev + 1) % filteredProducts.length);
-        setIsFading(false);
-      }, 250);
-    }, 2000);
-
-    return () => clearInterval(timer);
-  }, [filteredProducts.length]);
-
   const handleTabChange = (tabId: string) => {
     setActiveTab(tabId);
-    setStartIndex(0);
   };
 
-  // Circular slice of 6 products
+  // Up to 12 products: 6 products per row across 2 rows on desktop (6 by 6 two lines)
   const visibleProducts = useMemo(() => {
-    if (filteredProducts.length <= 6) return filteredProducts;
-    const items = [];
-    for (let i = 0; i < 6; i++) {
-      items.push(filteredProducts[(startIndex + i) % filteredProducts.length]);
-    }
-    return items;
-  }, [filteredProducts, startIndex]);
+    return filteredProducts.slice(0, 12);
+  }, [filteredProducts]);
 
   return (
     <section className="py-12 sm:py-16 bg-[#FFF9F6] relative">
@@ -136,44 +116,15 @@ export function BestSellers() {
           </div>
         </div>
 
-        {/* 6 Products Grid with Smooth 2-Second Rotation (Arrows Removed) */}
-        <div className="relative">
-          <div
-            className={`grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 transition-all duration-300 ease-in-out ${
-              isFading ? "opacity-40 scale-[0.99]" : "opacity-100 scale-100"
-            }`}
-          >
-            {visibleProducts.map((product, idx) => (
-              <ProductCard key={`${product.id}-${startIndex}-${idx}`} product={product} priority={idx < 4} />
-            ))}
-          </div>
-
-          {/* Carousel Progress Dots when more than 6 products */}
-          {filteredProducts.length > 6 && (
-            <div className="flex justify-center items-center gap-1.5 mt-6">
-              {filteredProducts.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => {
-                    setIsFading(true);
-                    setTimeout(() => {
-                      setStartIndex(i);
-                      setIsFading(false);
-                    }, 200);
-                  }}
-                  className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
-                    startIndex === i
-                      ? "w-5 bg-[#913638]"
-                      : "w-1.5 bg-[#E7D1CC] hover:bg-[#EFB8B0]"
-                  }`}
-                  aria-label={`Go to product group ${i + 1}`}
-                />
-              ))}
-            </div>
-          )}
+        {/* 6 by 6 Two Lines Product Grid (Up to 12 items: 6 per row on desktop) */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+          {visibleProducts.map((product, idx) => (
+            <ProductCard key={`${product.id}-${idx}`} product={product} priority={idx < 6} />
+          ))}
         </div>
 
       </div>
     </section>
   );
 }
+
