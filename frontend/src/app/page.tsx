@@ -21,11 +21,11 @@ export default function HomePage() {
       {/* SECTION 3 — SHOP BY CATEGORY */}
       <CategoryGrid />
 
-      {/* SECTION 4 — CUSTOM CROCHET BANNER */}
-      <CustomBanner />
-
-      {/* SECTION 5 — BEST SELLERS */}
+      {/* SECTION 4 — BEST SELLERS */}
       <BestSellers />
+
+      {/* SECTION 5 — CUSTOM CROCHET BANNER */}
+      <CustomBanner />
 
       {/* SECTION 6 — BRAND STORY */}
       <BrandStory />

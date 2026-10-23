@@ -1,3 +1,3 @@
 :HL["/knottele/_next/static/css/6960bdd4786a191c.css","style"]
 :HL["/knottele/_next/static/css/af5d8942d2309b70.css","style"]
-0:{"tree":{"name":"","param":null,"prefetchHints":4112,"slots":{"children":{"name":"account","param":null,"prefetchHints":4160,"slots":{"children":{"name":"addresses","param":null,"prefetchHints":4192,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":4256,"slots":null}}}}}}},"staleTime":300,"buildId":"TPZ7tL-ZG_QoqcykVBkYl"}
+0:{"tree":{"name":"","param":null,"prefetchHints":4112,"slots":{"children":{"name":"account","param":null,"prefetchHints":4160,"slots":{"children":{"name":"addresses","param":null,"prefetchHints":4192,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":4256,"slots":null}}}}}}},"staleTime":300,"buildId":"3Sht_KbKsR9o6_9Uit3RV"}
