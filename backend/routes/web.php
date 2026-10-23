@@ -457,13 +457,16 @@ Route::prefix('knottele/admin')->as('knottele.')->group($adminRoutes);
 | Enables both /api/... and /knottele/api/... to reach customer and admin
 | API endpoints identically in Laravel without web server rewrite conflicts.
 */
-Route::middleware('api')->prefix('knottele/api')->group(function () {
-    Route::get('/health', function () {
-        return response()->json(['status' => 'ok']);
+Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class])
+    ->middleware('api')
+    ->prefix('knottele/api')
+    ->group(function () {
+        Route::get('/health', function () {
+            return response()->json(['status' => 'ok']);
+        });
+        require __DIR__ . '/customer_api.php';
+        require __DIR__ . '/admin_api.php';
     });
-    require __DIR__ . '/customer_api.php';
-    require __DIR__ . '/admin_api.php';
-});
 
 /*
 |--------------------------------------------------------------------------

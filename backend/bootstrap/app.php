@@ -15,10 +15,24 @@ return Application::configure(basePath: dirname(__DIR__))
             __DIR__ . '/../routes/customer_api.php',
         ],
 
+        then: function () {
+            \Illuminate\Support\Facades\Route::middleware('api')->prefix('knottele/api')->group(function () {
+                \Illuminate\Support\Facades\Route::get('/health', fn() => response()->json(['status' => 'ok']));
+                require __DIR__ . '/../routes/customer_api.php';
+                require __DIR__ . '/../routes/admin_api.php';
+            });
+        },
+
         commands: __DIR__ . '/../routes/console.php',
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->validateCsrfTokens(except: [
+            'knottele/api/*',
+            'api/*',
+            '*/api/*',
+        ]);
+
         $middleware->web(append: [
             \App\Http\Middleware\TrackVisitors::class,
         ]);
