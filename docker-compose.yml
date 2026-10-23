@@ -9,6 +9,8 @@ services:
     volumes:
       - ./docker/nginx.conf:/etc/nginx/http.d/default.conf
       - ./backend/routes:/var/www/html/routes
+      - ./backend/public/_next:/var/www/html/public/_next
+      - ./backend/public/index.html:/var/www/html/public/index.html
       - ./backend/storage:/var/www/html/storage
       - ./backend/public/images:/var/www/html/public/images
       - ./backend/public/videos:/var/www/html/public/videos
