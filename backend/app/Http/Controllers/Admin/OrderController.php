@@ -92,7 +92,9 @@ class OrderController extends Controller
                         default => ucfirst($order->payment_method ?? 'N/A'),
                     },
 
-                    'shipping_address' => $order->shipping_address ? implode(', ', array_filter($order->shipping_address)) : 'N/A',
+                    'shipping_address' => is_array($order->shipping_address)
+                        ? implode(', ', array_filter(array_map(fn($v) => is_scalar($v) ? (string)$v : '', $order->shipping_address)))
+                        : (is_string($order->shipping_address) ? $order->shipping_address : 'N/A'),
                     'tracking_number' => $order->shipments->first()?->tracking_number ?? null,
                 ];
             });

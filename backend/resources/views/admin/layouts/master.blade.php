@@ -210,20 +210,74 @@
         (function() {
             try {
                 const params = new URLSearchParams(window.location.search);
-                const token = params.get('auth_token');
-                if (token) {
-                    localStorage.setItem('admin_auth_token', token);
+                const urlToken = params.get('auth_token');
+                const sessionToken = '{{ session("admin_api_token") }}';
+                if (urlToken) {
+                    localStorage.setItem('admin_auth_token', urlToken);
+                } else if (sessionToken && !localStorage.getItem('admin_auth_token')) {
+                    localStorage.setItem('admin_auth_token', sessionToken);
                 }
-                const savedToken = localStorage.getItem('admin_auth_token');
-                if (savedToken) {
+                const activeToken = localStorage.getItem('admin_auth_token') || urlToken || sessionToken;
+
+                if (activeToken) {
+                    // 1. Intercept all internal admin navigation links
                     document.addEventListener('click', function(e) {
                         const link = e.target.closest('a[href]');
                         if (link && link.href && link.href.includes('/admin') && !link.href.includes('auth_token=') && !link.href.includes('/logout')) {
-                            const u = new URL(link.href);
-                            u.searchParams.set('auth_token', savedToken);
+                            const u = new URL(link.href, window.location.origin);
+                            u.searchParams.set('auth_token', activeToken);
                             link.href = u.toString();
                         }
                     }, true);
+
+                    // 2. Intercept window.fetch for all admin AJAX requests
+                    const originalFetch = window.fetch;
+                    window.fetch = function(input, init) {
+                        init = init || {};
+                        let headers = init.headers || {};
+                        if (headers instanceof Headers) {
+                            if (!headers.has('X-Admin-Token')) headers.set('X-Admin-Token', activeToken);
+                        } else if (Array.isArray(headers)) {
+                            headers.push(['X-Admin-Token', activeToken]);
+                        } else {
+                            headers['X-Admin-Token'] = activeToken;
+                        }
+                        init.headers = headers;
+
+                        if (typeof input === 'string') {
+                            if (input.includes('/admin') && !input.includes('auth_token=')) {
+                                const sep = input.includes('?') ? '&' : '?';
+                                input = input + sep + 'auth_token=' + encodeURIComponent(activeToken);
+                            }
+                        } else if (input instanceof Request) {
+                            try {
+                                const u = new URL(input.url);
+                                if (u.pathname.includes('/admin') && !u.searchParams.has('auth_token')) {
+                                    u.searchParams.set('auth_token', activeToken);
+                                    input = new Request(u.toString(), input);
+                                }
+                            } catch(err) {}
+                        }
+                        return originalFetch.call(this, input, init);
+                    };
+
+                    // 3. Intercept XMLHttpRequest (e.g. Tabulator, axios, jQuery)
+                    const originalOpen = XMLHttpRequest.prototype.open;
+                    XMLHttpRequest.prototype.open = function(method, url, ...rest) {
+                        if (typeof url === 'string' && url.includes('/admin') && !url.includes('auth_token=')) {
+                            const sep = url.includes('?') ? '&' : '?';
+                            url = url + sep + 'auth_token=' + encodeURIComponent(activeToken);
+                        }
+                        return originalOpen.call(this, method, url, ...rest);
+                    };
+
+                    const originalSend = XMLHttpRequest.prototype.send;
+                    XMLHttpRequest.prototype.send = function(...args) {
+                        try {
+                            this.setRequestHeader('X-Admin-Token', activeToken);
+                        } catch(e) {}
+                        return originalSend.apply(this, args);
+                    };
                 }
             } catch(e) {}
         })();

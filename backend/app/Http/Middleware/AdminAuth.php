@@ -12,7 +12,7 @@ class AdminAuth
     public function handle($request, Closure $next)
     {
         if (!Auth::guard('admin')->check()) {
-            $tokenParam = $request->query('auth_token') ?: $request->header('X-Admin-Token');
+            $tokenParam = urldecode($request->query('auth_token') ?: $request->header('X-Admin-Token', ''));
             if ($tokenParam) {
                 try {
                     $accessToken = Sanctum::$personalAccessTokenModel::findToken($tokenParam);
@@ -23,6 +23,9 @@ class AdminAuth
                         return $next($request);
                     }
                 } catch (\Throwable $e) {}
+            }
+            if ($request->expectsJson() || $request->ajax() || $request->is('*/data*')) {
+                return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
             }
             return redirect()->route('admin.signin');
         }

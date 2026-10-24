@@ -60,7 +60,7 @@ class AuthController extends Controller
 
         // Safely manage API token without blocking dashboard redirect
         try {
-            $admin->tokens()->delete();
+            $admin->tokens()->where('name', 'admin_api')->where('created_at', '<', now()->subDays(7))->delete();
             $token = $admin->createToken('admin_api', ['admin'])->plainTextToken;
             session([
                 'admin_api_token' => $token,

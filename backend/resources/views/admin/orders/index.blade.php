@@ -327,6 +327,10 @@
     function loadOrders() {
         showLoading();
 
+        const token = new URLSearchParams(window.location.search).get('auth_token')
+                   || localStorage.getItem('admin_auth_token')
+                   || '{{ session("admin_api_token") }}';
+
         const params = new URLSearchParams({
             page: currentPage,
             status: currentStatusFilter,
@@ -335,11 +339,16 @@
             per_page: 10
         });
 
+        if (token) {
+            params.set('auth_token', token);
+        }
+
         fetch(`{{ route('admin.orders.data') }}?${params}`, {
             headers: {
                 'Accept': 'application/json',
                 'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'X-Admin-Token': token || ''
             }
         })
         .then(response => response.json())
