@@ -5,9 +5,12 @@ namespace App\Services\Admin;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\Category;
+use App\Models\Media;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Illuminate\Http\UploadedFile;
 
 class ProductService
 {
@@ -467,6 +470,66 @@ class ProductService
             }
         }
 
+        // 4. Check for direct file uploads (fallback)
+        $uploadedFiles = [];
+        if (!empty($data['slot_files']) && is_array($data['slot_files'])) {
+            $uploadedFiles = $data['slot_files'];
+        } elseif (request()->hasFile('slot_files')) {
+            $uploadedFiles = request()->file('slot_files');
+        } elseif (request()->hasFile('images')) {
+            $uploadedFiles = request()->file('images');
+        }
+
+        if (!empty($uploadedFiles) && is_array($uploadedFiles)) {
+            $targetFolder = 'images/products';
+            $targetDirectory = public_path($targetFolder);
+            if (!File::isDirectory($targetDirectory)) {
+                File::makeDirectory($targetDirectory, 0755, true, true);
+            }
+
+            foreach ($uploadedFiles as $slotIdx => $file) {
+                if ($file instanceof UploadedFile && $file->isValid()) {
+                    try {
+                        $originalName = $file->getClientOriginalName();
+                        $extension = strtolower($file->getClientOriginalExtension() ?: $file->guessExtension() ?: 'jpg');
+                        $rawName = pathinfo($originalName, PATHINFO_FILENAME);
+                        $cleanSlug = Str::slug($rawName);
+                        $uniqueName = ($cleanSlug ?: 'product') . '_' . time() . '_' . Str::random(4) . '.' . $extension;
+
+                        $file->move($targetDirectory, $uniqueName);
+                        $relPath = $targetFolder . '/' . $uniqueName;
+                        $fullDiskPath = $targetDirectory . DIRECTORY_SEPARATOR . $uniqueName;
+                        $fileSize = file_exists($fullDiskPath) ? filesize($fullDiskPath) : 0;
+
+                        $media = Media::create([
+                            'file_name' => $originalName,
+                            'file_path' => $relPath,
+                            'disk' => 'local',
+                            'mime_type' => 'image/' . ($extension === 'png' ? 'png' : ($extension === 'webp' ? 'webp' : 'jpeg')),
+                            'file_type' => 'image',
+                            'file_size' => $fileSize,
+                            'alt_text' => $rawName,
+                            'page' => 'products',
+                            'section' => 'products',
+                            'slot' => 'slot-' . $slotIdx,
+                            'title' => $rawName,
+                            'is_active' => true,
+                            'uploaded_by' => auth('admin')->id() ?? 1,
+                            'uploader_type' => 'admin',
+                        ]);
+
+                        if ($slotIdx === 0 || $slotIdx === '0') {
+                            array_unshift($imageIds, (int)$media->id);
+                        } else {
+                            $imageIds[] = (int)$media->id;
+                        }
+                    } catch (\Exception $e) {
+                        Log::error('Direct product file upload failed: ' . $e->getMessage());
+                    }
+                }
+            }
+        }
+
         return array_values(array_unique(array_filter($imageIds)));
     }
 
@@ -514,15 +577,28 @@ class ProductService
 
         $mainImageId = $variantData['main_image_id'] ?? ($imageIds[0] ?? null);
 
+        $primaryChosen = false;
         foreach ($imageIds as $index => $imageId) {
+            $isPrimary = false;
+            if ($mainImageId && $imageId == $mainImageId && !$primaryChosen) {
+                $isPrimary = true;
+                $primaryChosen = true;
+            } elseif (!$mainImageId && $index === 0 && !$primaryChosen) {
+                $isPrimary = true;
+                $primaryChosen = true;
+            }
             $imagesData[] = [
                 'variant_id' => $variant->id,
                 'media_id' => $imageId,
-                'is_primary' => ($index === 0 || $imageId == $mainImageId) ? 1 : 0,
+                'is_primary' => $isPrimary ? 1 : 0,
                 'sort_order' => $index,
                 'created_at' => now(),
                 'updated_at' => now(),
             ];
+        }
+
+        if (!$primaryChosen && !empty($imagesData)) {
+            $imagesData[0]['is_primary'] = 1;
         }
 
         if (!empty($imagesData)) {

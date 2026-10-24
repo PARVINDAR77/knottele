@@ -196,7 +196,7 @@ class Product extends Model
     // Helper to get Main Image from Default Variant's Primary Image
     public function getMainImageAttribute()
     {
-        $variant = $this->defaultVariant;
+        $variant = $this->defaultVariant ?: $this->variants()->first();
         if (!$variant) return null;
 
         $images = $variant->images;
@@ -213,7 +213,7 @@ class Product extends Model
 
     public function getMainImageIdAttribute()
     {
-        $variant = $this->defaultVariant;
+        $variant = $this->defaultVariant ?: $this->variants()->first();
         if (!$variant) return null;
         
         $primaryImage = $variant->images->where('pivot.is_primary', 1)->first();

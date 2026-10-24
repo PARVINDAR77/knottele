@@ -137,8 +137,8 @@
                             <div class="relative aspect-square w-full rounded-xl overflow-hidden bg-white border border-stone-200/80 flex items-center justify-center shadow-inner group/thumb mb-3">
                                 <img id="slot-img-{{ $i }}" src="{{ $slotMediaUrl ?: '/images/logo/Logo_1.png' }}" class="{{ $slotMediaUrl ? '' : 'hidden' }} w-full h-full object-cover">
                                 
-                                <div id="slot-empty-{{ $i }}" class="{{ $slotMediaUrl ? 'hidden' : 'flex' }} flex-col items-center justify-center p-3 text-center">
-                                    <div class="w-10 h-10 rounded-full bg-stone-100 flex items-center justify-center text-stone-400 mb-1">
+                                <div id="slot-empty-{{ $i }}" class="{{ $slotMediaUrl ? 'hidden' : 'flex' }} flex-col items-center justify-center p-3 text-center cursor-pointer group/slot-empty w-full h-full" onclick="document.getElementById('slot-file-input-{{ $i }}').click()">
+                                    <div class="w-10 h-10 rounded-full bg-stone-100 flex items-center justify-center text-stone-400 mb-1 group-hover/slot-empty:bg-red-50 group-hover/slot-empty:text-red-500 transition">
                                         <i class="fas fa-image text-lg"></i>
                                     </div>
                                     <span class="text-xs font-semibold text-stone-600">Empty Slot</span>
@@ -162,7 +162,7 @@
                                 <label class="cursor-pointer flex items-center justify-center gap-1 text-[11px] font-bold text-stone-700 bg-white hover:bg-stone-100 border border-stone-200/90 py-1.5 px-2 rounded-lg shadow-2xs transition active:scale-95">
                                     <i class="fas fa-upload text-stone-500 text-[10px]"></i>
                                     <span>Upload</span>
-                                    <input type="file" accept="image/*" class="hidden" onchange="uploadSingleSlot(event, {{ $i }})">
+                                    <input type="file" id="slot-file-input-{{ $i }}" name="slot_files[{{ $i }}]" accept="image/*" class="hidden" onchange="uploadSingleSlot(event, {{ $i }})">
                                 </label>
 
                                 <button type="button" onclick="openMediaModalForSlot({{ $i }})" class="flex items-center justify-center gap-1 text-[11px] font-bold text-stone-700 bg-white hover:bg-stone-100 border border-stone-200/90 py-1.5 px-2 rounded-lg shadow-2xs transition active:scale-95">
@@ -546,6 +546,7 @@
         const img = document.getElementById(`slot-img-${slotIndex}`);
         const emptyState = document.getElementById(`slot-empty-${slotIndex}`);
         const clearBtn = document.getElementById(`slot-clear-btn-${slotIndex}`);
+        const fileInput = document.getElementById(`slot-file-input-${slotIndex}`);
 
         if (input) input.value = '';
         if (slotIndex === 0) {
@@ -558,6 +559,7 @@
         }
         if (emptyState) emptyState.classList.remove('hidden');
         if (clearBtn) clearBtn.classList.add('hidden');
+        if (fileInput) fileInput.value = '';
     }
 
     async function uploadSingleSlot(event, slotIndex) {
@@ -578,19 +580,21 @@
                 }
             });
 
-            if (response.data && response.data.success && response.data.data) {
-                const media = response.data.data;
+            const media = (response.data && response.data.data) ||
+                          (response.data && response.data.all_uploaded && response.data.all_uploaded[0]);
+
+            if (response.data && response.data.success && media) {
                 assignImageToSlot(slotIndex, media.id, media.url);
                 toastr.success(`Slot #${slotIndex + 1} photo uploaded!`);
             } else {
-                toastr.error(response.data.message || 'Failed to upload photo.');
+                toastr.error(response.data?.message || 'Failed to upload photo.');
             }
         } catch (error) {
             console.error('Upload error:', error);
-            toastr.error('Failed to upload photo.');
+            const msg = error.response?.data?.message || 'Failed to upload photo.';
+            toastr.error(msg);
         } finally {
             if (loading) loading.classList.add('hidden');
-            event.target.value = '';
         }
     }
 

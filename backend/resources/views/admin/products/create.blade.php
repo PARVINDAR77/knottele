@@ -153,7 +153,7 @@
                                 <label class="cursor-pointer flex items-center justify-center gap-1 text-[11px] font-bold text-stone-700 bg-white hover:bg-stone-100 border border-stone-200/90 py-1.5 px-2 rounded-lg shadow-2xs transition active:scale-95">
                                     <i class="fas fa-upload text-stone-500 text-[10px]"></i>
                                     <span>Upload</span>
-                                    <input type="file" id="slot-file-input-{{ $i }}" accept="image/*" class="hidden" onchange="uploadSingleSlot(event, {{ $i }})">
+                                    <input type="file" id="slot-file-input-{{ $i }}" name="slot_files[{{ $i }}]" accept="image/*" class="hidden" onchange="uploadSingleSlot(event, {{ $i }})">
                                 </label>
 
                                 <button type="button" onclick="openMediaModalForSlot({{ $i }})" class="flex items-center justify-center gap-1 text-[11px] font-bold text-stone-700 bg-white hover:bg-stone-100 border border-stone-200/90 py-1.5 px-2 rounded-lg shadow-2xs transition active:scale-95">
@@ -510,7 +510,8 @@
 
 <script>
     // Global State
-    let currentMode = 'main'; // 'main', 'gallery', 'variant-main', 'variant-gallery'
+    let currentMode = 'slot-0'; // 'slot-0'...'slot-4', 'multi-slot', 'variant-main', 'variant-gallery'
+    let activeSlotIndex = 0;
     let currentVariantIndex = null;
     let selectedImages = [];
     let currentMediaData = null;
@@ -697,9 +698,6 @@
     }
 
     // =============== MEDIA MANAGEMENT FUNCTIONS (5 Slots + Variants) ===============
-    let currentMode = 'slot-0';
-    let activeSlotIndex = 0;
-    let currentVariantIndex = null;
 
     function openMediaModalForSlot(slotIndex) {
         activeSlotIndex = slotIndex;
@@ -767,6 +765,7 @@
         const img = document.getElementById(`slot-img-${slotIndex}`);
         const emptyState = document.getElementById(`slot-empty-${slotIndex}`);
         const clearBtn = document.getElementById(`slot-clear-btn-${slotIndex}`);
+        const fileInput = document.getElementById(`slot-file-input-${slotIndex}`);
 
         if (input) input.value = '';
         if (slotIndex === 0) {
@@ -779,6 +778,7 @@
         }
         if (emptyState) emptyState.classList.remove('hidden');
         if (clearBtn) clearBtn.classList.add('hidden');
+        if (fileInput) fileInput.value = '';
     }
 
     async function uploadSingleSlot(event, slotIndex) {
@@ -799,19 +799,21 @@
                 }
             });
 
-            if (response.data && response.data.success && response.data.data) {
-                const media = response.data.data;
+            const media = (response.data && response.data.data) ||
+                          (response.data && response.data.all_uploaded && response.data.all_uploaded[0]);
+
+            if (response.data && response.data.success && media) {
                 assignImageToSlot(slotIndex, media.id, media.url);
                 toastr.success(`Slot #${slotIndex + 1} photo uploaded!`);
             } else {
-                toastr.error(response.data.message || 'Failed to upload photo.');
+                toastr.error(response.data?.message || 'Failed to upload photo.');
             }
         } catch (error) {
             console.error('Upload error:', error);
-            toastr.error('Failed to upload photo.');
+            const msg = error.response?.data?.message || 'Failed to upload photo.';
+            toastr.error(msg);
         } finally {
             if (loading) loading.classList.add('hidden');
-            event.target.value = '';
         }
     }
 
@@ -884,17 +886,18 @@
     function sanitizeImageUrl(rawUrl) {
         if (!rawUrl) return '/images/logo/Logo_1.png';
         let url = String(rawUrl).trim();
-        url = url.replace(/^https?:\/\/[^\/]+/, '');
+        if (url.startsWith(window.location.origin)) {
+            url = url.substring(window.location.origin.length);
+        }
+        if (/^https?:\/\//i.test(url)) {
+            return url;
+        }
         if (url.startsWith('/storage/images/')) {
             url = url.replace('/storage/images/', '/images/');
         } else if (url.startsWith('storage/images/')) {
             url = url.replace('storage/images/', '/images/');
-        } else if (url.startsWith('/storage/')) {
-            url = url.replace('/storage/', '/images/');
-        } else if (url.startsWith('storage/')) {
-            url = url.replace('storage/', '/images/');
         }
-        if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('/')) {
+        if (!url.startsWith('/')) {
             url = '/' + url;
         }
         return url;
@@ -917,7 +920,8 @@
 
             html += `
             <div class="relative border rounded-lg overflow-hidden cursor-pointer group hover:shadow-md transition ${isSelected ? 'ring-2 ring-red-500' : ''}"
-                 onclick="toggleImageSelection(${item.id}, '${url}')">
+                 onclick="toggleImageSelection(${item.id}, '${url}')"
+                 ondblclick="toggleImageSelection(${item.id}, '${url}'); confirmMediaSelection();">
                 <img src="${url}" class="w-full h-32 object-cover bg-stone-100" onerror="this.onerror=null;this.src='/images/logo/Logo_1.png'">
                 <div class="p-2 text-xs truncate font-medium text-stone-700 bg-white border-t">${name}</div>
                 <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition"></div>
@@ -982,8 +986,8 @@
             return;
         }
 
-        if (currentMode.startsWith('slot-')) {
-            const slotIdx = parseInt(currentMode.replace('slot-', ''), 10);
+        if (currentMode === 'main' || currentMode.startsWith('slot-')) {
+            const slotIdx = currentMode === 'main' ? 0 : parseInt(currentMode.replace('slot-', ''), 10);
             const { id, url } = selectedImages[0];
             assignImageToSlot(slotIdx, id, url);
             toastr.success(`Photo assigned to Slot #${slotIdx + 1}`);
@@ -1105,7 +1109,7 @@
                 toastr.success(response.data.message || 'Files uploaded successfully');
 
                 if (response.data.all_uploaded && response.data.all_uploaded.length > 0) {
-                    if (currentMode === 'main' || currentMode === 'variant-main') {
+                    if (currentMode === 'main' || currentMode.startsWith('slot-') || currentMode === 'variant-main') {
                         const first = response.data.all_uploaded[0];
                         selectedImages = [{ id: first.id, url: first.url }];
                     } else {

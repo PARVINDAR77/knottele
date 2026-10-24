@@ -66,7 +66,7 @@ class ProductController extends Controller
 
     public function store(Request $request)
     {
-        $data = $request->all();
+        $data = array_merge($request->all(), $request->allFiles());
 
         // 1. Auto-generate slug if empty
         if (empty($data['slug']) && !empty($data['name'])) {
@@ -138,7 +138,7 @@ class ProductController extends Controller
             return back()->withInput()->with('error', 'Configurable products must have at least one variant generated. Please select attributes and generate variants.');
         }
 
-        $result = $this->productService->createProduct($request->all());
+        $result = $this->productService->createProduct($data);
 
         if ($request->ajax() || $request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
             if ($result['success']) {
@@ -192,7 +192,7 @@ class ProductController extends Controller
             'variants.*.sku' => 'required_if:product_type,configurable|string|max:255',
         ]);
         
-        $data = $request->all();
+        $data = array_merge($request->all(), $request->allFiles());
         if (!isset($data['product_type'])) {
             $data['product_type'] = $product->product_type;
         }
@@ -262,7 +262,7 @@ class ProductController extends Controller
                 return [
                     'id' => $product->id,
                     'name' => $product->name . ' (' . $product->product_code . ')',
-                    'image' => asset('storage/' . $product->main_image),
+                    'image' => $product->main_image_url,
                 ];
             })
         ]);
