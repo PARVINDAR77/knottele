@@ -30,7 +30,31 @@ export function normalizeInternalLink(url?: string | null): string {
   if (path.startsWith("/knottele")) {
     path = path.replace(/^\/knottele(?:\/|$)/, "/");
   }
+
+  // Ensure trailing slash for paths without file extension, query, or hash
+  // to align with Next.js trailingSlash: true export structure
+  if (
+    path &&
+    !path.includes("?") &&
+    !path.includes("#") &&
+    !/\.[a-zA-Z0-9]+$/.test(path) &&
+    !path.endsWith("/")
+  ) {
+    path = `${path}/`;
+  }
+
   return path || "/";
+}
+
+export function isRouteActive(currentPath?: string | null, targetHref?: string | null): boolean {
+  if (!currentPath || !targetHref) return false;
+  const norm = (p: string) => {
+    let clean = p.startsWith("/knottele") ? p.replace(/^\/knottele(?:\/|$)/, "/") : p;
+    clean = clean.split("?")[0].split("#")[0].trim();
+    const withoutSlash = clean.replace(/\/+$/, "");
+    return withoutSlash === "" ? "/" : withoutSlash;
+  };
+  return norm(currentPath) === norm(targetHref);
 }
 
 export function getFullPath(path: string): string {

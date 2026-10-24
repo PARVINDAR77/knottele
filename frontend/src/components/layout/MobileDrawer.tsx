@@ -22,7 +22,7 @@ import { useWishlist } from "@/context/WishlistContext";
 import { useCart } from "@/context/CartContext";
 import { useWebsiteMedia } from "@/context/MediaContext";
 import { useAuth } from "@/context/AuthContext";
-import { normalizeInternalLink } from "@/lib/api";
+import { normalizeInternalLink, isRouteActive } from "@/lib/api";
 
 export interface MobileNavItem {
   name: string;
@@ -88,10 +88,10 @@ export function MobileDrawer({
 
   const defaultItems: MobileNavItem[] = [
     { name: "Home", href: "/", is_highlighted: false },
-    { name: "Shop", href: "/shop", is_highlighted: false },
-    { name: "Custom Order", href: "/custom-order", is_highlighted: true },
-    { name: "About", href: "/about", is_highlighted: false },
-    { name: "Contact", href: "/contact", is_highlighted: false },
+    { name: "Shop", href: "/shop/", is_highlighted: false },
+    { name: "Custom Order", href: "/custom-order/", is_highlighted: true },
+    { name: "About", href: "/about/", is_highlighted: false },
+    { name: "Contact", href: "/contact/", is_highlighted: false },
   ];
 
   const items = navLinks && navLinks.length > 0 ? navLinks : defaultItems;
@@ -128,6 +128,7 @@ export function MobileDrawer({
           <div className="p-4 sm:p-5 border-b border-[#E7D1CC]/80 flex items-center justify-between bg-[#FFF9F6]">
             <Link
               href={normalizeInternalLink("/")}
+              prefetch={true}
               onClick={onClose}
               className="flex items-center gap-2 group cursor-pointer"
             >
@@ -162,6 +163,7 @@ export function MobileDrawer({
           <div className="grid grid-cols-2 gap-2.5 px-5 py-3 bg-[#FFF9F6] border-y border-[#E7D1CC]/70">
             <Link
               href={normalizeInternalLink("/account/wishlist")}
+              prefetch={true}
               onClick={onClose}
               className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-white border border-[#E7D1CC] text-xs font-semibold text-[#2E211E] hover:bg-[#FCE9E5] hover:text-[#913638] transition-colors shadow-2xs relative"
             >
@@ -176,6 +178,7 @@ export function MobileDrawer({
 
             <Link
               href={normalizeInternalLink("/cart")}
+              prefetch={true}
               onClick={onClose}
               className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-white border border-[#E7D1CC] text-xs font-semibold text-[#2E211E] hover:bg-[#FCE9E5] hover:text-[#913638] transition-colors shadow-2xs relative"
             >
@@ -200,16 +203,14 @@ export function MobileDrawer({
               <nav className="flex flex-col space-y-1">
                 {items.map((item, idx) => {
                   const href = normalizeInternalLink(item.href);
-                  const isActive =
-                    pathname === href ||
-                    (href === "/" && (pathname === "/" || pathname === ""));
+                  const isActive = isRouteActive(pathname, href);
                   const isHighlighted = Boolean(item.is_highlighted);
 
                   return (
                     <Link
                       key={item.href + idx}
                       href={href}
-                      prefetch={false}
+                      prefetch={true}
                       onClick={onClose}
                       className={`group flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
                         isActive
@@ -249,6 +250,7 @@ export function MobileDrawer({
                   </p>
                   <Link
                     href={normalizeInternalLink("/shop")}
+                    prefetch={true}
                     onClick={onClose}
                     className="text-[10px] font-semibold text-[#913638] hover:underline"
                   >
@@ -260,6 +262,7 @@ export function MobileDrawer({
                     <Link
                       key={cat.id || cat.slug}
                       href={normalizeInternalLink(`/category/${cat.slug}`)}
+                      prefetch={true}
                       onClick={onClose}
                       className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg bg-[#FFF9F6] border border-[#E7D1CC]/60 text-xs text-[#2E211E] hover:bg-[#FCE9E5] hover:text-[#913638] transition-colors truncate"
                     >
@@ -289,6 +292,7 @@ export function MobileDrawer({
 
                   <Link
                     href={normalizeInternalLink("/account")}
+                    prefetch={true}
                     onClick={onClose}
                     className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-[#2E211E] hover:bg-[#FCE9E5]/60 hover:text-[#913638] transition-colors"
                   >
@@ -298,6 +302,7 @@ export function MobileDrawer({
 
                   <Link
                     href={normalizeInternalLink("/account/orders")}
+                    prefetch={true}
                     onClick={onClose}
                     className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-[#2E211E] hover:bg-[#FCE9E5]/60 hover:text-[#913638] transition-colors"
                   >
@@ -321,6 +326,7 @@ export function MobileDrawer({
                 <div className="grid grid-cols-2 gap-2">
                   <Link
                     href={normalizeInternalLink("/login")}
+                    prefetch={true}
                     onClick={onClose}
                     className="flex items-center justify-center py-2 px-3 rounded-xl bg-[#913638] text-white text-xs font-semibold hover:bg-[#74292B] transition-colors text-center shadow-xs"
                   >
@@ -328,6 +334,7 @@ export function MobileDrawer({
                   </Link>
                   <Link
                     href={normalizeInternalLink("/signup")}
+                    prefetch={true}
                     onClick={onClose}
                     className="flex items-center justify-center py-2 px-3 rounded-xl bg-white border border-[#E7D1CC] text-[#2E211E] text-xs font-semibold hover:bg-[#FCE9E5] hover:text-[#913638] transition-colors text-center shadow-2xs"
                   >
@@ -349,6 +356,7 @@ export function MobileDrawer({
               <div className="pt-1.5">
                 <Link
                   href={normalizeInternalLink("/custom-order")}
+                  prefetch={true}
                   onClick={onClose}
                   className="inline-block w-full py-1.5 px-3 rounded-full bg-[#913638] text-white text-[11px] font-semibold hover:bg-[#74292B] active:scale-[0.98] transition-all text-center cursor-pointer shadow-2xs"
                 >

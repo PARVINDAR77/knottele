@@ -8,7 +8,7 @@ import { KnotelleCrownLogo } from "@/components/ui/BotanicalDecorations";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { useWebsiteMedia } from "@/context/MediaContext";
-import { normalizeInternalLink } from "@/lib/api";
+import { normalizeInternalLink, isRouteActive } from "@/lib/api";
 import { SearchModal } from "./SearchModal";
 import { MobileDrawer } from "./MobileDrawer";
 
@@ -26,10 +26,10 @@ export function Navbar() {
 
   const defaultNavLinks = [
     { name: "Home", href: "/", is_highlighted: false, is_active: true },
-    { name: "Shop", href: "/shop", is_highlighted: false, is_active: true },
-    { name: "Custom Order", href: "/custom-order", is_highlighted: true, is_active: true },
-    { name: "About", href: "/about", is_highlighted: false, is_active: true },
-    { name: "Contact", href: "/contact", is_highlighted: false, is_active: true },
+    { name: "Shop", href: "/shop/", is_highlighted: false, is_active: true },
+    { name: "Custom Order", href: "/custom-order/", is_highlighted: true, is_active: true },
+    { name: "About", href: "/about/", is_highlighted: false, is_active: true },
+    { name: "Contact", href: "/contact/", is_highlighted: false, is_active: true },
   ];
 
   const rawNavLinks = (navbar?.nav_links && navbar.nav_links.length > 0)
@@ -51,6 +51,7 @@ export function Navbar() {
           {announcement.link ? (
             <Link
               href={normalizeInternalLink(announcement.link)}
+              prefetch={true}
               className="inline-flex items-center justify-center gap-1.5 hover:underline decoration-white/60 underline-offset-4"
             >
               <span>{announcement.text}</span>
@@ -77,7 +78,7 @@ export function Navbar() {
                 <Menu className="w-6 h-6 text-[#2E211E]" />
               </button>
 
-              <Link href={normalizeInternalLink("/")} prefetch={false} className="flex items-center group py-1" aria-label="KNOTELLE Home">
+              <Link href={normalizeInternalLink("/")} prefetch={true} className="flex items-center group py-1" aria-label="KNOTELLE Home">
                 <KnotelleCrownLogo className="h-12 sm:h-16 w-auto" />
               </Link>
             </div>
@@ -86,7 +87,7 @@ export function Navbar() {
             <nav className="hidden lg:flex items-center gap-7 xl:gap-9">
               {navLinks.map((link, idx) => {
                 const href = normalizeInternalLink(link.href);
-                const isActive = pathname === href || (href === "/" && (pathname === "/" || pathname === ""));
+                const isActive = isRouteActive(pathname, href);
                 const isHighlighted = Boolean(link.is_highlighted);
 
                 if (isHighlighted) {
@@ -111,7 +112,7 @@ export function Navbar() {
                   <Link
                     key={link.href + idx}
                     href={href}
-                    prefetch={false}
+                    prefetch={true}
                     className={`relative text-sm font-medium tracking-wide py-2 transition-colors flex flex-col items-center ${
                       isActive
                         ? "text-[#913638] font-bold"
@@ -142,6 +143,7 @@ export function Navbar() {
               {showWishlist && (
                 <Link
                   href={normalizeInternalLink("/account/wishlist")}
+                  prefetch={true}
                   className="relative p-2.5 rounded-full text-[#2E211E] hover:text-[#913638] hover:bg-[#FCE9E5] transition-colors flex items-center justify-center"
                   aria-label="View wishlist"
                 >
@@ -157,6 +159,7 @@ export function Navbar() {
               {showAccount && (
                 <Link
                   href={normalizeInternalLink("/account")}
+                  prefetch={true}
                   className="p-2.5 rounded-full text-[#2E211E] hover:text-[#913638] hover:bg-[#FCE9E5] transition-colors flex items-center justify-center"
                   aria-label="My Account"
                 >

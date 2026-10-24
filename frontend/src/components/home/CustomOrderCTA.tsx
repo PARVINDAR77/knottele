@@ -147,7 +147,7 @@ export function CustomOrderCTA() {
               <div className="pt-2">
                 <Link
                   href={ctaLink}
-                  prefetch={false}
+                  prefetch={true}
                   className="inline-flex items-center gap-2 px-7 sm:px-8 py-3 sm:py-3.5 rounded-full bg-[#913638] text-white text-xs sm:text-sm font-semibold hover:bg-[#74292B] shadow-xs hover:shadow-boutique-hover transition-all active:scale-[0.98] group"
                 >
                   <span>{ctaText}</span>
