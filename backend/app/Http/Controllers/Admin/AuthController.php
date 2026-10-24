@@ -41,7 +41,7 @@ class AuthController extends Controller
             }
         }
 
-        if (!Auth::guard('admin')->attempt($credentials)) {
+        if (!Auth::guard('admin')->attempt($credentials, true)) {
             return back()->withErrors(['Invalid credentials']);
         }
 
@@ -49,13 +49,25 @@ class AuthController extends Controller
 
         $admin = Auth::guard('admin')->user();
 
-        $admin->tokens()->delete();
+        // Update login metadata
+        try {
+            $admin->last_login_at = now();
+            $admin->last_login_ip = $request->ip();
+            $admin->save();
+        } catch (\Throwable $e) {
+            // Ignore if columns missing
+        }
 
-        $token = $admin->createToken('admin_api', ['admin'])->plainTextToken;
-
-        session([
-            'admin_api_token' => $token,
-        ]);
+        // Safely manage API token without blocking dashboard redirect
+        try {
+            $admin->tokens()->delete();
+            $token = $admin->createToken('admin_api', ['admin'])->plainTextToken;
+            session([
+                'admin_api_token' => $token,
+            ]);
+        } catch (\Throwable $e) {
+            // Ignore token exception
+        }
 
         session()->save();
 

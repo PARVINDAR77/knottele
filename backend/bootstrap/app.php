@@ -27,6 +27,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->trustProxies(at: '*');
+
         $middleware->validateCsrfTokens(except: [
             'knottele/api/*',
             'api/*',
@@ -53,6 +55,10 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->render(function (\Illuminate\Session\TokenMismatchException $e, $request) {
+            if ($request->is('admin*') || $request->is('*/admin*')) {
+                return redirect()->route('admin.signin')->withErrors(['Your session expired. Please sign in again.']);
+            }
+        });
     })
     ->create();

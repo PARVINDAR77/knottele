@@ -15,7 +15,18 @@ echo "🐳 Recreating Docker container with latest build..."
 docker compose down || true
 docker compose up -d --build --force-recreate
 
-# 3. Clear Laravel internal caches
+# 3. Fix storage and cache permissions
+echo "🔒 Fixing file and directory permissions..."
+chmod -R 777 /var/www/knottele-fullstack/backend/storage /var/www/knottele-fullstack/backend/bootstrap/cache 2>/dev/null || true
+docker exec knotelle-app chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache || true
+docker exec knotelle-app chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache || true
+
+# 4. Run database migrations and seed default admin user
+echo "📦 Running database migrations and ensuring Admin exists..."
+docker exec knotelle-app php artisan migrate --force || true
+docker exec knotelle-app php artisan db:seed --class=AdminSeeder --force || true
+
+# 5. Clear and refresh Laravel caches
 echo "⚡ Clearing Laravel caches..."
 docker exec knotelle-app php artisan route:clear || true
 docker exec knotelle-app php artisan cache:clear || true

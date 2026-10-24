@@ -483,6 +483,38 @@ Route::get('/check-contact-messages', function () {
     return \App\Models\ContactMessage::count();
 });
 
+Route::get('/knottele-session-check', function () {
+    try {
+        session(['test_check' => 'active_' . now()]);
+        session()->save();
+        $dbSessionCount = \Illuminate\Support\Facades\Schema::hasTable('sessions')
+            ? \Illuminate\Support\Facades\DB::table('sessions')->count()
+            : 'table_sessions_missing';
+        $adminsCount = \Illuminate\Support\Facades\Schema::hasTable('admins')
+            ? \Illuminate\Support\Facades\DB::table('admins')->count()
+            : 'table_admins_missing';
+        return response()->json([
+            'status' => 'ok',
+            'session_id' => session()->getId(),
+            'session_driver' => config('session.driver'),
+            'session_domain' => config('session.domain'),
+            'session_secure' => config('session.secure'),
+            'request_secure' => request()->isSecure(),
+            'scheme' => request()->getScheme(),
+            'has_sessions_table' => $dbSessionCount,
+            'admins_count' => $adminsCount,
+            'app_url' => config('app.url'),
+        ]);
+    } catch (\Throwable $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+        ], 500);
+    }
+});
+
 
 /*
 |--------------------------------------------------------------------------

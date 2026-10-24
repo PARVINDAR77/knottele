@@ -293,7 +293,7 @@ class DashboardController extends Controller
             ->get()
             ->map(function ($row) {
                 return [
-                    'name' => strtoupper($row->payment_method),
+                    'name' => strtoupper($row->payment_method ?? 'OTHER'),
                     'order_count' => $row->order_count,
                     'total_amount' => $row->total_amount,
                 ];
@@ -301,13 +301,16 @@ class DashboardController extends Controller
             ->toArray();
 
         // ==================== VISITOR STATISTICS ====================
+        $hasVisitorsTable = \Illuminate\Support\Facades\Schema::hasTable('visitors');
         $visitorStats = [
-            'total_unique' => DB::table('visitors')->count(),
-            'today_unique' => DB::table('visitors')->whereDate('visit_date', $today)->count(),
-            'monthly_unique' => DB::table('visitors')
-                ->whereMonth('visit_date', Carbon::now()->month)
-                ->whereYear('visit_date', Carbon::now()->year)
-                ->count(),
+            'total_unique' => $hasVisitorsTable ? DB::table('visitors')->count() : 0,
+            'today_unique' => $hasVisitorsTable ? DB::table('visitors')->whereDate('visit_date', $today)->count() : 0,
+            'monthly_unique' => $hasVisitorsTable
+                ? DB::table('visitors')
+                    ->whereMonth('visit_date', Carbon::now()->month)
+                    ->whereYear('visit_date', Carbon::now()->year)
+                    ->count()
+                : 0,
             'current_month' => Carbon::now()->format('F Y'),
         ];
 
