@@ -71,7 +71,21 @@ class AuthController extends Controller
 
         session()->save();
 
-        return redirect()->route('admin.dashboard');
+        $response = redirect()->route('admin.dashboard');
+        $cookieName = config('session.cookie', 'knotelle-session');
+        $response->withCookie(cookie(
+            $cookieName,
+            session()->getId(),
+            config('session.lifetime', 120),
+            '/',
+            config('session.domain'),
+            false,
+            true,
+            false,
+            'lax'
+        ));
+
+        return $response;
     }
 
 

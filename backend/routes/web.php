@@ -504,6 +504,7 @@ Route::get('/knottele-session-check', function () {
             'has_sessions_table' => $dbSessionCount,
             'admins_count' => $adminsCount,
             'app_url' => config('app.url'),
+            'headers_list' => headers_list(),
         ]);
     } catch (\Throwable $e) {
         return response()->json([
@@ -513,6 +514,11 @@ Route::get('/knottele-session-check', function () {
             'line' => $e->getLine(),
         ], 500);
     }
+});
+
+Route::get('/set-raw-cookie', function () {
+    return response('testing raw cookie')
+        ->header('Set-Cookie', 'knotelle_raw_test=12345; Path=/; Secure; HttpOnly; SameSite=Lax');
 });
 
 
