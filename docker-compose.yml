@@ -11,6 +11,8 @@ services:
       - ./backend/routes:/var/www/html/routes
       - ./backend/app:/var/www/html/app
       - ./backend/bootstrap/app.php:/var/www/html/bootstrap/app.php
+      - ./backend/resources:/var/www/html/resources
+      - ./backend/config:/var/www/html/config
       - ./backend/public:/var/www/html/public
       - ./backend/storage:/var/www/html/storage
       - ./backend/storage/app/public:/var/www/html/public/storage
