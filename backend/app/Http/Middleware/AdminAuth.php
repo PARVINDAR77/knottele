@@ -12,6 +12,18 @@ class AdminAuth
     public function handle($request, Closure $next)
     {
         if (!Auth::guard('admin')->check()) {
+            $tokenParam = $request->query('auth_token') ?: $request->header('X-Admin-Token');
+            if ($tokenParam) {
+                try {
+                    $accessToken = Sanctum::$personalAccessTokenModel::findToken($tokenParam);
+                    if ($accessToken && $accessToken->tokenable instanceof Admin) {
+                        Auth::guard('admin')->login($accessToken->tokenable, true);
+                        $request->session()->put('admin_api_token', $tokenParam);
+                        $request->session()->save();
+                        return $next($request);
+                    }
+                } catch (\Throwable $e) {}
+            }
             return redirect()->route('admin.signin');
         }
 

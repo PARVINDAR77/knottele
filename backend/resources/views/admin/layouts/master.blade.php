@@ -206,8 +206,28 @@
         }
     </script>
 
-
-
+    <script>
+        (function() {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const token = params.get('auth_token');
+                if (token) {
+                    localStorage.setItem('admin_auth_token', token);
+                }
+                const savedToken = localStorage.getItem('admin_auth_token');
+                if (savedToken) {
+                    document.addEventListener('click', function(e) {
+                        const link = e.target.closest('a[href]');
+                        if (link && link.href && link.href.includes('/admin') && !link.href.includes('auth_token=') && !link.href.includes('/logout')) {
+                            const u = new URL(link.href);
+                            u.searchParams.set('auth_token', savedToken);
+                            link.href = u.toString();
+                        }
+                    }, true);
+                }
+            } catch(e) {}
+        })();
+    </script>
 
     <script>
         function broadcastMediaUpdate() {

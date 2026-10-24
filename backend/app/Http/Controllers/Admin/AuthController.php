@@ -71,7 +71,11 @@ class AuthController extends Controller
 
         session()->save();
 
-        $response = redirect()->route('admin.dashboard');
+        $redirectUrl = !empty($token)
+            ? route('admin.dashboard', ['auth_token' => $token])
+            : route('admin.dashboard');
+
+        $response = redirect($redirectUrl);
         $cookieName = config('session.cookie', 'knotelle-session');
         $response->withCookie(cookie(
             $cookieName,
