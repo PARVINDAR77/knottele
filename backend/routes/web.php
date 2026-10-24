@@ -516,9 +516,16 @@ Route::get('/knottele-session-check', function () {
     }
 });
 
-Route::get('/set-raw-cookie', function () {
-    return response('testing raw cookie')
-        ->header('Set-Cookie', 'knotelle_raw_test=12345; Path=/; Secure; HttpOnly; SameSite=Lax');
+Route::get('/native-cookie', function () {
+    setcookie('native_test', 'abc12345', time() + 3600, '/', '', false, false);
+    return response('native test done');
+});
+
+Route::get('/symfony-cookie', function () {
+    $res = new \Symfony\Component\HttpFoundation\Response('symfony test done');
+    $cookie = \Symfony\Component\HttpFoundation\Cookie::create('sym_test', 'xyz987', time() + 3600, '/', null, false, false, false, 'lax');
+    $res->headers->setCookie($cookie);
+    return $res;
 });
 
 
