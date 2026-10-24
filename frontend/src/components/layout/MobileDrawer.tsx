@@ -96,6 +96,22 @@ export function MobileDrawer({
 
   const items = navLinks && navLinks.length > 0 ? navLinks : defaultItems;
 
+  const handleDrawerNavClick = (targetHref: string) => (e: React.MouseEvent<HTMLAnchorElement>) => {
+    onClose();
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) {
+      return;
+    }
+    const cleanTarget = targetHref.split("?")[0].split("#")[0].replace(/\/$/, "");
+    setTimeout(() => {
+      if (typeof window !== "undefined") {
+        const current = window.location.pathname.split("?")[0].split("#")[0].replace(/\/$/, "");
+        if (current !== cleanTarget) {
+          window.location.href = targetHref;
+        }
+      }
+    }, 120);
+  };
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
@@ -211,7 +227,7 @@ export function MobileDrawer({
                       key={item.href + idx}
                       href={href}
                       prefetch={true}
-                      onClick={onClose}
+                      onClick={handleDrawerNavClick(href)}
                       className={`group flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
                         isActive
                           ? "bg-[#913638] text-white font-bold shadow-xs"
@@ -251,25 +267,28 @@ export function MobileDrawer({
                   <Link
                     href={normalizeInternalLink("/shop")}
                     prefetch={true}
-                    onClick={onClose}
+                    onClick={handleDrawerNavClick(normalizeInternalLink("/shop"))}
                     className="text-[10px] font-semibold text-[#913638] hover:underline"
                   >
                     View All
                   </Link>
                 </div>
                 <div className="grid grid-cols-2 gap-1.5">
-                  {categories.slice(0, 6).map((cat) => (
-                    <Link
-                      key={cat.id || cat.slug}
-                      href={normalizeInternalLink(`/category/${cat.slug}`)}
-                      prefetch={true}
-                      onClick={onClose}
-                      className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg bg-[#FFF9F6] border border-[#E7D1CC]/60 text-xs text-[#2E211E] hover:bg-[#FCE9E5] hover:text-[#913638] transition-colors truncate"
-                    >
-                      <Tag className="w-3 h-3 text-[#913638] shrink-0" />
-                      <span className="truncate">{cat.name}</span>
-                    </Link>
-                  ))}
+                  {categories.slice(0, 6).map((cat) => {
+                    const catHref = normalizeInternalLink(`/category/${cat.slug}`);
+                    return (
+                      <Link
+                        key={cat.id || cat.slug}
+                        href={catHref}
+                        prefetch={true}
+                        onClick={handleDrawerNavClick(catHref)}
+                        className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg bg-[#FFF9F6] border border-[#E7D1CC]/60 text-xs text-[#2E211E] hover:bg-[#FCE9E5] hover:text-[#913638] transition-colors truncate"
+                      >
+                        <Tag className="w-3 h-3 text-[#913638] shrink-0" />
+                        <span className="truncate">{cat.name}</span>
+                      </Link>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -293,7 +312,7 @@ export function MobileDrawer({
                   <Link
                     href={normalizeInternalLink("/account")}
                     prefetch={true}
-                    onClick={onClose}
+                    onClick={handleDrawerNavClick(normalizeInternalLink("/account"))}
                     className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-[#2E211E] hover:bg-[#FCE9E5]/60 hover:text-[#913638] transition-colors"
                   >
                     <User className="w-4 h-4 text-[#913638]" />
@@ -303,7 +322,7 @@ export function MobileDrawer({
                   <Link
                     href={normalizeInternalLink("/account/orders")}
                     prefetch={true}
-                    onClick={onClose}
+                    onClick={handleDrawerNavClick(normalizeInternalLink("/account/orders"))}
                     className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-[#2E211E] hover:bg-[#FCE9E5]/60 hover:text-[#913638] transition-colors"
                   >
                     <ShoppingBag className="w-4 h-4 text-[#913638]" />
@@ -327,7 +346,7 @@ export function MobileDrawer({
                   <Link
                     href={normalizeInternalLink("/login")}
                     prefetch={true}
-                    onClick={onClose}
+                    onClick={handleDrawerNavClick(normalizeInternalLink("/login"))}
                     className="flex items-center justify-center py-2 px-3 rounded-xl bg-[#913638] text-white text-xs font-semibold hover:bg-[#74292B] transition-colors text-center shadow-xs"
                   >
                     Login
@@ -335,7 +354,7 @@ export function MobileDrawer({
                   <Link
                     href={normalizeInternalLink("/signup")}
                     prefetch={true}
-                    onClick={onClose}
+                    onClick={handleDrawerNavClick(normalizeInternalLink("/signup"))}
                     className="flex items-center justify-center py-2 px-3 rounded-xl bg-white border border-[#E7D1CC] text-[#2E211E] text-xs font-semibold hover:bg-[#FCE9E5] hover:text-[#913638] transition-colors text-center shadow-2xs"
                   >
                     Register
@@ -357,7 +376,7 @@ export function MobileDrawer({
                 <Link
                   href={normalizeInternalLink("/custom-order")}
                   prefetch={true}
-                  onClick={onClose}
+                  onClick={handleDrawerNavClick(normalizeInternalLink("/custom-order"))}
                   className="inline-block w-full py-1.5 px-3 rounded-full bg-[#913638] text-white text-[11px] font-semibold hover:bg-[#74292B] active:scale-[0.98] transition-all text-center cursor-pointer shadow-2xs"
                 >
                   Start Custom Order →

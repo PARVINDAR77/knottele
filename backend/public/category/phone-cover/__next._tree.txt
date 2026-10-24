@@ -1,3 +1,2 @@
-:HL["/knottele/_next/static/css/6960bdd4786a191c.css","style"]
-:HL["/knottele/_next/static/css/af5d8942d2309b70.css","style"]
-0:{"tree":{"name":"","param":null,"prefetchHints":4112,"slots":{"children":{"name":"category","param":null,"prefetchHints":4160,"slots":{"children":{"name":"slug","param":{"type":"d","key":"phone-cover","siblings":[]},"prefetchHints":4192,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":4256,"slots":null}}}}}}},"staleTime":300,"buildId":"kwWvk1ic2_9Zp-dZRUYBe"}
+:HL["/_next/static/css/ace08339cdde1396.css","style"]
+0:{"tree":{"name":"","param":null,"prefetchHints":4112,"slots":{"children":{"name":"category","param":null,"prefetchHints":4160,"slots":{"children":{"name":"slug","param":{"type":"d","key":"phone-cover","siblings":[]},"prefetchHints":4192,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":4256,"slots":null}}}}}}},"staleTime":300,"buildId":"kNAEC71dbqy3XrPbpk0kZ"}

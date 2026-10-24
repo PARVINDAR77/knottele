@@ -5,8 +5,6 @@ const isDev = process.env.NODE_ENV === "development";
 const nextConfig: NextConfig = {
   output: "export",
   trailingSlash: true,
-  basePath: "/knottele",
-  assetPrefix: "/knottele",
   experimental: {
     optimizePackageImports: [
       "lucide-react",

@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Plus_Jakarta_Sans, Caveat } from "next/font/google";
 import "./globals.css";
 import { ToastProvider } from "@/context/ToastContext";
 import { CartProvider } from "@/context/CartContext";
@@ -11,26 +10,9 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { CartDrawer } from "@/components/layout/CartDrawer";
 
-const serifFont = Cormorant_Garamond({
-  variable: "--font-serif",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  display: "swap",
-});
-
-const sansFont = Plus_Jakarta_Sans({
-  variable: "--font-sans",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  display: "swap",
-});
-
-const scriptFont = Caveat({
-  variable: "--font-script",
-  subsets: ["latin"],
-  weight: ["400", "600", "700"],
-  display: "swap",
-});
+const serifFont = { variable: "font-serif-luxury" };
+const sansFont = { variable: "font-sans" };
+const scriptFont = { variable: "font-script-boutique" };
 
 export const metadata: Metadata = {
   title: "KNOTELLE | Customized Crochet Products & Handmade Boutique",
@@ -46,11 +28,11 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/knottele/images/logo/Logo_1.png?v=2", type: "image/png" },
-      { url: "/knottele/icon.png?v=2", type: "image/png" },
+      { url: "/images/logo/Logo_1.png?v=2", type: "image/png" },
+      { url: "/icon.png?v=2", type: "image/png" },
     ],
-    shortcut: "/knottele/images/logo/Logo_1.png?v=2",
-    apple: "/knottele/images/logo/Logo_1.png?v=2",
+    shortcut: "/images/logo/Logo_1.png?v=2",
+    apple: "/images/logo/Logo_1.png?v=2",
   },
 };
 
@@ -70,9 +52,9 @@ export default async function RootLayout({
       className={`${serifFont.variable} ${sansFont.variable} ${scriptFont.variable} h-full antialiased`}
     >
       <head>
-        <link rel="icon" href="/knottele/images/logo/Logo_1.png?v=2" type="image/png" />
-        <link rel="icon" href="/knottele/icon.png?v=2" type="image/png" />
-        <link rel="apple-touch-icon" href="/knottele/images/logo/Logo_1.png?v=2" />
+        <link rel="icon" href="/images/logo/Logo_1.png?v=2" type="image/png" />
+        <link rel="icon" href="/icon.png?v=2" type="image/png" />
+        <link rel="apple-touch-icon" href="/images/logo/Logo_1.png?v=2" />
       </head>
       <body suppressHydrationWarning className="min-h-full flex flex-col bg-[#FFF8F5] text-[#2C201D] font-sans">
         <MediaProvider initialMedia={initialMedia}>

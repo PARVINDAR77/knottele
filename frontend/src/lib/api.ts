@@ -58,9 +58,11 @@ export function isRouteActive(currentPath?: string | null, targetHref?: string |
 }
 
 export function getFullPath(path: string): string {
-  const clean = path.startsWith("/") ? path : `/${path}`;
-  if (clean.startsWith("/knottele")) return clean;
-  return clean === "/" ? "/knottele" : `/knottele${clean}`;
+  let clean = path.startsWith("/") ? path : `/${path}`;
+  if (clean.startsWith("/knottele")) {
+    clean = clean.replace(/^\/knottele(?:\/|$)/, "/");
+  }
+  return clean || "/";
 }
 
 export function getBrowserApiBaseUrl(): string {
@@ -72,12 +74,12 @@ export function getBrowserApiBaseUrl(): string {
       return "http://127.0.0.1:8000/api";
     }
 
-    // On remote production server (IP or domain), always use /knottele/api to avoid 301 redirects and ensure POST requests work seamlessly
-    return "/knottele/api";
+    // On remote production server, always use standard /api
+    return "/api";
   }
 
   // Fallback
-  return "/knottele/api";
+  return "/api";
 }
 
 export function getServerApiBaseUrl(): string {
@@ -85,7 +87,7 @@ export function getServerApiBaseUrl(): string {
     return process.env.INTERNAL_API_URL;
   }
   if (process.env.NODE_ENV === "production") {
-    return "http://127.0.0.1/knottele/api";
+    return "http://127.0.0.1/api";
   }
   return "http://127.0.0.1:8000/api";
 }

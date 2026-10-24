@@ -43,6 +43,21 @@ export function Navbar() {
   const showAccount = actions?.show_account !== false;
   const showCart = actions?.show_cart !== false;
 
+  const handleNavClick = (targetHref: string) => (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) {
+      return;
+    }
+    const cleanTarget = targetHref.split("?")[0].split("#")[0].replace(/\/$/, "");
+    setTimeout(() => {
+      if (typeof window !== "undefined") {
+        const current = window.location.pathname.split("?")[0].split("#")[0].replace(/\/$/, "");
+        if (current !== cleanTarget) {
+          window.location.href = targetHref;
+        }
+      }
+    }, 120);
+  };
+
   return (
     <>
       {/* Dynamic Announcement Banner */}
@@ -52,6 +67,7 @@ export function Navbar() {
             <Link
               href={normalizeInternalLink(announcement.link)}
               prefetch={true}
+              onClick={handleNavClick(normalizeInternalLink(announcement.link))}
               className="inline-flex items-center justify-center gap-1.5 hover:underline decoration-white/60 underline-offset-4"
             >
               <span>{announcement.text}</span>
@@ -78,7 +94,13 @@ export function Navbar() {
                 <Menu className="w-6 h-6 text-[#2E211E]" />
               </button>
 
-              <Link href={normalizeInternalLink("/")} prefetch={true} className="flex items-center group py-1" aria-label="KNOTELLE Home">
+              <Link
+                href={normalizeInternalLink("/")}
+                prefetch={true}
+                onClick={handleNavClick(normalizeInternalLink("/"))}
+                className="flex items-center group py-1"
+                aria-label="KNOTELLE Home"
+              >
                 <KnotelleCrownLogo className="h-12 sm:h-16 w-auto" />
               </Link>
             </div>
@@ -96,6 +118,7 @@ export function Navbar() {
                       key={link.href + idx}
                       href={href}
                       prefetch={true}
+                      onClick={handleNavClick(href)}
                       className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all shadow-xs active:scale-95 ${
                         isActive
                           ? "bg-[#913638] text-white ring-2 ring-[#913638]/25 shadow-sm"
@@ -113,6 +136,7 @@ export function Navbar() {
                     key={link.href + idx}
                     href={href}
                     prefetch={true}
+                    onClick={handleNavClick(href)}
                     className={`relative text-sm font-medium tracking-wide py-2 transition-colors flex flex-col items-center ${
                       isActive
                         ? "text-[#913638] font-bold"
@@ -144,6 +168,7 @@ export function Navbar() {
                 <Link
                   href={normalizeInternalLink("/account/wishlist")}
                   prefetch={true}
+                  onClick={handleNavClick(normalizeInternalLink("/account/wishlist"))}
                   className="relative p-2.5 rounded-full text-[#2E211E] hover:text-[#913638] hover:bg-[#FCE9E5] transition-colors flex items-center justify-center"
                   aria-label="View wishlist"
                 >
@@ -160,6 +185,7 @@ export function Navbar() {
                 <Link
                   href={normalizeInternalLink("/account")}
                   prefetch={true}
+                  onClick={handleNavClick(normalizeInternalLink("/account"))}
                   className="p-2.5 rounded-full text-[#2E211E] hover:text-[#913638] hover:bg-[#FCE9E5] transition-colors flex items-center justify-center"
                   aria-label="My Account"
                 >
