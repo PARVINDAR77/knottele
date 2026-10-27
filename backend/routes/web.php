@@ -710,6 +710,21 @@ Route::match(['GET', 'HEAD'], '/{any}', function ($any = '') {
         }
     }
 
+    // 3e-3. Resilient order-confirmation route fallback
+    if (str_starts_with($path, 'order-confirmation')) {
+        if (request()->has('_rsc') || request()->header('RSC') === '1' || str_contains($path, '__next.') || str_ends_with($path, '.txt')) {
+            if (file_exists(public_path('order-confirmation/__next._full.txt'))) {
+                return response()->file(public_path('order-confirmation/__next._full.txt'), ['Content-Type' => 'text/plain; charset=utf-8']);
+            }
+            if (file_exists(public_path('order-confirmation/index.txt'))) {
+                return response()->file(public_path('order-confirmation/index.txt'), ['Content-Type' => 'text/plain; charset=utf-8']);
+            }
+        }
+        if (file_exists(public_path('order-confirmation/index.html'))) {
+            return response()->file(public_path('order-confirmation/index.html'));
+        }
+    }
+
     // 3f. Resilient Next.js RSC Flight Payload resolver (resolves client-side navigation RSC flight requests)
     if (str_contains($path, '__next.') && str_ends_with($path, '.txt')) {
         if (file_exists(public_path($path))) {

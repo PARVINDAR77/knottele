@@ -34,6 +34,7 @@ import {
   fetchActiveOffers,
   createRazorpayOrder,
   verifyRazorpayPayment,
+  getFullPath,
 } from "@/lib/api";
 import { KNOTELLE_LOGO_BASE64 } from "@/lib/brandLogo";
 
@@ -212,6 +213,33 @@ export default function CheckoutPage() {
     return (
       <div className="bg-[#FFF9F6] min-h-screen py-16 flex items-center justify-center text-center">
         <p className="text-xs text-[#786864]">Redirecting to Login for Checkout...</p>
+      </div>
+    );
+  }
+
+  if (items.length === 0 && !isSubmitting) {
+    return (
+      <div className="bg-[#FFF9F6] min-h-[75vh] flex items-center justify-center py-16 px-4">
+        <div className="max-w-md w-full bg-white rounded-3xl border border-[#E7D1CC] p-8 sm:p-12 text-center shadow-boutique space-y-6">
+          <div className="w-16 h-16 rounded-full bg-[#FCE9E5] border border-[#E7D1CC] flex items-center justify-center mx-auto text-[#913638]">
+            <FlowerIcon className="w-8 h-8 text-[#913638]" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="font-serif-luxury text-2xl sm:text-3xl font-bold text-[#2E211E]">
+              Your Cart is Empty
+            </h2>
+            <p className="text-xs sm:text-sm text-[#786864] leading-relaxed">
+              Explore our boutique collection of handmade crochet creations and add your favorites to checkout.
+            </p>
+          </div>
+          <Link
+            href="/shop"
+            className="inline-flex items-center gap-2 px-7 py-3 rounded-full bg-[#913638] text-white text-xs font-semibold hover:bg-[#74292B] active:scale-[0.98] shadow-sm transition-all"
+          >
+            <span>Explore Boutique</span>
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
       </div>
     );
   }
@@ -396,10 +424,12 @@ export default function CheckoutPage() {
               } catch (e) {}
 
               addOrder(newOrder);
-              await refetchOrders();
+              try {
+                await refetchOrders();
+              } catch {}
               clearCart();
 
-              router.push(`/order-confirmation?orderNumber=${encodeURIComponent(realOrderNumber)}&orderId=${encodeURIComponent(realOrderId)}`);
+              window.location.href = getFullPath(`/order-confirmation?orderNumber=${encodeURIComponent(realOrderNumber)}&orderId=${encodeURIComponent(realOrderId)}`);
             } catch (err: any) {
               console.error("Razorpay verification callback exception:", err);
               showToast("Order Submission Error", err?.message || "Payment verified, but failed to save order.", "error");
@@ -538,10 +568,12 @@ export default function CheckoutPage() {
       } catch (e) {}
 
       addOrder(newOrder);
-      await refetchOrders();
+      try {
+        await refetchOrders();
+      } catch {}
       clearCart();
 
-      router.push(`/order-confirmation?orderNumber=${encodeURIComponent(realOrderNumber)}&orderId=${encodeURIComponent(realOrderId)}`);
+      window.location.href = getFullPath(`/order-confirmation?orderNumber=${encodeURIComponent(realOrderNumber)}&orderId=${encodeURIComponent(realOrderId)}`);
     } catch (err: any) {
       console.error("Order submission exception:", err);
       showToast("Order Submission Error", err?.message || "An unexpected error occurred.", "error");
@@ -601,12 +633,15 @@ export default function CheckoutPage() {
 
           {!isSummaryCollapsedMobile && (
             <div className="mt-4 pt-4 border-t border-[#E7D1CC] space-y-3 text-xs animate-in fade-in">
-              {items.map((item) => (
-                <div key={item.id} className="flex justify-between items-center">
-                  <span>{item.quantity}x {item.product.name}</span>
-                  <span className="font-bold text-[#2E211E]">₹{(item.price * item.quantity).toLocaleString("en-IN")}</span>
-                </div>
-              ))}
+              {items.map((item) => {
+                const name = item.product?.name || (item as any)?.name || "Handmade Product";
+                return (
+                  <div key={item.id} className="flex justify-between items-center">
+                    <span>{item.quantity}x {name}</span>
+                    <span className="font-bold text-[#2E211E]">₹{((item.price || 0) * (item.quantity || 1)).toLocaleString("en-IN")}</span>
+                  </div>
+                );
+              })}
 
               {/* Offer / Promo Code Apply Section (Mobile) */}
               <div className="pt-3 border-t border-[#E7D1CC] space-y-2">
@@ -1194,13 +1229,19 @@ export default function CheckoutPage() {
 
               <div className="divide-y divide-[#E7D1CC]/60 max-h-72 overflow-y-auto pr-1">
                 {items.map((item) => {
-                  const isSaved = isInWishlist(item.product.id);
+                  const productId = item.product?.id || item.productId || item.id;
+                  const isSaved = productId ? isInWishlist(productId) : false;
+                  const productName = item.product?.name || (item as any)?.name || "Handmade Product";
+                  const productImage = normalizeImageUrl(
+                    item.product?.main_image || item.product?.images?.[0] || (item as any)?.image,
+                    "/images/products/bunny-keychain.jpg"
+                  );
                   return (
                     <div key={item.id} className="py-3 first:pt-0 last:pb-0 flex items-center gap-3">
                       <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-[#FFF9F6] shrink-0 border border-[#E7D1CC]">
                         <Image
-                          src={normalizeImageUrl(item.product.main_image || item.product.images?.[0], "/images/products/bunny-keychain.jpg")}
-                          alt={item.product.name}
+                          src={productImage}
+                          alt={productName}
                           fill
                           sizes="56px"
                           className="object-cover"
@@ -1211,24 +1252,26 @@ export default function CheckoutPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-bold text-[#2E211E] truncate">
-                          {item.product.name}
+                          {productName}
                         </p>
                         {item.customization?.color && (
                           <p className="text-[10px] text-[#786864]">
                             {item.customization.color.name}
                           </p>
                         )}
-                        <button
-                          type="button"
-                          onClick={() => toggleWishlist(item.product)}
-                          className="mt-0.5 inline-flex items-center gap-1 text-[10px] font-semibold text-[#913638] hover:underline cursor-pointer"
-                        >
-                          <Heart className={`w-3 h-3 ${isSaved ? "fill-[#913638] text-[#913638]" : ""}`} />
-                          <span>{isSaved ? "Remove Wishlist" : "Add Wishlist"}</span>
-                        </button>
+                        {item.product && (
+                          <button
+                            type="button"
+                            onClick={() => toggleWishlist(item.product)}
+                            className="mt-0.5 inline-flex items-center gap-1 text-[10px] font-semibold text-[#913638] hover:underline cursor-pointer"
+                          >
+                            <Heart className={`w-3 h-3 ${isSaved ? "fill-[#913638] text-[#913638]" : ""}`} />
+                            <span>{isSaved ? "Remove Wishlist" : "Add Wishlist"}</span>
+                          </button>
+                        )}
                       </div>
                       <span className="text-xs font-bold text-[#913638]">
-                        ₹{(item.price * item.quantity).toLocaleString("en-IN")}
+                        ₹{((item.price || 0) * (item.quantity || 1)).toLocaleString("en-IN")}
                       </span>
                     </div>
                   );
