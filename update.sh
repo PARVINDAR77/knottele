@@ -15,6 +15,13 @@ echo "🐳 Recreating Docker container with latest build..."
 docker compose down || true
 docker compose up -d --build --force-recreate
 
+# 2b. Ensure host Nginx reverse proxy allows large video uploads (256M)
+if [ -f /etc/nginx/nginx.conf ]; then
+    sed -i '/client_max_body_size/d' /etc/nginx/nginx.conf 2>/dev/null || true
+    sed -i '/http {/a \    client_max_body_size 256M;' /etc/nginx/nginx.conf 2>/dev/null || true
+    nginx -t 2>/dev/null && systemctl reload nginx 2>/dev/null || true
+fi
+
 # 3. Fix storage and cache permissions
 echo "🔒 Fixing file and directory permissions..."
 chmod -R 777 /var/www/knottele-fullstack/backend/storage /var/www/knottele-fullstack/backend/bootstrap/cache 2>/dev/null || true
