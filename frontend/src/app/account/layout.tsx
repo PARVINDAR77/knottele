@@ -246,7 +246,12 @@ export default function AccountLayout({
               </p>
               <Link
                 href="/custom-order"
-                className="inline-block text-xs font-semibold text-[#913638] hover:underline pt-1"
+                onClick={(e) => {
+                  if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                  e.preventDefault();
+                  window.location.href = "/custom-order";
+                }}
+                className="inline-block text-xs font-semibold text-[#913638] hover:underline pt-1 cursor-pointer"
               >
                 Request Custom Order →
               </Link>

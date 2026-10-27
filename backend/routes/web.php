@@ -560,6 +560,32 @@ Route::match(['GET', 'HEAD'], '/{any}', function ($any = '') {
         return view('welcome');
     }
 
+    // 0b. Resilient Next.js RSC Flight Payload resolver (for requests asking for RSC payload via ?_rsc, RSC header, or .txt / __next.)
+    if (request()->has('_rsc') || request()->header('RSC') === '1' || str_contains($path, '__next.') || str_ends_with($path, '.txt')) {
+        // Direct match with static txt file
+        if ($path && file_exists(public_path($path)) && !is_dir(public_path($path))) {
+            return response()->file(public_path($path), ['Content-Type' => 'text/plain; charset=utf-8']);
+        }
+
+        // Subfolder __next._full.txt or index.txt
+        $cleanPath = preg_replace('/(\.txt|\/__next\..*)$/', '', $path);
+        if ($cleanPath) {
+            if (file_exists(public_path($cleanPath . '/__next._full.txt'))) {
+                return response()->file(public_path($cleanPath . '/__next._full.txt'), ['Content-Type' => 'text/plain; charset=utf-8']);
+            }
+            if (file_exists(public_path($cleanPath . '/index.txt'))) {
+                return response()->file(public_path($cleanPath . '/index.txt'), ['Content-Type' => 'text/plain; charset=utf-8']);
+            }
+        }
+
+        if ($path && file_exists(public_path($path . '/__next._full.txt'))) {
+            return response()->file(public_path($path . '/__next._full.txt'), ['Content-Type' => 'text/plain; charset=utf-8']);
+        }
+        if ($path && file_exists(public_path($path . '/index.txt'))) {
+            return response()->file(public_path($path . '/index.txt'), ['Content-Type' => 'text/plain; charset=utf-8']);
+        }
+    }
+
     // 1. Direct match with static asset file (e.g. /icon.png -> public/icon.png, /favicon.ico -> public/favicon.ico)
     if ($path && file_exists(public_path($path)) && !is_dir(public_path($path))) {
         return response()->file(public_path($path));
@@ -641,6 +667,14 @@ Route::match(['GET', 'HEAD'], '/{any}', function ($any = '') {
 
     // 3e. Resilient account/custom-orders route fallback
     if (str_starts_with($path, 'account/custom-orders')) {
+        if (request()->has('_rsc') || request()->header('RSC') === '1' || str_contains($path, '__next.') || str_ends_with($path, '.txt')) {
+            if (file_exists(public_path('account/custom-orders/__next._full.txt'))) {
+                return response()->file(public_path('account/custom-orders/__next._full.txt'), ['Content-Type' => 'text/plain; charset=utf-8']);
+            }
+            if (file_exists(public_path('account/custom-orders/index.txt'))) {
+                return response()->file(public_path('account/custom-orders/index.txt'), ['Content-Type' => 'text/plain; charset=utf-8']);
+            }
+        }
         if (file_exists(public_path('account/custom-orders/index.html'))) {
             return response()->file(public_path('account/custom-orders/index.html'));
         }
@@ -648,6 +682,14 @@ Route::match(['GET', 'HEAD'], '/{any}', function ($any = '') {
 
     // 3e-1. Resilient account/wishlist route fallback
     if (str_starts_with($path, 'account/wishlist')) {
+        if (request()->has('_rsc') || request()->header('RSC') === '1' || str_contains($path, '__next.') || str_ends_with($path, '.txt')) {
+            if (file_exists(public_path('account/wishlist/__next._full.txt'))) {
+                return response()->file(public_path('account/wishlist/__next._full.txt'), ['Content-Type' => 'text/plain; charset=utf-8']);
+            }
+            if (file_exists(public_path('account/wishlist/index.txt'))) {
+                return response()->file(public_path('account/wishlist/index.txt'), ['Content-Type' => 'text/plain; charset=utf-8']);
+            }
+        }
         if (file_exists(public_path('account/wishlist/index.html'))) {
             return response()->file(public_path('account/wishlist/index.html'));
         }
@@ -655,6 +697,14 @@ Route::match(['GET', 'HEAD'], '/{any}', function ($any = '') {
 
     // 3e-2. Resilient custom-order route fallback (catches typos like /custom-orderrbtydsg)
     if (str_starts_with($path, 'custom-order')) {
+        if (request()->has('_rsc') || request()->header('RSC') === '1' || str_contains($path, '__next.') || str_ends_with($path, '.txt')) {
+            if (file_exists(public_path('custom-order/__next._full.txt'))) {
+                return response()->file(public_path('custom-order/__next._full.txt'), ['Content-Type' => 'text/plain; charset=utf-8']);
+            }
+            if (file_exists(public_path('custom-order/index.txt'))) {
+                return response()->file(public_path('custom-order/index.txt'), ['Content-Type' => 'text/plain; charset=utf-8']);
+            }
+        }
         if (file_exists(public_path('custom-order/index.html'))) {
             return response()->file(public_path('custom-order/index.html'));
         }

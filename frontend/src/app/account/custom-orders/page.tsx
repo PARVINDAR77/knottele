@@ -49,6 +49,15 @@ export default function CustomerCustomOrdersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedOrder, setSelectedOrder] = useState<CustomOrder | null>(null);
 
+  const handleNavigateToCustomOrder = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    // If middle click or Cmd/Ctrl/Shift held, allow browser new tab
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) {
+      return;
+    }
+    e.preventDefault();
+    window.location.href = "/custom-order";
+  };
+
   const loadOrders = async () => {
     setLoading(true);
     try {
@@ -166,7 +175,8 @@ export default function CustomerCustomOrdersPage() {
         <div className="flex items-center gap-2">
           <Link
             href="/custom-order"
-            className="px-5 py-2.5 rounded-full bg-[#913638] text-white text-xs font-semibold hover:bg-[#74292B] active:scale-[0.98] transition-all flex items-center gap-1.5 shadow-xs"
+            onClick={handleNavigateToCustomOrder}
+            className="px-5 py-2.5 rounded-full bg-[#913638] text-white text-xs font-semibold hover:bg-[#74292B] active:scale-[0.98] transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>New Custom Request</span>
@@ -210,7 +220,8 @@ export default function CustomerCustomOrdersPage() {
           </p>
           <Link
             href="/custom-order"
-            className="px-7 py-3 rounded-full bg-[#913638] text-white text-xs font-semibold hover:bg-[#74292B] active:scale-[0.98] transition-all inline-flex items-center gap-2 shadow-xs"
+            onClick={handleNavigateToCustomOrder}
+            className="px-7 py-3 rounded-full bg-[#913638] text-white text-xs font-semibold hover:bg-[#74292B] active:scale-[0.98] transition-all inline-flex items-center gap-2 shadow-xs cursor-pointer"
           >
             <Sparkles className="w-3.5 h-3.5" />
             <span>Design Your Custom Piece →</span>
