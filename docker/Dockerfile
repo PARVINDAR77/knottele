@@ -30,8 +30,9 @@ WORKDIR /var/www/html
 # Copy application backend files (includes pre-built frontend in public/)
 COPY backend/ /var/www/html/
 
-# Copy Nginx and Supervisor configs
+# Copy Nginx, PHP, and Supervisor configs
 COPY docker/nginx.conf /etc/nginx/http.d/default.conf
+COPY docker/uploads.ini /usr/local/etc/php/conf.d/uploads.ini
 COPY docker/supervisord.conf /etc/supervisord.conf
 
 # Setup permissions
