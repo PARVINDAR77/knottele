@@ -1151,7 +1151,16 @@ export async function registerCustomer(payload: {
         password_confirmation: payload.password_confirmation || payload.password,
       }),
     });
-    const result = await response.json();
+    const text = await response.text();
+    let result: any = {};
+    try {
+      result = JSON.parse(text);
+    } catch {
+      return {
+        success: false,
+        message: response.status === 504 ? "Server timeout. Please try again." : `Server error (${response.status}). Please try again.`,
+      };
+    }
     if (response.ok && result.success) {
       return {
         success: true,
@@ -1188,7 +1197,16 @@ export async function verifyCustomerOtp(payload: {
       },
       body: JSON.stringify(payload),
     });
-    const result = await response.json();
+    const text = await response.text();
+    let result: any = {};
+    try {
+      result = JSON.parse(text);
+    } catch {
+      return {
+        success: false,
+        message: response.status === 504 ? "Server timeout. Please try again." : `Server error (${response.status}). Please try again.`,
+      };
+    }
     if (response.ok && result.success) {
       return {
         success: true,
@@ -1276,7 +1294,16 @@ export async function loginCustomer(payload: {
       },
       body: JSON.stringify(payload),
     });
-    const result = await response.json();
+    const text = await response.text();
+    let result: any = {};
+    try {
+      result = JSON.parse(text);
+    } catch {
+      return {
+        success: false,
+        message: response.status === 504 ? "Server timeout. Please try again." : `Server error (${response.status}). Please try again.`,
+      };
+    }
     if (response.ok && result.success) {
       return {
         success: true,

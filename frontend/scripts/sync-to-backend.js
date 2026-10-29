@@ -8,6 +8,7 @@ const destDir = path.resolve(__dirname, '../../backend/public');
 const PRESERVED_ITEMS = new Set([
   'index.php',
   '.htaccess',
+  '.user.ini',
   'robots.txt',
   'css',
   'js',
@@ -24,6 +25,7 @@ const PRESERVED_ITEMS = new Set([
 const PROTECTED_LARAVEL_ROOT_FILES = new Set([
   'index.php',
   '.htaccess',
+  '.user.ini',
   'storage',
   '.git',
   '.gitignore',
