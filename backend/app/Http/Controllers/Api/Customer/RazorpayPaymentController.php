@@ -13,11 +13,15 @@ class RazorpayPaymentController extends Controller
 
     public function __construct()
     {
-        try {
-            $this->razorpayService = app(RazorpayService::class);
-        } catch (\Exception $e) {
-            Log::warning('RazorpayService initialization warning: ' . $e->getMessage());
+        // Lazy-loaded to prevent constructor failures during DI routing resolution
+    }
+
+    protected function getRazorpayService(): RazorpayService
+    {
+        if (!$this->razorpayService) {
+            $this->razorpayService = new RazorpayService();
         }
+        return $this->razorpayService;
     }
 
     /**
@@ -30,40 +34,37 @@ class RazorpayPaymentController extends Controller
      */
     public function createOrder(Request $request)
     {
-        if (!$request->has('amount') || !is_numeric($request->amount)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'The amount field is required and must be a number.',
-                'error' => 'Validation error'
-            ], 400);
-        }
-
-        // Support both paise (amount >= 100) or explicit rupees (amount_in_rupees)
-        $rawAmount = (float) $request->amount;
-        if ($request->has('amount_in_rupees') || ($request->has('is_rupees') && $request->is_rupees)) {
-            $amountInPaise = (int) round($rawAmount * 100);
-        } else {
-            $amountInPaise = (int) round($rawAmount);
-        }
-
-        // Validate minimum amount: 100 paise (₹1.00)
-        if ($amountInPaise < 100) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Amount must be at least 100 paise (₹1.00).',
-                'error' => 'Minimum amount is 100 paise'
-            ], 400);
-        }
-
-        $currency = $request->input('currency', 'INR');
-        $receipt = $request->input('receipt');
-
         try {
-            if (!$this->razorpayService) {
-                $this->razorpayService = new RazorpayService();
+            if (!$request->has('amount') || !is_numeric($request->amount)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'The amount field is required and must be a number.',
+                    'error' => 'Validation error'
+                ], 400);
             }
 
-            $result = $this->razorpayService->createOrderByAmount($amountInPaise, $currency, $receipt);
+            // Support both paise (amount >= 100) or explicit rupees (amount_in_rupees)
+            $rawAmount = (float) $request->amount;
+            if ($request->has('amount_in_rupees') || ($request->has('is_rupees') && $request->is_rupees)) {
+                $amountInPaise = (int) round($rawAmount * 100);
+            } else {
+                $amountInPaise = (int) round($rawAmount);
+            }
+
+            // Validate minimum amount: 100 paise (₹1.00)
+            if ($amountInPaise < 100) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Amount must be at least 100 paise (₹1.00).',
+                    'error' => 'Minimum amount is 100 paise'
+                ], 400);
+            }
+
+            $currency = $request->input('currency', 'INR');
+            $receipt = $request->input('receipt');
+
+            $service = $this->getRazorpayService();
+            $result = $service->createOrderByAmount($amountInPaise, $currency, $receipt);
 
             if (!$result['success']) {
                 $code = $result['code'] ?? 500;
@@ -108,24 +109,21 @@ class RazorpayPaymentController extends Controller
      */
     public function verifyPayment(Request $request)
     {
-        $paymentId = $request->input('razorpay_payment_id') ?: $request->input('payment_id');
-        $orderId = $request->input('razorpay_order_id') ?: $request->input('order_id');
-        $signature = $request->input('razorpay_signature') ?: $request->input('signature');
-
-        if (empty($paymentId) || empty($orderId) || empty($signature)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Missing required payment verification fields (razorpay_payment_id, razorpay_order_id, razorpay_signature).',
-                'error' => 'Missing required fields'
-            ], 400);
-        }
-
         try {
-            if (!$this->razorpayService) {
-                $this->razorpayService = new RazorpayService();
+            $paymentId = $request->input('razorpay_payment_id') ?: $request->input('payment_id');
+            $orderId = $request->input('razorpay_order_id') ?: $request->input('order_id');
+            $signature = $request->input('razorpay_signature') ?: $request->input('signature');
+
+            if (empty($paymentId) || empty($orderId) || empty($signature)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Missing required payment verification fields (razorpay_payment_id, razorpay_order_id, razorpay_signature).',
+                    'error' => 'Missing required fields'
+                ], 400);
             }
 
-            $result = $this->razorpayService->verifyPayment($paymentId, $orderId, $signature);
+            $service = $this->getRazorpayService();
+            $result = $service->verifyPayment($paymentId, $orderId, $signature);
 
             if (!$result['success']) {
                 return response()->json($result, 400);

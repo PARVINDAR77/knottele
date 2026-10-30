@@ -21,6 +21,15 @@ class RazorpayService
         $this->keySecret = config('services.razorpay.key_secret') ?: env('RAZORPAY_KEY_SECRET');
 
         if (empty($this->keyId) || empty($this->keySecret)) {
+            try {
+                $this->keyId = $this->keyId ?: \App\Helpers\SettingsHelper::get('razorpay_key_id');
+                $this->keySecret = $this->keySecret ?: \App\Helpers\SettingsHelper::get('razorpay_key_secret');
+            } catch (\Throwable $e) {
+                // Ignore settings helper exception if DB unavailable
+            }
+        }
+
+        if (empty($this->keyId) || empty($this->keySecret)) {
             throw new \Exception('Razorpay credentials not configured');
         }
 
@@ -139,13 +148,18 @@ class RazorpayService
 
             $order = $this->razorpay->order->create($orderData);
 
+            $orderId = is_object($order) ? ($order->id ?? ($order['id'] ?? null)) : ($order['id'] ?? null);
+            $orderAmount = is_object($order) ? ($order->amount ?? ($order['amount'] ?? $amountInPaise)) : ($order['amount'] ?? $amountInPaise);
+            $orderCurrency = is_object($order) ? ($order->currency ?? ($order['currency'] ?? 'INR')) : ($order['currency'] ?? 'INR');
+            $orderReceipt = is_object($order) ? ($order->receipt ?? ($order['receipt'] ?? $orderData['receipt'])) : ($order['receipt'] ?? $orderData['receipt']);
+
             return [
                 'success' => true,
-                'order_id' => $order['id'],
+                'order_id' => $orderId,
                 'key_id' => $this->keyId,
-                'amount' => $order['amount'],
-                'currency' => $order['currency'],
-                'receipt' => $order['receipt'] ?? $orderData['receipt'],
+                'amount' => $orderAmount,
+                'currency' => $orderCurrency,
+                'receipt' => $orderReceipt,
             ];
 
         } catch (\Razorpay\Api\Errors\Error $e) {
