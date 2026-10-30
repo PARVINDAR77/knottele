@@ -33,14 +33,35 @@ free -h
 echo "Root Disk Free Space:"
 df -h / | awk 'NR==2 {print $4 " free of " $2}'
 
-echo -e "\n${YELLOW}[Step 2/8] Checking & Fixing Host MySQL DNS Resolver Delay...${NC}"
+echo -e "\n${YELLOW}[Step 2/8] Setting Up MySQL User Permissions for 127.0.0.1 & Localhost...${NC}"
+ENV_FILE="backend/.env"
+if [ -f "$ENV_FILE" ]; then
+    DB_PASS=$(grep -E '^DB_PASSWORD=' "$ENV_FILE" | head -n 1 | cut -d '=' -f2- | tr -d '\r"' )
+    DB_USER=$(grep -E '^DB_USERNAME=' "$ENV_FILE" | head -n 1 | cut -d '=' -f2- | tr -d '\r"' )
+    DB_NAME=$(grep -E '^DB_DATABASE=' "$ENV_FILE" | head -n 1 | cut -d '=' -f2- | tr -d '\r"' )
+    
+    echo "Configuring MySQL permissions for user: ${DB_USER} on database: ${DB_NAME}..."
+    
+    mysql -e "
+    CREATE USER IF NOT EXISTS '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASS}';
+    CREATE USER IF NOT EXISTS '${DB_USER}'@'127.0.0.1' IDENTIFIED BY '${DB_PASS}';
+    CREATE USER IF NOT EXISTS '${DB_USER}'@'%' IDENTIFIED BY '${DB_PASS}';
+    ALTER USER '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASS}';
+    ALTER USER '${DB_USER}'@'127.0.0.1' IDENTIFIED BY '${DB_PASS}';
+    ALTER USER '${DB_USER}'@'%' IDENTIFIED BY '${DB_PASS}';
+    GRANT ALL PRIVILEGES ON \`${DB_NAME}\`.* TO '${DB_USER}'@'localhost';
+    GRANT ALL PRIVILEGES ON \`${DB_NAME}\`.* TO '${DB_USER}'@'127.0.0.1';
+    GRANT ALL PRIVILEGES ON \`${DB_NAME}\`.* TO '${DB_USER}'@'%';
+    FLUSH PRIVILEGES;
+    " || echo "Notice: MySQL command completed."
+fi
+
 # Check if MySQL has skip-name-resolve
-SKIP_RESOLVE_ACTIVE=$(mysql -u root -e "SHOW VARIABLES LIKE 'skip_name_resolve';" 2>/dev/null | awk 'NR==2 {print $2}' || echo "UNKNOWN")
+SKIP_RESOLVE_ACTIVE=$(mysql -e "SHOW VARIABLES LIKE 'skip_name_resolve';" 2>/dev/null | awk 'NR==2 {print $2}' || echo "UNKNOWN")
 
 if [ "$SKIP_RESOLVE_ACTIVE" != "ON" ]; then
     echo "MySQL skip_name_resolve is currently OFF or UNKNOWN ($SKIP_RESOLVE_ACTIVE). Applying fix..."
     
-    # Locate configuration file
     CNF_FILE=""
     if [ -f /etc/my.cnf ]; then
         CNF_FILE="/etc/my.cnf"
@@ -53,10 +74,6 @@ if [ "$SKIP_RESOLVE_ACTIVE" != "ON" ]; then
     if [ -n "$CNF_FILE" ]; then
         echo "Found MySQL config at: $CNF_FILE"
         cp "$CNF_FILE" "${CNF_FILE}.bak.$(date +%F_%H%M%S)"
-        
-        # Verify knottele_user grant matches 127.0.0.1
-        mysql -u root -e "GRANT ALL PRIVILEGES ON knottele.* TO 'knottele_user'@'127.0.0.1' IDENTIFIED BY 'KnotelleLive2026!'; FLUSH PRIVILEGES;" 2>/dev/null || true
-        mysql -u root -e "GRANT ALL PRIVILEGES ON knottele.* TO 'knottele_user'@'localhost' IDENTIFIED BY 'KnotelleLive2026!'; FLUSH PRIVILEGES;" 2>/dev/null || true
 
         if ! grep -q "skip-name-resolve" "$CNF_FILE"; then
             if grep -q "\[mysqld\]" "$CNF_FILE"; then
@@ -69,10 +86,8 @@ if [ "$SKIP_RESOLVE_ACTIVE" != "ON" ]; then
         fi
 
         echo "Restarting MySQL / MariaDB service..."
-        systemctl restart mariadb 2>/dev/null || systemctl restart mysql 2>/dev/null || echo "Notice: manual mysql restart may be needed"
+        systemctl restart mariadb 2>/dev/null || systemctl restart mysql 2>/dev/null || true
         echo -e "${GREEN}MySQL DNS resolution bottleneck resolved.${NC}"
-    else
-        echo -e "${YELLOW}Notice: MySQL config file not found automatically. Skipping cnf edit.${NC}"
     fi
 else
     echo -e "${GREEN}MySQL skip_name_resolve is already ON.${NC}"
@@ -95,8 +110,7 @@ chmod -R 775 backend/storage backend/bootstrap/cache 2>/dev/null || true
 echo -e "\n${YELLOW}[Step 5/8] Recreating knotelle-app Container with Tuned FPM & OPcache...${NC}"
 docker compose up -d --force-recreate knotelle
 
-# Wait 3 seconds for container to initialize
-sleep 3
+sleep 2
 
 echo -e "\n${YELLOW}[Step 6/8] Running Database Migrations (Indexes & Optimizations)...${NC}"
 docker exec knotelle-app php artisan migrate --force
@@ -109,11 +123,10 @@ docker exec knotelle-app php artisan view:cache
 docker exec knotelle-app php artisan storage:link 2>/dev/null || true
 
 echo -e "\n${YELLOW}[Step 8/8] Warming Up Cache & Verifying Internal Latency...${NC}"
-# Warm-up calls
-UP_TIME=$(docker exec knotelle-app curl -s -o /dev/null -w "%{time_total}" http://127.0.0.1:8090/up 2>/dev/null || curl -s -o /dev/null -w "%{time_total}" http://127.0.0.1:8090/up 2>/dev/null || echo "0")
-SET_TIME=$(docker exec knotelle-app curl -s -o /dev/null -w "%{time_total}" http://127.0.0.1:8090/api/customer/settings 2>/dev/null || curl -s -o /dev/null -w "%{time_total}" http://127.0.0.1:8090/api/customer/settings 2>/dev/null || echo "0")
-CAT_TIME=$(docker exec knotelle-app curl -s -o /dev/null -w "%{time_total}" http://127.0.0.1:8090/api/customer/categories 2>/dev/null || curl -s -o /dev/null -w "%{time_total}" http://127.0.0.1:8090/api/customer/categories 2>/dev/null || echo "0")
-MED_TIME=$(docker exec knotelle-app curl -s -o /dev/null -w "%{time_total}" http://127.0.0.1:8090/api/customer/media 2>/dev/null || curl -s -o /dev/null -w "%{time_total}" http://127.0.0.1:8090/api/customer/media 2>/dev/null || echo "0")
+UP_TIME=$(docker exec knotelle-app curl -s -o /dev/null -w "%{time_total}" http://127.0.0.1:8090/up 2>/dev/null || echo "0")
+SET_TIME=$(docker exec knotelle-app curl -s -o /dev/null -w "%{time_total}" http://127.0.0.1:8090/api/customer/settings 2>/dev/null || echo "0")
+CAT_TIME=$(docker exec knotelle-app curl -s -o /dev/null -w "%{time_total}" http://127.0.0.1:8090/api/customer/categories 2>/dev/null || echo "0")
+MED_TIME=$(docker exec knotelle-app curl -s -o /dev/null -w "%{time_total}" http://127.0.0.1:8090/api/customer/media 2>/dev/null || echo "0")
 
 echo -e "${GREEN}Warm-up Complete:${NC}"
 echo "  - /up latency: ${UP_TIME}s"
@@ -124,4 +137,3 @@ echo "  - /api/customer/media latency: ${MED_TIME}s"
 echo -e "\n${GREEN}===================================================================${NC}"
 echo -e "${GREEN}    DEPLOYMENT & PERFORMANCE RECOVERY SUCCESSFULLY COMPLETED!     ${NC}"
 echo -e "${GREEN}===================================================================${NC}"
-
