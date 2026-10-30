@@ -1155,7 +1155,7 @@ export async function createRazorpayOrder(amountInPaise: number, currency: strin
   try {
     const validPaise = Math.max(100, Math.round(amountInPaise));
 
-    let res = await fetch(`${getApiBaseUrl()}/create-order`, {
+    let res = await fetch(`${getApiBaseUrl()}/customer/payment/razorpay/order`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -1165,7 +1165,7 @@ export async function createRazorpayOrder(amountInPaise: number, currency: strin
     });
 
     if (res.status === 404) {
-      res = await fetch(`${getApiBaseUrl()}/customer/payment/razorpay/order`, {
+      res = await fetch(`${getApiBaseUrl()}/create-order`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1198,7 +1198,7 @@ export async function verifyRazorpayPayment(payload: {
   razorpay_signature: string;
 }): Promise<{ success: boolean; message?: string }> {
   try {
-    let res = await fetch(`${getApiBaseUrl()}/verify-payment`, {
+    let res = await fetch(`${getApiBaseUrl()}/customer/payment/razorpay/verify`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -1208,7 +1208,7 @@ export async function verifyRazorpayPayment(payload: {
     });
 
     if (res.status === 404) {
-      res = await fetch(`${getApiBaseUrl()}/customer/payment/razorpay/verify`, {
+      res = await fetch(`${getApiBaseUrl()}/verify-payment`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

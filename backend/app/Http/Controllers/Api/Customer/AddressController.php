@@ -94,7 +94,7 @@ class AddressController extends Controller
             'address' => $fullAddr,
             'city' => trim($request->city),
             'state' => trim($request->state),
-            'country' => 'India',
+            'country' => 'IN',
             'pincode' => trim($request->pincode),
             'type' => $request->input('type', 'shipping'),
             'is_default' => $isDefault ? 1 : 0,

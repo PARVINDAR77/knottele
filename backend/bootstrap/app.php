@@ -11,6 +11,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // MULTIPLE API ROUTE FILES
         api: [
+            __DIR__ . '/../routes/api.php',
             __DIR__ . '/../routes/admin_api.php',
             __DIR__ . '/../routes/customer_api.php',
         ],
