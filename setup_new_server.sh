@@ -161,7 +161,14 @@ docker compose up -d --build
 
 sleep 5
 
-echo -e "\n${YELLOW}[Step 6/7] Compiling Laravel Production Caches & Linking Storage...${NC}"
+echo -e "\n${YELLOW}[Step 6/7] Ensuring Composer Dependencies & Compiling Laravel Caches...${NC}"
+# Check if vendor/autoload.php exists in container
+if ! docker exec knotelle-app test -f /var/www/html/vendor/autoload.php; then
+    echo "Installing Composer packages inside container..."
+    docker exec knotelle-app apk add --no-cache composer git unzip
+    docker exec knotelle-app composer install --no-dev --optimize-autoloader --no-interaction
+fi
+
 docker exec knotelle-app php artisan migrate --force || true
 docker exec knotelle-app php artisan optimize:clear
 docker exec knotelle-app php artisan config:cache

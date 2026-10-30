@@ -1,10 +1,13 @@
 FROM php:8.2-fpm-alpine
 
-# Install system dependencies and Nginx
+# Install system dependencies, Nginx, and Composer
 RUN apk add --no-cache \
     nginx \
     supervisor \
     curl \
+    git \
+    unzip \
+    composer \
     libpng-dev \
     libjpeg-turbo-dev \
     freetype-dev \
@@ -29,6 +32,11 @@ WORKDIR /var/www/html
 
 # Copy application backend files (includes pre-built frontend in public/)
 COPY backend/ /var/www/html/
+
+# Install Composer dependencies if vendor does not exist
+RUN if [ ! -f /var/www/html/vendor/autoload.php ]; then \
+        composer install --no-dev --optimize-autoloader --no-interaction; \
+    fi
 
 # Copy Nginx, PHP, and Supervisor configs
 COPY docker/nginx.conf /etc/nginx/http.d/default.conf
