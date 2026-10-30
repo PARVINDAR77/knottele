@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Offer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class OfferController extends Controller
 {
@@ -14,36 +15,45 @@ class OfferController extends Controller
         try {
             $subtotal = $request->query('subtotal') ?? $request->query('cart_amount');
 
-            $query = Offer::active()
-                ->where('status', true)
-                ->where(function($q) {
-                    $q->where(function($query) {
-                        $query->whereNotNull('discount_value')
-                              ->where('discount_value', '>', 0);
+            $fetchOffers = function ($sub = null) {
+                $query = Offer::active()
+                    ->where('status', true)
+                    ->where(function($q) {
+                        $q->where(function($query) {
+                            $query->whereNotNull('discount_value')
+                                  ->where('discount_value', '>', 0);
+                        })
+                        ->orWhereIn('offer_type', ['bogo', 'buy_x_get_y', 'free_shipping']);
                     })
-                    ->orWhereIn('offer_type', ['bogo', 'buy_x_get_y', 'free_shipping']);
-                })
-                ->where(function($q) {
-                    $q->whereNull('max_uses')
-                      ->orWhereRaw('used_count < max_uses');
-                });
+                    ->where(function($q) {
+                        $q->whereNull('max_uses')
+                          ->orWhereRaw('used_count < max_uses');
+                    });
 
-            // If subtotal is provided, filter out offers where minimum cart amount is not satisfied or exceeds max cart amount
-            if ($subtotal !== null && is_numeric($subtotal)) {
-                $query->where(function($q) use ($subtotal) {
-                    $q->whereNull('min_cart_amount')
-                      ->orWhere('min_cart_amount', '<=', (float)$subtotal);
-                })->where(function($q) use ($subtotal) {
-                    $q->whereNull('max_cart_amount')
-                      ->orWhere('max_cart_amount', '>=', (float)$subtotal);
+                if ($sub !== null && is_numeric($sub)) {
+                    $query->where(function($q) use ($sub) {
+                        $q->whereNull('min_cart_amount')
+                          ->orWhere('min_cart_amount', '<=', (float)$sub);
+                    })->where(function($q) use ($sub) {
+                        $q->whereNull('max_cart_amount')
+                          ->orWhere('max_cart_amount', '>=', (float)$sub);
+                    });
+                }
+
+                return $query->select('id', 'name', 'code', 'offer_type', 'discount_value', 'buy_qty', 'get_qty', 'min_cart_amount', 'max_cart_amount', 'starts_at', 'ends_at')
+                    ->orderByRaw('CASE WHEN discount_value IS NULL THEN 1 ELSE 0 END')
+                    ->orderBy('discount_value', 'desc')
+                    ->limit(10)
+                    ->get();
+            };
+
+            if ($subtotal === null || (float)$subtotal <= 0) {
+                $offers = Cache::remember('knotelle_active_offers_general', 600, function () use ($fetchOffers) {
+                    return $fetchOffers(null);
                 });
+            } else {
+                $offers = $fetchOffers($subtotal);
             }
-
-            $offers = $query->select('id', 'name', 'code', 'offer_type', 'discount_value', 'buy_qty', 'get_qty', 'min_cart_amount', 'max_cart_amount', 'starts_at', 'ends_at')
-                ->orderByRaw('CASE WHEN discount_value IS NULL THEN 1 ELSE 0 END')
-                ->orderBy('discount_value', 'desc')
-                ->limit(10)
-                ->get();
 
             return response()->json([
                 'success' => true,

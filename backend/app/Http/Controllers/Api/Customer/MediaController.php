@@ -9,15 +9,18 @@ use App\Models\Testimonial;
 use App\Models\Setting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class MediaController extends Controller
 {
     /**
      * Get structured website media for customer storefront.
+     * Cached for 30 minutes for instantaneous sub-10ms delivery.
      */
     public function index(Request $request): JsonResponse
     {
         try {
+            $data = Cache::remember('knotelle_customer_homepage_media_v2', 1800, function () {
             // 0. Live Store Settings
             $rawSettings = Setting::all();
             $storeSettings = [];
@@ -642,50 +645,53 @@ class MediaController extends Controller
             'items' => $blogReelsItems,
         ];
 
+        return [
+            'hero' => [
+                'desktop' => $heroDesktop,
+                'mobile' => $heroMobile,
+                'slides' => $heroSlides,
+            ],
+            'categories' => $categories,
+            'categorySection' => $categorySection,
+            'customCrochet' => $customCrochet,
+            'brandStory' => $brandStory,
+            'customOrder' => $customOrder,
+            'customOrderItems' => $customOrderItems,
+            'newsletter' => $newsletter,
+            'footer' => $footer,
+            'navbar' => $navbar,
+            'shop' => $shop,
+            'about' => $about,
+            'contact' => $contact,
+            'blogReels' => $blogReels,
+            'testimonials' => Testimonial::where('is_active', true)->orderBy('id', 'desc')->get(),
+            'global' => [
+                'logo' => !empty($storeSettings['logo_url']) ? $storeSettings['logo_url'] : $mainLogo,
+                'mobileLogo' => !empty($storeSettings['logo_url']) ? $storeSettings['logo_url'] : $mainLogo,
+                'favicon' => !empty($storeSettings['favicon_url']) ? $storeSettings['favicon_url'] : asset('favicon.ico'),
+                'defaultProduct' => asset('images/logo/Logo_1.png'),
+                'defaultCategory' => asset('images/logo/Logo_1.png'),
+                'store_name' => $storeSettings['store_name'] ?? 'KNOTELLE',
+                'store_email' => $storeSettings['store_email'] ?? 'hello@knotelle.com',
+                'store_phone' => $storeSettings['store_phone'] ?? '+91 966048417',
+                'store_phone_alt' => $storeSettings['store_phone_alt'] ?? '',
+                'store_address' => $storeSettings['store_address'] ?? 'India',
+                'currency' => $storeSettings['currency'] ?? 'INR',
+                'theme_color' => $storeSettings['theme_color'] ?? '#913638',
+                'default_shipping_rate' => (float)($storeSettings['default_shipping_rate'] ?? 99),
+                'free_shipping_min' => (float)($storeSettings['free_shipping_min'] ?? 999),
+                'tax_rate' => (float)($storeSettings['tax_rate'] ?? 0),
+                'cod_enabled' => filter_var($storeSettings['cod_enabled'] ?? true, FILTER_VALIDATE_BOOLEAN),
+                'razorpay_enabled' => filter_var($storeSettings['razorpay_enabled'] ?? true, FILTER_VALIDATE_BOOLEAN),
+                'razorpay_key_id' => $storeSettings['razorpay_key_id'] ?? '',
+            ],
+            'settings' => $storeSettings,
+        ];
+        });
+
         return response()->json([
             'success' => true,
-            'data' => [
-                'hero' => [
-                    'desktop' => $heroDesktop,
-                    'mobile' => $heroMobile,
-                    'slides' => $heroSlides,
-                ],
-                'categories' => $categories,
-                'categorySection' => $categorySection,
-                'customCrochet' => $customCrochet,
-                'brandStory' => $brandStory,
-                'customOrder' => $customOrder,
-                'customOrderItems' => $customOrderItems,
-                'newsletter' => $newsletter,
-                'footer' => $footer,
-                'navbar' => $navbar,
-                'shop' => $shop,
-                'about' => $about,
-                'contact' => $contact,
-                'blogReels' => $blogReels,
-                'testimonials' => Testimonial::where('is_active', true)->orderBy('id', 'desc')->get(),
-                'global' => [
-                    'logo' => !empty($storeSettings['logo_url']) ? $storeSettings['logo_url'] : $mainLogo,
-                    'mobileLogo' => !empty($storeSettings['logo_url']) ? $storeSettings['logo_url'] : $mainLogo,
-                    'favicon' => !empty($storeSettings['favicon_url']) ? $storeSettings['favicon_url'] : asset('favicon.ico'),
-                    'defaultProduct' => asset('images/logo/Logo_1.png'),
-                    'defaultCategory' => asset('images/logo/Logo_1.png'),
-                    'store_name' => $storeSettings['store_name'] ?? 'KNOTELLE',
-                    'store_email' => $storeSettings['store_email'] ?? 'hello@knotelle.com',
-                    'store_phone' => $storeSettings['store_phone'] ?? '+91 966048417',
-                    'store_phone_alt' => $storeSettings['store_phone_alt'] ?? '',
-                    'store_address' => $storeSettings['store_address'] ?? 'India',
-                    'currency' => $storeSettings['currency'] ?? 'INR',
-                    'theme_color' => $storeSettings['theme_color'] ?? '#913638',
-                    'default_shipping_rate' => (float)($storeSettings['default_shipping_rate'] ?? 99),
-                    'free_shipping_min' => (float)($storeSettings['free_shipping_min'] ?? 999),
-                    'tax_rate' => (float)($storeSettings['tax_rate'] ?? 0),
-                    'cod_enabled' => filter_var($storeSettings['cod_enabled'] ?? true, FILTER_VALIDATE_BOOLEAN),
-                    'razorpay_enabled' => filter_var($storeSettings['razorpay_enabled'] ?? true, FILTER_VALIDATE_BOOLEAN),
-                    'razorpay_key_id' => $storeSettings['razorpay_key_id'] ?? '',
-                ],
-                'settings' => $storeSettings,
-            ]
+            'data' => $data
         ]);
         } catch (\Throwable $e) {
             \Log::error('Customer MediaController index error: ' . $e->getMessage(), [
@@ -726,12 +732,13 @@ class MediaController extends Controller
      */
     public function getAboutPage(Request $request): JsonResponse
     {
-        $aboutStoryMedia = Media::where('page', 'about')
-            ->where('section', 'about_story')
-            ->where('is_active', true)
-            ->first();
+        $data = Cache::remember('knotelle_customer_about_data', 1800, function () {
+            $aboutStoryMedia = Media::where('page', 'about')
+                ->where('section', 'about_story')
+                ->where('is_active', true)
+                ->first();
 
-        $storyMeta = $aboutStoryMedia && $aboutStoryMedia->metadata ? $aboutStoryMedia->metadata : [];
+            $storyMeta = $aboutStoryMedia && $aboutStoryMedia->metadata ? $aboutStoryMedia->metadata : [];
 
         $aboutStory = [
             'id' => $aboutStoryMedia ? $aboutStoryMedia->id : null,
@@ -839,14 +846,17 @@ class MediaController extends Controller
             'items' => $pillarsItems,
         ];
 
-        return response()->json([
-            'success' => true,
-            'data' => [
+            return [
                 'story' => $aboutStory,
                 'hero' => $aboutStory,
                 'craftPillars' => $craftPillars,
                 'pillars' => $craftPillars,
-            ]
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => $data
         ]);
     }
 
@@ -855,7 +865,9 @@ class MediaController extends Controller
      */
     public function getContactPage(Request $request): JsonResponse
     {
-        $contact = $this->formatContactData();
+        $contact = Cache::remember('knotelle_customer_contact_data', 1800, function () {
+            return $this->formatContactData();
+        });
 
         return response()->json([
             'success' => true,

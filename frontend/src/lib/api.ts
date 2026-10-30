@@ -92,6 +92,64 @@ export function getServerApiBaseUrl(): string {
   return "http://127.0.0.1:8000/api";
 }
 
+// ============================================================================
+// PERFORMANCE: In-Memory Client Cache & Promise Deduplicator
+// Prevents duplicate concurrent fetches and eliminates server latency on page navigation
+// ============================================================================
+interface ApiCacheEntry<T> {
+  data: T;
+  timestamp: number;
+}
+const clientApiCache = new Map<string, ApiCacheEntry<any>>();
+const inFlightRequests = new Map<string, Promise<any>>();
+
+export function getCachedOrFetch<T>(
+  key: string,
+  fetcher: () => Promise<T>,
+  ttlMs: number = 60000
+): Promise<T> {
+  if (typeof window === "undefined") {
+    return fetcher();
+  }
+
+  // 1. Check valid in-memory cache
+  const cached = clientApiCache.get(key);
+  if (cached && Date.now() - cached.timestamp < ttlMs) {
+    return Promise.resolve(cached.data);
+  }
+
+  // 2. Deduplicate in-flight requests (returns identical promise if already requested)
+  if (inFlightRequests.has(key)) {
+    return inFlightRequests.get(key)!;
+  }
+
+  const promise = fetcher()
+    .then((data) => {
+      if (data !== null && data !== undefined) {
+        clientApiCache.set(key, { data, timestamp: Date.now() });
+      }
+      return data;
+    })
+    .finally(() => {
+      inFlightRequests.delete(key);
+    });
+
+  inFlightRequests.set(key, promise);
+  return promise;
+}
+
+export function clearClientApiCache(prefix?: string) {
+  if (!prefix) {
+    clientApiCache.clear();
+  } else {
+    for (const k of clientApiCache.keys()) {
+      if (k.startsWith(prefix)) {
+        clientApiCache.delete(k);
+      }
+    }
+  }
+}
+
 export const getApiBaseUrl = (): string => {
   if (typeof window !== "undefined") {
     return getBrowserApiBaseUrl();
@@ -613,27 +671,22 @@ export function transformApiProductToProduct(apiProduct: ApiProduct): Product {
  * Fetch Categories from Laravel Backend API
  */
 export async function fetchCategories(): Promise<ApiCategory[]> {
-  try {
-    const isBrowser = typeof window !== "undefined";
-    const isDev = process.env.NODE_ENV === "development";
-    const bypassCache = isBrowser || isDev;
-    const url = bypassCache
-      ? `${getApiBaseUrl()}/customer/categories?_t=${Date.now()}`
-      : `${getApiBaseUrl()}/customer/categories`;
-
-    const response = await fetch(url, {
-      headers: { Accept: "application/json" },
-      ...(bypassCache ? { cache: "no-store" as const } : { next: { revalidate: 60 } }),
-    });
-    const result = await response.json();
-    if (result.status === "success" && Array.isArray(result.data)) {
-      return result.data;
+  return getCachedOrFetch("categories_list", async () => {
+    try {
+      const url = `${getApiBaseUrl()}/customer/categories`;
+      const response = await fetch(url, {
+        headers: { Accept: "application/json" },
+      });
+      const result = await response.json();
+      if (result.status === "success" && Array.isArray(result.data)) {
+        return result.data;
+      }
+      return [];
+    } catch (error) {
+      console.warn("Fetch categories network issue:", error);
+      return [];
     }
-    return [];
-  } catch (error) {
-    console.warn("Fetch categories network issue:", error);
-    return [];
-  }
+  }, 300000); // 5 minutes in-memory cache with request deduplication
 }
 
 /**
@@ -652,101 +705,88 @@ export async function fetchProducts(params?: {
   per_page?: number;
   in_stock?: boolean;
 }): Promise<{ products: Product[]; rawApiProducts?: ApiProduct[]; meta?: any; filters?: any }> {
-  try {
-    const isBrowser = typeof window !== "undefined";
-    const isDev = process.env.NODE_ENV === "development";
-    const bypassCache = isBrowser || isDev;
+  const query = new URLSearchParams();
+  if (params?.category_id) query.set("category_id", String(params.category_id));
+  if (params?.search) query.set("search", params.search);
+  if (params?.min_price !== undefined) query.set("min_price", String(params.min_price));
+  if (params?.max_price !== undefined) query.set("max_price", String(params.max_price));
+  if (params?.is_featured !== undefined) query.set("is_featured", String(params.is_featured));
+  if (params?.is_bestseller !== undefined) query.set("is_bestseller", String(params.is_bestseller));
+  if (params?.is_new !== undefined) query.set("is_new", String(params.is_new));
+  if (params?.sort_by) query.set("sort_by", params.sort_by);
+  if (params?.per_page) query.set("per_page", String(params.per_page));
+  if (params?.in_stock) query.set("in_stock", "true");
 
-    const query = new URLSearchParams();
-    if (params?.category_id) query.set("category_id", String(params.category_id));
-    if (params?.search) query.set("search", params.search);
-    if (params?.min_price !== undefined) query.set("min_price", String(params.min_price));
-    if (params?.max_price !== undefined) query.set("max_price", String(params.max_price));
-    if (params?.is_featured !== undefined) query.set("is_featured", String(params.is_featured));
-    if (params?.is_bestseller !== undefined) query.set("is_bestseller", String(params.is_bestseller));
-    if (params?.is_new !== undefined) query.set("is_new", String(params.is_new));
-    if (params?.sort_by) query.set("sort_by", params.sort_by);
-    if (params?.per_page) query.set("per_page", String(params.per_page));
-    if (params?.in_stock) query.set("in_stock", "true");
-    if (bypassCache) query.set("_t", String(Date.now()));
+  const qs = query.toString();
+  const cacheKey = `products_${qs || "default"}`;
 
-    const qs = query.toString();
-    const url = `${getApiBaseUrl()}/customer/products${qs ? `?${qs}` : ""}`;
+  return getCachedOrFetch(cacheKey, async () => {
+    try {
+      const url = `${getApiBaseUrl()}/customer/products${qs ? `?${qs}` : ""}`;
+      const response = await fetch(url, {
+        headers: { Accept: "application/json" },
+      });
 
-    const response = await fetch(url, {
-      headers: { Accept: "application/json" },
-      ...(bypassCache ? { cache: "no-store" as const } : { next: { revalidate: 30 } }),
-    });
-
-    const result = await response.json();
-    if (result.success && result.data && Array.isArray(result.data.products)) {
-      const transformed = result.data.products.map(transformApiProductToProduct);
-      return {
-        products: transformed,
-        rawApiProducts: result.data.products,
-        meta: result.data.meta,
-        filters: result.data.filters,
-      };
+      const result = await response.json();
+      if (result.success && result.data && Array.isArray(result.data.products)) {
+        const transformed = result.data.products.map(transformApiProductToProduct);
+        return {
+          products: transformed,
+          rawApiProducts: result.data.products,
+          meta: result.data.meta,
+          filters: result.data.filters,
+        };
+      }
+      return { products: [] };
+    } catch (error) {
+      console.warn("Fetch products error:", error);
+      return { products: [] };
     }
-    return { products: [] };
-  } catch (error) {
-    console.warn("Fetch products error:", error);
-    return { products: [] };
-  }
+  }, 60000); // 1 minute in-memory cache with request deduplication
 }
 
 /**
  * Fetch Single Product by Slug from Laravel Backend API
  */
 export async function fetchProductBySlug(slug: string): Promise<Product | null> {
-  try {
-    const isBrowser = typeof window !== "undefined";
-    const isDev = process.env.NODE_ENV === "development";
-    const bypassCache = isBrowser || isDev;
-    const url = bypassCache
-      ? `${getApiBaseUrl()}/customer/products/${encodeURIComponent(slug)}?_t=${Date.now()}`
-      : `${getApiBaseUrl()}/customer/products/${encodeURIComponent(slug)}`;
-
-    const response = await fetch(url, {
-      headers: { Accept: "application/json" },
-      ...(bypassCache ? { cache: "no-store" as const } : { next: { revalidate: 30 } }),
-    });
-    const result = await response.json();
-    if (result.success && result.data) {
-      return transformApiProductToProduct(result.data);
+  return getCachedOrFetch(`product_slug_${slug}`, async () => {
+    try {
+      const url = `${getApiBaseUrl()}/customer/products/${encodeURIComponent(slug)}`;
+      const response = await fetch(url, {
+        headers: { Accept: "application/json" },
+      });
+      const result = await response.json();
+      if (result.success && result.data) {
+        return transformApiProductToProduct(result.data);
+      }
+      return null;
+    } catch (error) {
+      console.warn(`Fetch product by slug (${slug}) error:`, error);
+      return null;
     }
-    return null;
-  } catch (error) {
-    console.warn(`Fetch product by slug (${slug}) error:`, error);
-    return null;
-  }
+  }, 300000); // 5 minutes in-memory cache
 }
 
 /**
  * Fetch Related Products by Product ID
  */
 export async function fetchRelatedProducts(productId: number | string): Promise<Product[]> {
-  try {
-    const isBrowser = typeof window !== "undefined";
-    const isDev = process.env.NODE_ENV === "development";
-    const bypassCache = isBrowser || isDev;
-    const url = bypassCache
-      ? `${getApiBaseUrl()}/customer/products/${productId}/related?_t=${Date.now()}`
-      : `${getApiBaseUrl()}/customer/products/${productId}/related`;
-
-    const response = await fetch(url, {
-      headers: { Accept: "application/json" },
-      ...(bypassCache ? { cache: "no-store" as const } : { next: { revalidate: 60 } }),
-    });
-    const result = await response.json();
-    if (result.success && Array.isArray(result.data)) {
-      return result.data.map(transformApiProductToProduct);
+  return getCachedOrFetch(`product_related_${productId}`, async () => {
+    try {
+      const url = `${getApiBaseUrl()}/customer/products/${productId}/related`;
+      const response = await fetch(url, {
+        headers: { Accept: "application/json" },
+      });
+      const result = await response.json();
+      if (result.success && Array.isArray(result.data)) {
+        return result.data.map(transformApiProductToProduct);
+      }
+      return [];
+    } catch (error) {
+      console.warn(`Fetch related products error:`, error);
+      return [];
     }
-    return [];
-  } catch (error) {
-    console.warn(`Fetch related products error:`, error);
-    return [];
-  }
+  }, 300000); // 5 minutes in-memory cache
 }
 
 /**
@@ -1565,41 +1605,34 @@ export async function updateCustomerProfile(payload: {
  * Fetch Structured Homepage & Global Media (Always Live in Browser, Static-friendly on Server)
  */
 export async function fetchHomepageMedia(): Promise<HomepageMedia | null> {
-  try {
-    const isBrowser = typeof window !== "undefined";
-    const isDev = process.env.NODE_ENV === "development";
-    const bypassCache = isBrowser || isDev;
-    const url = bypassCache
-      ? `${getApiBaseUrl()}/customer/media?_t=${Date.now()}`
-      : `${getApiBaseUrl()}/customer/media`;
+  return getCachedOrFetch("homepage_media", async () => {
+    try {
+      const url = `${getApiBaseUrl()}/customer/media`;
+      const response = await fetch(url, {
+        headers: { Accept: "application/json" },
+      });
 
-    const response = await fetch(url, {
-      headers: {
-        Accept: "application/json",
-      },
-      ...(bypassCache ? { cache: "no-store" as const } : {}),
-    });
+      if (!response.ok) {
+        console.warn(`Fetch homepage media returned HTTP ${response.status}`);
+        return null;
+      }
 
-    if (!response.ok) {
-      console.warn(`Fetch homepage media returned HTTP ${response.status}`);
+      const contentType = response.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        console.warn("Fetch homepage media received non-JSON content type:", contentType);
+        return null;
+      }
+
+      const result = await response.json();
+      if (result.success && result.data) {
+        return result.data as HomepageMedia;
+      }
+      return null;
+    } catch (error) {
+      console.warn("Fetch homepage media error:", error);
       return null;
     }
-
-    const contentType = response.headers.get("content-type") || "";
-    if (!contentType.includes("application/json")) {
-      console.warn("Fetch homepage media received non-JSON content type:", contentType);
-      return null;
-    }
-
-    const result = await response.json();
-    if (result.success && result.data) {
-      return result.data as HomepageMedia;
-    }
-    return null;
-  } catch (error) {
-    console.warn("Fetch homepage media error:", error);
-    return null;
-  }
+  }, 180000); // 3 minutes in-memory cache with request deduplication
 }
 
 export interface AboutStoryData {
@@ -2070,16 +2103,18 @@ export async function setDefaultCustomerAddress(id: string): Promise<{ success: 
  * Fetch public store settings (UPI QR configs, COD status, etc.)
  */
 export async function fetchStoreSettings(): Promise<Record<string, any>> {
-  try {
-    const res = await fetch(`${getApiBaseUrl()}/customer/settings?t=${Date.now()}`, {
-      headers: {
-        Accept: "application/json",
-      },
-    });
-    const json = await res.json();
-    return json?.data || {};
-  } catch (err) {
-    console.warn("fetchStoreSettings error:", err);
-    return {};
-  }
+  return getCachedOrFetch("store_settings", async () => {
+    try {
+      const res = await fetch(`${getApiBaseUrl()}/customer/settings`, {
+        headers: {
+          Accept: "application/json",
+        },
+      });
+      const json = await res.json();
+      return json?.data || {};
+    } catch (err) {
+      console.warn("fetchStoreSettings error:", err);
+      return {};
+    }
+  }, 600000); // 10 minutes cache with request deduplication
 }
