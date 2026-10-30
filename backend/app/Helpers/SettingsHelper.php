@@ -66,7 +66,7 @@ class SettingsHelper
     /**
      * Clear settings cache
      */
-    public static function clearCache(string $key = null): void
+    public static function clearCache(?string $key = null): void
     {
         if ($key) {
             Cache::forget("setting.{$key}");

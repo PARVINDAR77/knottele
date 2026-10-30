@@ -1,13 +1,12 @@
 FROM php:8.2-fpm-alpine
 
-# Install system dependencies, Nginx, and Composer
+# Install system dependencies and Nginx
 RUN apk add --no-cache \
     nginx \
     supervisor \
     curl \
     git \
     unzip \
-    composer \
     libpng-dev \
     libjpeg-turbo-dev \
     freetype-dev \
@@ -15,6 +14,9 @@ RUN apk add --no-cache \
     icu-dev \
     oniguruma-dev \
     libxml2-dev
+
+# Copy official Composer binary
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 # Install PHP extensions
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
