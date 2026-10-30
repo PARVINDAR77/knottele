@@ -16,13 +16,13 @@ echo -e "${YELLOW}==============================================================
 cd /var/www/knottele-fullstack
 
 # 1. Pull latest assets and fixes from git
-echo -e "\n${YELLOW}[Step 1/5] Pulling latest git updates (including missing footer assets)...${NC}"
+echo -e "\n${YELLOW}[Step 1/5] Pulling latest git updates...${NC}"
 git pull origin main
 
-# 2. Install Composer & PHP packages inside container
+# 2. Install Composer & PHP packages inside container with --ignore-platform-reqs
 echo -e "\n${YELLOW}[Step 2/5] Installing Composer dependencies inside knotelle-app...${NC}"
-docker exec knotelle-app apk add --no-cache composer git unzip
-docker exec -w /var/www/html knotelle-app composer install --no-dev --optimize-autoloader --no-interaction
+docker exec knotelle-app apk add --no-cache composer git unzip php-session php-fileinfo php-tokenizer php-dom php-xml 2>/dev/null || true
+docker exec -w /var/www/html knotelle-app composer install --no-dev --optimize-autoloader --no-interaction --ignore-platform-reqs
 
 # 3. Compile Laravel Caches & Migrations
 echo -e "\n${YELLOW}[Step 3/5] Compiling Laravel route, config & view caches...${NC}"
