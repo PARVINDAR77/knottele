@@ -37,6 +37,19 @@ class Category extends Model
         'show_in_nav' => 'boolean',
     ];
 
+    /**
+     * Automatic Cache Invalidation on Category Changes
+     */
+    protected static function booted(): void
+    {
+        static::saved(function () {
+            \Illuminate\Support\Facades\Cache::forget('knotelle_customer_categories_v2');
+        });
+        static::deleted(function () {
+            \Illuminate\Support\Facades\Cache::forget('knotelle_customer_categories_v2');
+        });
+    }
+
     // Relationships
     public function parent(): BelongsTo
     {

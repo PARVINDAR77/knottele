@@ -100,8 +100,8 @@ interface ApiCacheEntry<T> {
   data: T;
   timestamp: number;
 }
-const clientApiCache = new Map<string, ApiCacheEntry<any>>();
-const inFlightRequests = new Map<string, Promise<any>>();
+const clientApiCache = new Map<string, ApiCacheEntry<unknown>>();
+const inFlightRequests = new Map<string, Promise<unknown>>();
 
 export function getCachedOrFetch<T>(
   key: string,

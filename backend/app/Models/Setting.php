@@ -27,4 +27,19 @@ class Setting extends Model
         'is_public' => 'boolean',
         'options' => 'array',
     ];
+
+    /**
+     * Automatic Cache Invalidation on Setting Changes
+     */
+    protected static function booted(): void
+    {
+        static::saved(function () {
+            \Illuminate\Support\Facades\Cache::forget('knotelle_public_store_settings');
+            \Illuminate\Support\Facades\Cache::forget('knotelle_customer_homepage_media_v2');
+        });
+        static::deleted(function () {
+            \Illuminate\Support\Facades\Cache::forget('knotelle_public_store_settings');
+            \Illuminate\Support\Facades\Cache::forget('knotelle_customer_homepage_media_v2');
+        });
+    }
 }

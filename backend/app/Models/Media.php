@@ -65,6 +65,23 @@ class Media extends Model
         'is_featured' => 'boolean',
     ];
 
+    /**
+     * Automatic Cache Invalidation on Media Changes
+     */
+    protected static function booted(): void
+    {
+        static::saved(function () {
+            \Illuminate\Support\Facades\Cache::forget('knotelle_customer_homepage_media_v2');
+            \Illuminate\Support\Facades\Cache::forget('knotelle_customer_about_data');
+            \Illuminate\Support\Facades\Cache::forget('knotelle_customer_contact_data');
+        });
+        static::deleted(function () {
+            \Illuminate\Support\Facades\Cache::forget('knotelle_customer_homepage_media_v2');
+            \Illuminate\Support\Facades\Cache::forget('knotelle_customer_about_data');
+            \Illuminate\Support\Facades\Cache::forget('knotelle_customer_contact_data');
+        });
+    }
+
     protected $appends = [
         'url',
         'thumb_url',
