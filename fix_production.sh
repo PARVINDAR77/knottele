@@ -114,7 +114,7 @@ docker exec knotelle-app supervisorctl restart laravel-worker:* 2>/dev/null || t
 
 # Verify API output
 echo -e "\n${YELLOW}Verifying API responses...${NC}"
-MEDIA_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8090/api/media/homepage || true)
+MEDIA_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8090/api/customer/media || true)
 ORDER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://127.0.0.1:8090/api/customer/payment/razorpay/order -H "Content-Type: application/json" -H "Accept: application/json" -d '{"amount":100}' || true)
 
 echo -e "Media API HTTP Status: ${GREEN}$MEDIA_STATUS${NC}"
