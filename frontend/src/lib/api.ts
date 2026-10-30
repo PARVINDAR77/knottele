@@ -115,12 +115,12 @@ export function getCachedOrFetch<T>(
   // 1. Check valid in-memory cache
   const cached = clientApiCache.get(key);
   if (cached && Date.now() - cached.timestamp < ttlMs) {
-    return Promise.resolve(cached.data);
+    return Promise.resolve(cached.data as T);
   }
 
   // 2. Deduplicate in-flight requests (returns identical promise if already requested)
   if (inFlightRequests.has(key)) {
-    return inFlightRequests.get(key)!;
+    return inFlightRequests.get(key)! as Promise<T>;
   }
 
   const promise = fetcher()

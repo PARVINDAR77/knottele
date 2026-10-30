@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { fetchHomepageMedia, HomepageMedia } from "@/lib/api";
-import { useClientCache, setupAdminSyncListener } from "@/lib/cache";
+import { setupAdminSyncListener } from "@/lib/cache";
 
 const MEDIA_CACHE_KEY = "knotelle_cache_media";
 
@@ -22,15 +22,21 @@ export function MediaProvider({
   children: React.ReactNode;
   initialMedia?: HomepageMedia | null;
 }) {
-  const [cachedMedia, setCachedMedia] = useClientCache<HomepageMedia | null>(
-    MEDIA_CACHE_KEY,
-    initialMedia ?? null
-  );
-
-  const media = cachedMedia || initialMedia || null;
-  const [loading, setLoading] = useState<boolean>(!media);
+  const [media, setMedia] = useState<HomepageMedia | null>(initialMedia);
+  const [loading, setLoading] = useState<boolean>(!initialMedia);
   const [lastUpdated, setLastUpdated] = useState<number>(Date.now());
   const isFetchingRef = useRef(false);
+
+  // Check localStorage once on client mount
+  useEffect(() => {
+    try {
+      const cached = localStorage.getItem(MEDIA_CACHE_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed) setMedia(parsed);
+      }
+    } catch {}
+  }, []);
 
   const refetchMedia = useCallback(async () => {
     if (isFetchingRef.current) return;
@@ -38,8 +44,11 @@ export function MediaProvider({
     try {
       const data = await fetchHomepageMedia();
       if (data) {
-        setCachedMedia(data);
+        setMedia(data);
         setLastUpdated(Date.now());
+        try {
+          localStorage.setItem(MEDIA_CACHE_KEY, JSON.stringify(data));
+        } catch {}
       }
     } catch (err) {
       console.warn("Live media sync notice:", err);
@@ -47,7 +56,7 @@ export function MediaProvider({
       isFetchingRef.current = false;
       setLoading(false);
     }
-  }, [setCachedMedia]);
+  }, []);
 
   useEffect(() => {
     // 1. Initial live fetch to ensure cache freshness
@@ -58,12 +67,12 @@ export function MediaProvider({
       refetchMedia();
     });
 
-    // 3. Fallback background polling (every 18 seconds when visible)
+    // 3. Fallback background polling (every 60 seconds when visible)
     const pollTimer = setInterval(() => {
       if (document.visibilityState === "visible") {
         refetchMedia();
       }
-    }, 18000);
+    }, 60000);
 
     return () => {
       cleanupListeners();
