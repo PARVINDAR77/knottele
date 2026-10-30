@@ -10,7 +10,7 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${YELLOW}====================================================================${NC}"
-echo -e "${YELLOW}       FIXING COMPOSER AUTOLOAD, ASSETS & RAZORPAY CHECKOUT         ${NC}"
+echo -e "${YELLOW}       UPDATING PRODUCTION .ENV & COMPILING LARAVEL CACHES          ${NC}"
 echo -e "${YELLOW}====================================================================${NC}"
 
 cd /var/www/knottele-fullstack
@@ -19,16 +19,74 @@ cd /var/www/knottele-fullstack
 echo -e "\n${YELLOW}[Step 1/6] Pulling latest git updates...${NC}"
 git pull origin main
 
-# 2. Ensure Razorpay keys in backend/.env if missing
-echo -e "\n${YELLOW}[Step 2/6] Checking Razorpay credentials in backend/.env...${NC}"
-if [ -f "backend/.env" ]; then
-    if ! grep -q "^RAZORPAY_KEY_ID=" backend/.env; then
-        echo "RAZORPAY_KEY_ID=rzp_test_Tu0iAbxyAp9LSq" >> backend/.env
-    fi
-    if ! grep -q "^RAZORPAY_KEY_SECRET=" backend/.env; then
-        echo "RAZORPAY_KEY_SECRET=uiJALgqjQlS39DHO26kUKHF4" >> backend/.env
-    fi
-fi
+# 2. Write exact production environment variables to backend/.env
+echo -e "\n${YELLOW}[Step 2/6] Writing verified production .env...${NC}"
+cat << 'EOF' > backend/.env
+APP_NAME=KNOTELLE
+APP_ENV=production
+APP_KEY=base64:VnrUSV6b7OqcSVFwFdOIVNTUJNyqlqYHsrfnKvtOWls=
+APP_DEBUG=false
+APP_URL=https://knotelleindia.com
+
+APP_LOCALE=en
+APP_FALLBACK_LOCALE=en
+APP_FAKER_LOCALE=en_US
+
+APP_MAINTENANCE_DRIVER=file
+BCRYPT_ROUNDS=12
+
+LOG_CHANNEL=stack
+LOG_STACK=single
+LOG_DEPRECATIONS_CHANNEL=null
+LOG_LEVEL=error
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=knottele
+DB_USERNAME=knottele_user
+DB_PASSWORD=KnotelleLive2026!
+
+SESSION_DRIVER=database
+SESSION_LIFETIME=120
+SESSION_ENCRYPT=false
+SESSION_PATH=/
+SESSION_DOMAIN=null
+
+BROADCAST_CONNECTION=log
+FILESYSTEM_DISK=local
+QUEUE_CONNECTION=database
+CACHE_STORE=database
+
+MEMCACHED_HOST=127.0.0.1
+
+REDIS_CLIENT=phpredis
+REDIS_HOST=127.0.0.1
+REDIS_PASSWORD=null
+REDIS_PORT=6379
+
+MAIL_MAILER=smtp
+MAIL_SCHEME=smtps
+MAIL_HOST=smtp.hostinger.com
+MAIL_PORT=465
+MAIL_USERNAME=nexora@vardaansmartsolutions.com
+MAIL_PASSWORD=Cz?f;R5!d
+MAIL_ENCRYPTION=ssl
+
+MAIL_FROM_ADDRESS=nexora@vardaansmartsolutions.com
+MAIL_FROM_NAME="KNOTELLE"
+
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_DEFAULT_REGION=us-east-1
+AWS_BUCKET=
+AWS_USE_PATH_STYLE_ENDPOINT=false
+
+VITE_APP_NAME="${APP_NAME}"
+
+RAZORPAY_KEY_ID=rzp_live_Tu2n0eQvOns3qd
+RAZORPAY_KEY_SECRET=Zg25hn2EJogstsbOTBucdX6r
+EOF
 
 # 3. Point /usr/bin/php to the official Docker PHP (which has PDO & pdo_mysql)
 echo -e "\n${YELLOW}[Step 3/6] Linking /usr/local/bin/php to /usr/bin/php...${NC}"
@@ -41,7 +99,6 @@ docker exec -w /var/www/html knotelle-app /usr/local/bin/php artisan package:dis
 
 # 5. Compile Laravel Caches & Migrations
 echo -e "\n${YELLOW}[Step 5/6] Compiling Laravel route, config & view caches...${NC}"
-docker exec -w /var/www/html knotelle-app /usr/local/bin/php artisan key:generate --force || true
 docker exec -w /var/www/html knotelle-app /usr/local/bin/php artisan migrate --force || true
 docker exec -w /var/www/html knotelle-app /usr/local/bin/php artisan optimize:clear
 docker exec -w /var/www/html knotelle-app /usr/local/bin/php artisan config:cache
