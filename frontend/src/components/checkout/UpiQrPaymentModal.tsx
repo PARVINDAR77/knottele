@@ -1,4 +1,4 @@
-"useclient";
+"use client";
 
 import React, { useState, useEffect, useId } from "react";
 import Image from "next/image";
@@ -78,6 +78,7 @@ export default function UpiQrPaymentModal({
 
   if (!isOpen) return null;
 
+  const safeAmount = typeof amount === "number" && !isNaN(amount) ? Math.max(0, amount) : 0;
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
   const formattedTime = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
@@ -94,7 +95,7 @@ export default function UpiQrPaymentModal({
   };
 
   // UPI deep link for mobile apps
-  const upiIntentUrl = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(accountName)}&am=${amount.toFixed(2)}&cu=INR&tn=Knotelle%20Order`;
+  const upiIntentUrl = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(accountName)}&am=${safeAmount.toFixed(2)}&cu=INR&tn=Knotelle%20Order`;
 
   // Fallback dynamic QR URL if custom uploaded QR doesn't load
   const dynamicQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=10&data=${encodeURIComponent(upiIntentUrl)}`;
@@ -239,11 +240,11 @@ export default function UpiQrPaymentModal({
                     <span className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Amount to Pay</span>
                     <div className="flex items-center justify-between mt-0.5">
                       <span className="text-2xl font-serif font-bold text-[#913638]">
-                        ₹{amount.toFixed(2)}
+                        ₹{safeAmount.toFixed(2)}
                       </span>
                       <button
                         type="button"
-                        onClick={() => handleCopy(amount.toFixed(2), "amount")}
+                        onClick={() => handleCopy(safeAmount.toFixed(2), "amount")}
                         className="px-2.5 py-1 text-xs font-semibold text-[#913638] bg-[#FCE9E5] hover:bg-[#F8D5CE] rounded-lg transition-colors flex items-center gap-1"
                         title="Copy Amount"
                       >
@@ -435,3 +436,4 @@ export default function UpiQrPaymentModal({
     </div>
   );
 }
+

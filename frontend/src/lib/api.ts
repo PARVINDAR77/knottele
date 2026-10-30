@@ -1979,7 +1979,6 @@ export async function fetchStoreSettings(): Promise<Record<string, any>> {
       headers: {
         Accept: "application/json",
       },
-      next: { revalidate: 30 },
     });
     const json = await res.json();
     return json?.data || {};

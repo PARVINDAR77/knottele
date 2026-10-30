@@ -43,7 +43,7 @@ export default function OrderDetailView({ id: propId }: OrderDetailViewProps) {
       o.orderNumber === cleanId ||
       o.id === `ord-${cleanId}` ||
       o.id === cleanId.replace("ord-", "") ||
-      o.orderNumber.toLowerCase() === cleanId.toLowerCase()
+      (o.orderNumber && o.orderNumber.toLowerCase() === cleanId.toLowerCase())
   );
 
   const order = contextOrder || apiOrder;
