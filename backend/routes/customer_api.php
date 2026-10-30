@@ -20,6 +20,12 @@ Route::prefix('customer')->group(function () {
     Route::post('forgot-password', [CustomerApiAuthController::class, 'forgotPassword']);
     Route::post('reset-password', [CustomerApiAuthController::class, 'resetPassword']);
 
+    // Public payment routes (Razorpay)
+    Route::post('payment/razorpay/order', [\App\Http\Controllers\Api\Customer\RazorpayPaymentController::class, 'createOrder']);
+    Route::post('payment/razorpay/verify', [\App\Http\Controllers\Api\Customer\RazorpayPaymentController::class, 'verifyPayment']);
+    Route::post('create-order', [\App\Http\Controllers\Api\Customer\RazorpayPaymentController::class, 'createOrder']);
+    Route::post('verify-payment', [\App\Http\Controllers\Api\Customer\RazorpayPaymentController::class, 'verifyPayment']);
+
     // Public offers routes
     Route::get('offers/active', [OfferController::class, 'getActiveOffers']);
     Route::get('offers/start-banner', [OfferController::class, 'getStartBanner']);

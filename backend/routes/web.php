@@ -142,8 +142,6 @@ $adminRoutes = function () {
             Route::get('/{order}', [AdminOrder::class, 'view'])->name('view');
             Route::post('/{order}/update-status', [AdminOrder::class, 'updateStatus'])->name('update-status');
             Route::post('/{order}/update-payment-status', [AdminOrder::class, 'updatePaymentStatus'])->name('update-payment-status');
-            Route::post('/{order}/approve-payment', [AdminOrder::class, 'approvePayment'])->name('approve-payment');
-            Route::post('/{order}/reject-payment', [AdminOrder::class, 'rejectPayment'])->name('reject-payment');
             Route::post('/{order}/update-tracking', [AdminOrder::class, 'updateTracking'])->name('update-tracking');
             Route::delete('/{order}', [AdminOrder::class, 'destroy'])->name('destroy');
             Route::post('/bulk-delete', [AdminOrder::class, 'bulkDelete'])->name('bulk-delete');

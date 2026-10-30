@@ -154,93 +154,32 @@
                         <p class="text-gray-500 text-sm mt-1">Configure how your customers pay for their orders.</p>
                     </div>
                     <div class="space-y-8">
-                        <!-- UPI QR Payment -->
-                        <div class="p-6 bg-[#FAF7F5] border border-[#E7D1CC] rounded-2xl space-y-6">
-                            <div class="flex items-center justify-between pb-4 border-b border-[#F0E4DE]">
+                        <!-- Razorpay -->
+                        <div class="p-4 bg-indigo-50/30 border border-indigo-100 rounded-2xl space-y-4">
+                            <div class="flex items-center justify-between">
                                 <div class="flex items-center gap-3">
-                                    <div class="w-12 h-12 bg-white rounded-xl border border-[#E7D1CC] flex items-center justify-center shadow-sm">
-                                        <i data-lucide="qr-code" class="w-6 h-6 text-[#913638]"></i>
+                                    <div class="w-10 h-10 bg-white rounded-lg border border-gray-200 flex items-center justify-center">
+                                        <i data-lucide="zap" class="w-5 h-5 text-indigo-600"></i>
                                     </div>
                                     <div>
-                                        <div class="flex items-center gap-2">
-                                            <h4 class="font-bold text-gray-900 text-base">Instant UPI QR Code Payment</h4>
-                                            <span class="px-2 py-0.5 text-xs font-semibold bg-[#913638]/10 text-[#913638] rounded-full">Customer Direct</span>
-                                        </div>
-                                        <p class="text-xs text-gray-500 mt-0.5">Customers scan QR with GPay, PhonePe, Paytm, or BHIM and submit the 12-digit UTR reference</p>
+                                        <h4 class="font-semibold text-gray-900">Razorpay</h4>
+                                        <p class="text-xs text-gray-500">Accept UPI, Credit Cards, Netbanking</p>
                                     </div>
                                 </div>
                                 <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" data-key="upi_qr_enabled" name="upi_qr_enabled" class="setting-input sr-only peer">
-                                    <div class="w-12 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#913638]"></div>
+                                    <input type="checkbox" data-key="razorpay_enabled" name="razorpay_enabled" class="setting-input sr-only peer">
+                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
                                 </label>
                             </div>
                             
-                            <div id="upiFields" class="space-y-6 pt-1 hidden">
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                    <div class="space-y-2">
-                                        <label class="text-xs font-bold uppercase tracking-wider text-gray-700 flex items-center gap-1.5">
-                                            <span>UPI ID / VPA</span>
-                                            <span class="text-red-500">*</span>
-                                        </label>
-                                        <input type="text" data-key="upi_id" placeholder="e.g. knotelle@icici or mobile@paytm" class="setting-input w-full px-4 py-2.5 text-sm bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#913638]/20 focus:border-[#913638] outline-none font-mono">
-                                        <p class="text-[11px] text-gray-500">Your registered UPI address where customer funds are received directly.</p>
-                                    </div>
-
-                                    <div class="space-y-2">
-                                        <label class="text-xs font-bold uppercase tracking-wider text-gray-700 flex items-center gap-1.5">
-                                            <span>Payee / Business Name</span>
-                                            <span class="text-red-500">*</span>
-                                        </label>
-                                        <input type="text" data-key="upi_account_name" placeholder="e.g. KNOTELLE BOUTIQUE" class="setting-input w-full px-4 py-2.5 text-sm bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#913638]/20 focus:border-[#913638] outline-none">
-                                        <p class="text-[11px] text-gray-500">Official business name displayed when customer scans the QR code.</p>
-                                    </div>
+                            <div id="razorpayFields" class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 hidden">
+                                <div class="space-y-1.5">
+                                    <label class="text-xs font-semibold text-gray-600">Key ID</label>
+                                    <input type="text" data-key="razorpay_key_id" class="setting-input w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none">
                                 </div>
-
-                                <!-- QR Image Upload & Preview -->
-                                <div class="space-y-2">
-                                    <label class="text-xs font-bold uppercase tracking-wider text-gray-700 flex items-center gap-1.5">
-                                        <span>Custom QR Code Image</span>
-                                        <span class="text-xs font-normal text-gray-500">(PhonePe / GPay / Paytm / Bank Standee QR)</span>
-                                    </label>
-                                    <div class="flex gap-2">
-                                        <input type="text" data-key="upi_qr_image" id="upi_qr_image" readonly class="setting-input w-full px-4 py-2.5 text-sm bg-gray-50 border border-gray-300 rounded-xl outline-none cursor-default font-mono" placeholder="/images/payments/upi-qr.png">
-                                        <div class="flex gap-1 shrink-0">
-                                            <button type="button" onclick="document.getElementById('upi_qr_file').click()" class="upload-btn px-4 py-2.5 bg-white border border-gray-300 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-50 hover:border-[#913638] transition-colors flex items-center gap-2 shadow-sm">
-                                                <i data-lucide="upload" class="w-4 h-4 text-[#913638]"></i>
-                                                Upload QR
-                                            </button>
-                                            <button type="button" onclick="clearToDefault('upi_qr_image', '/images/payments/upi-qr.png')" class="px-3 py-2.5 bg-white border border-gray-300 text-gray-400 rounded-xl hover:text-red-600 hover:border-red-200 transition-colors shadow-sm" title="Reset to Default">
-                                                <i data-lucide="trash-2" class="w-4 h-4"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <input type="file" id="upi_qr_file" class="hidden" accept="image/*" onchange="handleFileUpload(event, 'upi_qr_image')">
-                                    
-                                    <div class="mt-3 flex items-start gap-4 p-4 bg-white rounded-xl border border-dashed border-[#E7D1CC]">
-                                        <img id="upi_qr_preview" src="" alt="UPI QR Preview" class="img-preview w-28 h-28 object-contain rounded-lg border border-gray-200 shadow-sm hidden bg-white">
-                                        <div class="text-xs text-gray-600 space-y-1">
-                                            <p class="font-semibold text-gray-800">Preview Tips:</p>
-                                            <p>• Upload a high-resolution square QR code image (PNG, JPG, or WebP up to 4MB).</p>
-                                            <p>• Make sure the QR code borders and UPI branding are clearly visible for smooth scanning.</p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                    <div class="space-y-2">
-                                        <label class="text-xs font-bold uppercase tracking-wider text-gray-700 flex items-center gap-1.5">
-                                            <span>Session Countdown Timer (Minutes)</span>
-                                            <span class="text-red-500">*</span>
-                                        </label>
-                                        <input type="number" min="1" max="60" data-key="upi_timer_minutes" placeholder="5" class="setting-input w-full px-4 py-2.5 text-sm bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#913638]/20 focus:border-[#913638] outline-none">
-                                        <p class="text-[11px] text-gray-500">Duration customer has to scan & enter the UTR before session refreshes (default: 5 mins).</p>
-                                    </div>
-
-                                    <div class="space-y-2">
-                                        <label class="text-xs font-bold uppercase tracking-wider text-gray-700">Instructions / Guidance Note</label>
-                                        <textarea rows="3" data-key="upi_instructions" class="setting-input w-full px-4 py-2 text-sm bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#913638]/20 focus:border-[#913638] outline-none" placeholder="Scan using any UPI app..."></textarea>
-                                        <p class="text-[11px] text-gray-500">Notice shown to the customer inside the checkout QR modal.</p>
-                                    </div>
+                                <div class="space-y-1.5">
+                                    <label class="text-xs font-semibold text-gray-600">Key Secret</label>
+                                    <input type="password" data-key="razorpay_key_secret" class="setting-input w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none">
                                 </div>
                             </div>
                         </div>
@@ -525,12 +464,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // UPI QR Payment Toggle UI
-    const upiEnabled = document.querySelector('input[name="upi_qr_enabled"]') || document.querySelector('input[data-key="upi_qr_enabled"]');
-    if (upiEnabled) {
-        upiEnabled.addEventListener('change', (e) => {
-            const uf = document.getElementById('upiFields');
-            if (uf) uf.classList.toggle('hidden', !e.target.checked);
+    // Payment Toggle UI
+    const razorEnabled = document.querySelector('input[name="razorpay_enabled"]') || document.querySelector('input[data-key="razorpay_enabled"]');
+    if (razorEnabled) {
+        razorEnabled.addEventListener('change', (e) => {
+            const rf = document.getElementById('razorpayFields');
+            if (rf) rf.classList.toggle('hidden', !e.target.checked);
         });
     }
 
@@ -574,10 +513,10 @@ async function loadSettings() {
             if (settingsForm) settingsForm.classList.remove('hidden');
             
             // Sync UI states
-            const upiEnabled = document.querySelector('input[data-key="upi_qr_enabled"]');
-            const uf = document.getElementById('upiFields');
-            if (upiEnabled && uf) {
-                uf.classList.toggle('hidden', !upiEnabled.checked);
+            const razorEnabled = document.querySelector('input[data-key="razorpay_enabled"]');
+            const rf = document.getElementById('razorpayFields');
+            if (razorEnabled && rf) {
+                rf.classList.toggle('hidden', !razorEnabled.checked);
             }
 
             // Sync color text
@@ -616,9 +555,10 @@ function populateForms(groups) {
                 } else {
                     input.value = setting.value !== null && setting.value !== undefined ? setting.value : '';
                     
-                    // Show preview for logo, favicon, and UPI QR if value exists
-                    if (['logo_url', 'favicon_url', 'upi_qr_image'].includes(setting.key) && setting.value) {
-                        const preview = document.getElementById(setting.key.replace('url', 'preview')) || document.getElementById('upi_qr_preview');
+                    // Show preview for logo and favicon if value exists
+                    if (['logo_url', 'favicon_url'].includes(setting.key) && setting.value) {
+                        const previewId = setting.key.replace('url', 'preview');
+                        const preview = document.getElementById(previewId);
                         if (preview) {
                             preview.src = setting.value;
                             preview.classList.remove('hidden');
@@ -830,7 +770,8 @@ async function handleFileUpload(event, key) {
             }
             
             // Update preview
-            const preview = document.getElementById(key.replace('url', 'preview')) || document.getElementById('upi_qr_preview');
+            const previewId = key.replace('url', 'preview');
+            const preview = document.getElementById(previewId);
             if (preview) {
                 preview.src = url;
                 preview.classList.remove('hidden');

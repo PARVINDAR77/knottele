@@ -14,4 +14,9 @@ Route::get('/health', function () {
 
 Route::apiResource('products', ProductController::class);
 
+// Razorpay Standard Checkout Endpoints
+Route::post('/create-order', [\App\Http\Controllers\Api\Customer\RazorpayPaymentController::class, 'createOrder']);
+Route::post('/verify-payment', [\App\Http\Controllers\Api\Customer\RazorpayPaymentController::class, 'verifyPayment']);
+
+
 

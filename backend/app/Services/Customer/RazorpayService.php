@@ -17,14 +17,24 @@ class RazorpayService
 
     public function __construct()
     {
-        $this->keyId = config('services.razorpay.key_id');
-        $this->keySecret = config('services.razorpay.key_secret');
+        $this->keyId = config('services.razorpay.key_id') ?: env('RAZORPAY_KEY_ID');
+        $this->keySecret = config('services.razorpay.key_secret') ?: env('RAZORPAY_KEY_SECRET');
 
         if (empty($this->keyId) || empty($this->keySecret)) {
             throw new \Exception('Razorpay credentials not configured');
         }
 
         $this->razorpay = new Api($this->keyId, $this->keySecret);
+    }
+
+    public function getKeyId(): string
+    {
+        return $this->keyId;
+    }
+
+    public function getKeySecret(): string
+    {
+        return $this->keySecret;
     }
 
     /**
@@ -97,21 +107,37 @@ class RazorpayService
     }
 
     /**
-     * Create Razorpay order WITHOUT DB order
-     * (Used for online payment before checkout confirmation)
+     * Create Razorpay order by amount in paise
      */
-    public function createOrderByAmount(int $amountInPaise): array
+    public function createOrderByAmount(int $amountInPaise, ?string $currency = 'INR', ?string $receipt = null): array
     {
+        if ($amountInPaise < 100) {
+            return [
+                'success' => false,
+                'message' => 'Amount must be at least 100 paise (₹1.00).',
+                'code' => 400,
+            ];
+        }
+
         try {
             Log::info('Creating Razorpay order by amount', [
-                'amount' => $amountInPaise
+                'amount' => $amountInPaise,
+                'currency' => $currency ?: 'INR',
             ]);
 
-            $order = $this->razorpay->order->create([
-                'amount' => $amountInPaise, // already in paise
-                'currency' => 'INR',
+            $orderData = [
+                'amount' => $amountInPaise, // in paise
+                'currency' => $currency ?: 'INR',
                 'payment_capture' => 1,
-            ]);
+            ];
+
+            if ($receipt) {
+                $orderData['receipt'] = substr($receipt, 0, 40);
+            } else {
+                $orderData['receipt'] = 'rcpt_' . time() . '_' . substr(md5(uniqid()), 0, 6);
+            }
+
+            $order = $this->razorpay->order->create($orderData);
 
             return [
                 'success' => true,
@@ -119,86 +145,89 @@ class RazorpayService
                 'key_id' => $this->keyId,
                 'amount' => $order['amount'],
                 'currency' => $order['currency'],
+                'receipt' => $order['receipt'] ?? $orderData['receipt'],
             ];
 
-        } catch (\Exception $e) {
-            Log::warning('Razorpay API order creation warning: ' . $e->getMessage() . '. Using Test Mode order fallback.');
-
-            $testOrderId = 'order_test_' . substr(md5(uniqid()), 0, 14);
+        } catch (\Razorpay\Api\Errors\Error $e) {
+            Log::error('Razorpay API error creating order: ' . $e->getMessage());
             return [
-                'success' => true,
-                'order_id' => $testOrderId,
-                'key_id' => $this->keyId ?: 'rzp_test_1DP5A3y5551234',
-                'amount' => $amountInPaise,
-                'currency' => 'INR',
-                'is_test_mode' => true,
+                'success' => false,
+                'message' => $e->getMessage(),
+                'code' => $e->getCode() == 401 ? 401 : 500,
+            ];
+        } catch (\Throwable $e) {
+            Log::error('Razorpay order creation exception: ' . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'Failed to initialize Razorpay order: ' . $e->getMessage(),
+                'code' => 500,
             ];
         }
     }
 
 
     /**
-     * Verify payment signature
+     * Verify payment signature strictly using HMAC-SHA256
      */
-    public function verifyPayment($paymentId, $orderId, $signature)
+    public function verifyPayment($paymentId, $orderId, $signature): array
     {
+        if (empty($paymentId) || empty($orderId) || empty($signature)) {
+            return [
+                'success' => false,
+                'message' => 'Missing required payment verification fields.',
+                'code' => 400,
+            ];
+        }
+
         try {
-            Log::info('Verifying Razorpay payment', [
+            Log::info('Verifying Razorpay payment signature', [
                 'payment_id' => $paymentId,
                 'order_id' => $orderId
             ]);
 
-            if (str_starts_with($orderId, 'order_test_') || str_starts_with($paymentId, 'pay_test_')) {
+            // Algorithm: HMAC-SHA256(order_id + "|" + payment_id, KEY_SECRET)
+            $expectedSignature = hash_hmac('sha256', $orderId . '|' . $paymentId, $this->keySecret);
+
+            if (!hash_equals($expectedSignature, $signature)) {
+                Log::warning('Razorpay signature mismatch', [
+                    'order_id' => $orderId,
+                    'payment_id' => $paymentId
+                ]);
                 return [
-                    'success' => true,
-                    'payment' => [
-                        'id' => $paymentId,
-                        'status' => 'captured',
-                        'amount' => 0,
-                    ],
-                    'message' => 'Test payment verified successfully'
+                    'success' => false,
+                    'message' => 'Payment signature verification failed. Signatures do not match.',
+                    'code' => 400,
                 ];
             }
 
-            $attributes = [
-                'razorpay_order_id' => $orderId,
-                'razorpay_payment_id' => $paymentId,
-                'razorpay_signature' => $signature
-            ];
+            // Optional: Fetch payment details from Razorpay to verify capture status
+            $payment = null;
+            try {
+                $paymentObj = $this->razorpay->payment->fetch($paymentId);
+                $payment = $paymentObj->toArray();
+            } catch (\Throwable $fetchErr) {
+                Log::info('Razorpay payment fetch notice: ' . $fetchErr->getMessage());
+            }
 
-            $this->razorpay->utility->verifyPaymentSignature($attributes);
-
-            // Get payment details from Razorpay
-            $payment = $this->razorpay->payment->fetch($paymentId);
-
-            Log::info('Razorpay payment verified successfully', [
+            Log::info('Razorpay payment signature verified successfully', [
                 'payment_id' => $paymentId,
-                'status' => $payment->status
+                'order_id' => $orderId,
             ]);
 
             return [
                 'success' => true,
-                'payment' => $payment->toArray(),
-                'message' => 'Payment verified successfully'
+                'payment_id' => $paymentId,
+                'order_id' => $orderId,
+                'payment' => $payment,
+                'message' => 'Payment verified successfully',
             ];
 
-        } catch (\Exception $e) {
-            Log::warning('Razorpay Payment Verification Exception: ' . $e->getMessage() . '. Accepting fallback for test signature.');
-
-            if ($paymentId && $orderId && $signature) {
-                return [
-                    'success' => true,
-                    'payment' => [
-                        'id' => $paymentId,
-                        'status' => 'captured',
-                    ],
-                    'message' => 'Payment verified successfully'
-                ];
-            }
-
+        } catch (\Throwable $e) {
+            Log::error('Razorpay payment verification exception: ' . $e->getMessage());
             return [
                 'success' => false,
-                'message' => 'Payment verification failed: ' . $e->getMessage()
+                'message' => 'Payment verification error: ' . $e->getMessage(),
+                'code' => 400,
             ];
         }
     }

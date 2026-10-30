@@ -242,8 +242,7 @@ class OrderController extends Controller
             'shipping_address.city' => 'required|string',
             'shipping_address.pin_code' => 'required|string',
 
-            'payment_method' => 'required|string|in:upi_qr,upi,online,razorpay,card,netbanking,cod',
-            'utr_number' => 'nullable|string|max:100',
+            'payment_method' => 'required|string|in:razorpay,online,upi,card,netbanking,cod',
             'offer_code' => 'nullable|string',
             'discount_total' => 'nullable|numeric',
             'discount_amount' => 'nullable|numeric',
@@ -406,24 +405,14 @@ class OrderController extends Controller
             }
 
             // 2. Create the Order
-            $isUpi = in_array($request->payment_method, ['upi_qr', 'upi', 'online', 'razorpay', 'card', 'netbanking']);
-            $orderPaymentMethod = ($request->payment_method === 'cod') ? 'cod' : 'upi_qr';
-            $orderPaymentStatus = ($request->payment_method === 'cod') ? 'pending' : 'pending_verification';
-            $utrNumber = trim($request->input('utr_number') ?? '');
-
-            $adminNotes = null;
-            if ($utrNumber) {
-                $adminNotes = '[' . now()->format('d M Y H:i') . "] UPI QR Payment Submitted. UTR/Ref: {$utrNumber}";
-            }
-
             $order = Order::create([
                 'order_number' => 'KN' . strtoupper(uniqid()),
                 'customer_id' => $customerId,
-                'payment_method' => $orderPaymentMethod,
+                'payment_method' => $request->payment_method,
                 'shipping_method' => 'custom',
                 'currency' => 'INR',
                 'status' => 'pending',
-                'payment_status' => $orderPaymentStatus,
+                'payment_status' => $request->payment_method === 'cod' ? 'pending' : 'paid',
                 'subtotal' => $subtotal,
                 'tax_total' => $totalTaxAmount,
                 'shipping_total' => $shippingTotal,
@@ -432,7 +421,6 @@ class OrderController extends Controller
                 'grand_total' => $grandTotal,
                 'shipping_address' => collect($request->shipping_address)->filter()->toArray(),
                 'billing_address' => collect($request->shipping_address)->filter()->toArray(),
-                'admin_notes' => $adminNotes,
             ]);
 
             // 3. Create Order Items
@@ -440,36 +428,13 @@ class OrderController extends Controller
                 $order->items()->create($itemData);
             }
 
-            // 4. Create Payment record for UPI QR orders
-            if ($orderPaymentMethod === 'upi_qr' || $utrNumber) {
-                try {
-                    $order->payments()->create([
-                        'transaction_id' => $utrNumber ?: ('UPI-' . strtoupper(uniqid())),
-                        'amount' => $grandTotal,
-                        'payment_gateway' => 'upi_qr',
-                        'status' => 'pending',
-                        'request_data' => [
-                            'payment_method' => 'upi_qr',
-                            'utr_number' => $utrNumber,
-                            'submitted_at' => now()->toIso8601String(),
-                        ],
-                    ]);
-                } catch (\Throwable $paymentEx) {
-                    Log::warning('Payment record creation notice: ' . $paymentEx->getMessage());
-                }
-            }
-
-            // 5. Create initial status history
-            $historyNote = $utrNumber
-                ? "Order placed with UPI QR Payment. Customer submitted UTR: {$utrNumber}. Awaiting admin verification."
-                : ($orderPaymentMethod === 'cod' ? "Order placed successfully (Cash on Delivery)." : "Order placed with UPI payment. Awaiting verification.");
-
+            // 4. Create initial status history
             $order->statusHistory()->create([
                 'status' => 'pending',
-                'notes' => $historyNote,
+                'notes' => 'Order placed successfully by customer.',
             ]);
 
-            // 6. Increment offer usage if applied
+            // 5. Increment offer usage if applied
             if ($appliedOfferId) {
                 $offer->incrementUsage($customerId, $order->id, $discountTotal);
             }
@@ -485,9 +450,6 @@ class OrderController extends Controller
                     'grand_total' => (float) $order->grand_total,
                     'subtotal' => (float) $order->subtotal,
                     'shipping_total' => (float) $order->shipping_total,
-                    'payment_status' => $order->payment_status,
-                    'payment_method' => $order->payment_method,
-                    'utr_number' => $utrNumber,
                 ]
             ], 201);
 
@@ -631,18 +593,13 @@ class OrderController extends Controller
             ],
             'paymentMethod' => match ($order->payment_method) {
                 'cod' => 'Cash on Delivery',
-                'upi_qr', 'upi', 'online' => 'UPI QR Online Payment',
-                default => ucfirst(str_replace('_', ' ', $order->payment_method ?? 'UPI QR Payment')),
+                'razorpay', 'online' => 'Razorpay Online Payment',
+                'upi' => 'UPI',
+                'card' => 'Credit/Debit Card',
+                'netbanking' => 'Net Banking',
+                default => ucfirst($order->payment_method ?? 'Razorpay'),
             },
-            'paymentStatus' => match ($order->payment_status) {
-                'pending_verification' => 'Pending Verification',
-                'paid' => 'Paid',
-                'failed' => 'Failed',
-                'refunded' => 'Refunded',
-                default => ucwords(str_replace('_', ' ', $order->payment_status ?? 'Pending')),
-            },
-            'rawPaymentStatus' => $order->payment_status,
-            'utrNumber' => $order->payments?->last()?->transaction_id,
+            'paymentStatus' => ucfirst($order->payment_status ?? 'Pending'),
             'subtotal' => (float) $order->subtotal,
             'shipping' => (float) $order->shipping_total,
             'discount' => (float) $order->discount_total,
@@ -652,9 +609,7 @@ class OrderController extends Controller
                 [
                     'status' => 'Order Placed',
                     'date' => $order->created_at ? $order->created_at->format('d M Y, h:i A') : 'Just now',
-                    'description' => ($order->payment_method === 'upi_qr' && $order->payment_status === 'pending_verification')
-                        ? ('UPI QR payment submitted (UTR: ' . ($order->payments?->last()?->transaction_id ?? 'Pending') . '). Verification pending admin approval.')
-                        : 'Order received and queued for artisan assignment.',
+                    'description' => 'Order received and queued for artisan assignment.',
                     'completed' => true,
                     'current' => $order->status === 'pending',
                 ],

@@ -91,29 +91,31 @@ class CustomerApiAuthController extends Controller
                     \DB::rollBack();
                     return response()->json([
                         'success' => false,
-                        'message' => 'Email already registered'
+                        'message' => 'Email is already registered. Please log in.'
                     ], 422);
                 }
 
-                // Case B — Existing unverified customer: update details & resend OTP
+                // Existing unverified customer: update details & activate account
                 $existingCustomer->name = trim($request->name);
                 $existingCustomer->mobile = trim($request->mobile);
                 $existingCustomer->password = Hash::make($request->password);
+                $existingCustomer->email_verified_at = now();
+                $existingCustomer->status = true;
                 $existingCustomer->save();
                 $customer = $existingCustomer;
             } else {
-                // Case C — New customer
+                // New customer: create and activate account
                 $customer = Customer::create([
                     'name' => trim($request->name),
                     'email' => $email,
                     'mobile' => trim($request->mobile),
                     'password' => Hash::make($request->password),
                     'status' => true,
-                    'email_verified_at' => null,
+                    'email_verified_at' => now(),
                 ]);
             }
 
-            // Generate 6-digit OTP
+            // Generate 6-digit OTP for records / verification fallback
             $otp = sprintf('%06d', random_int(100000, 999999));
             $otpHash = Hash::make($otp);
 
@@ -131,17 +133,27 @@ class CustomerApiAuthController extends Controller
 
             \Log::info("KNOTELLE Registration OTP for {$email}: {$otp}");
 
-            // Dispatch verification email asynchronously so the HTTP request completes immediately
+            // Queue welcome / verification email asynchronously (never blocks the HTTP request)
             try {
                 Mail::to($customer->email)->queue(new VerifyAccountMail($customer->name, $otp));
             } catch (\Throwable $mailErr) {
                 \Log::warning("Could not queue verification email to {$email}: " . $mailErr->getMessage());
-                try {
-                    Mail::to($customer->email)->send(new VerifyAccountMail($customer->name, $otp));
-                } catch (\Throwable $sendErr) {
-                    \Log::error("Direct mail send also failed for {$email}: " . $sendErr->getMessage());
-                }
             }
+
+            $token = $customer->createToken('customer_api')->plainTextToken;
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Account created successfully! Welcome to Knotelle.',
+                'token' => $token,
+                'requires_otp' => false,
+                'user' => [
+                    'id' => $customer->id,
+                    'name' => $customer->name,
+                    'email' => $customer->email,
+                    'mobile' => $customer->mobile,
+                ],
+            ], 201);
         } catch (\Throwable $e) {
             \DB::rollBack();
             \Log::error("Failed to register customer {$email}: " . $e->getMessage());
@@ -150,13 +162,6 @@ class CustomerApiAuthController extends Controller
                 'message' => 'Registration failed. Please try again.'
             ], 500);
         }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Verification code sent to email',
-            'email' => $customer->email,
-            'requires_otp' => true,
-        ], 200);
     }
 
     public function verifyOtp(Request $request)
@@ -307,11 +312,6 @@ class CustomerApiAuthController extends Controller
                 Mail::to($customer->email)->queue(new VerifyAccountMail($customer->name, $otp));
             } catch (\Throwable $mailErr) {
                 \Log::warning("Could not queue resend verification email to {$email}: " . $mailErr->getMessage());
-                try {
-                    Mail::to($customer->email)->send(new VerifyAccountMail($customer->name, $otp));
-                } catch (\Throwable $sendErr) {
-                    \Log::error("Direct resend mail also failed for {$email}: " . $sendErr->getMessage());
-                }
             }
         } catch (\Throwable $e) {
             \DB::rollBack();

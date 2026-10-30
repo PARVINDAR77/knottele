@@ -1136,6 +1136,102 @@ export async function submitOrder(
 /**
  * Register Customer to Laravel Backend API
  */
+
+/**
+ * Create Razorpay Order from Backend API
+ * @param amountInPaise Amount in paise (minimum 100 paise = ₹1.00)
+ * @param currency Currency code (default: INR)
+ * @param receipt Optional receipt identifier
+ */
+export async function createRazorpayOrder(amountInPaise: number, currency: string = "INR", receipt?: string): Promise<{
+  success: boolean;
+  order_id?: string;
+  id?: string;
+  key_id?: string;
+  amount?: number;
+  currency?: string;
+  message?: string;
+}> {
+  try {
+    const validPaise = Math.max(100, Math.round(amountInPaise));
+
+    let res = await fetch(`${getApiBaseUrl()}/create-order`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({ amount: validPaise, currency, receipt }),
+    });
+
+    if (res.status === 404) {
+      res = await fetch(`${getApiBaseUrl()}/customer/payment/razorpay/order`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({ amount: validPaise, currency, receipt }),
+      });
+    }
+
+    const text = await res.text();
+    let data: any = {};
+    try {
+      data = JSON.parse(text);
+    } catch {
+      return { success: false, message: `Server error (${res.status})` };
+    }
+    return data;
+  } catch (err) {
+    console.error("Create Razorpay Order error:", err);
+    return { success: false, message: "Network error creating Razorpay order." };
+  }
+}
+
+/**
+ * Verify Razorpay Payment Signature with Backend API
+ */
+export async function verifyRazorpayPayment(payload: {
+  razorpay_payment_id: string;
+  razorpay_order_id: string;
+  razorpay_signature: string;
+}): Promise<{ success: boolean; message?: string }> {
+  try {
+    let res = await fetch(`${getApiBaseUrl()}/verify-payment`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (res.status === 404) {
+      res = await fetch(`${getApiBaseUrl()}/customer/payment/razorpay/verify`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+    }
+
+    const text = await res.text();
+    let data: any = {};
+    try {
+      data = JSON.parse(text);
+    } catch {
+      return { success: false, message: `Server error (${res.status})` };
+    }
+    return data;
+  } catch (err) {
+    console.error("Verify Razorpay Payment error:", err);
+    return { success: false, message: "Network error verifying Razorpay payment." };
+  }
+}
+
 export async function registerCustomer(payload: {
   name: string;
   email: string;

@@ -85,11 +85,11 @@ class OrderController extends Controller
                     'payment_status' => $order->payment_status,
                     'payment_method' => match ($order->payment_method) {
                         'cod' => 'Cash on Delivery',
-                        'upi_qr', 'upi' => 'UPI QR Payment',
-                        'online' => 'UPI QR Online Payment',
+                        'online' => 'Online Payment',
+                        'upi' => 'UPI',
                         'card' => 'Credit/Debit Card',
                         'netbanking' => 'Net Banking',
-                        default => ucfirst(str_replace('_', ' ', $order->payment_method ?? 'N/A')),
+                        default => ucfirst($order->payment_method ?? 'N/A'),
                     },
 
                     'shipping_address' => is_array($order->shipping_address)
@@ -189,7 +189,7 @@ class OrderController extends Controller
     public function updatePaymentStatus(Request $request, Order $order)
     {
         $validated = $request->validate([
-            'payment_status' => 'required|string|in:pending,pending_verification,paid,partially_paid,partially_refunded,failed,refunded',
+            'payment_status' => 'required|string|in:pending,paid,partially_paid,partially_refunded,failed,refunded',
             'notes' => 'nullable|string|max:500',
         ]);
 
@@ -262,131 +262,6 @@ class OrderController extends Controller
                 'success' => false,
                 'message' => 'Error updating payment status: ' . $e->getMessage(),
                 'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Approve UPI QR payment and confirm order.
-     */
-    public function approvePayment(Request $request, Order $order)
-    {
-        try {
-            DB::beginTransaction();
-
-            $order->payment_status = 'paid';
-            if (in_array($order->status, ['pending', 'processing'])) {
-                $order->status = 'confirmed';
-                $order->confirmed_at = now();
-            }
-
-            $adminName = auth('admin')->user()?->name ?? 'Admin';
-            $note = '[' . now()->format('d M Y H:i') . "] UPI Payment approved by {$adminName}. Order confirmed.";
-            $order->admin_notes = $order->admin_notes ? ($order->admin_notes . "\n" . $note) : $note;
-            $order->save();
-
-            // Update payment record if exists
-            $payment = $order->payments()->latest()->first();
-            if ($payment) {
-                $payment->update([
-                    'status' => 'success',
-                    'paid_at' => now(),
-                    'response_data' => array_merge($payment->response_data ?? [], [
-                        'approved_by' => $adminName,
-                        'approved_at' => now()->toIso8601String(),
-                    ])
-                ]);
-            }
-
-            // Create status history
-            $order->statusHistory()->create([
-                'status' => $order->status,
-                'notes' => 'UPI Payment verified & approved by ' . $adminName . '. Order confirmed.',
-                'admin_id' => auth('admin')->id(),
-            ]);
-
-            DB::commit();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'UPI payment approved successfully! Order status is now Confirmed.',
-                'order' => [
-                    'id' => $order->id,
-                    'status' => $order->status,
-                    'payment_status' => $order->payment_status,
-                ]
-            ]);
-        } catch (\Throwable $e) {
-            DB::rollBack();
-            Log::error('Error approving payment: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to approve payment: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Reject UPI payment and mark order as cancelled/failed.
-     */
-    public function rejectPayment(Request $request, Order $order)
-    {
-        $validated = $request->validate([
-            'reason' => 'nullable|string|max:500'
-        ]);
-
-        try {
-            DB::beginTransaction();
-
-            $order->payment_status = 'failed';
-            $order->status = 'cancelled';
-            $order->cancelled_at = now();
-
-            $adminName = auth('admin')->user()?->name ?? 'Admin';
-            $reason = $validated['reason'] ?? 'Payment verification failed / UTR not found';
-            $note = '[' . now()->format('d M Y H:i') . "] UPI Payment rejected by {$adminName}. Reason: {$reason}";
-            $order->admin_notes = $order->admin_notes ? ($order->admin_notes . "\n" . $note) : $note;
-            $order->cancellation_reason = 'Payment Verification Rejected: ' . $reason;
-            $order->save();
-
-            // Update payment record if exists
-            $payment = $order->payments()->latest()->first();
-            if ($payment) {
-                $payment->update([
-                    'status' => 'failed',
-                    'failure_reason' => $reason,
-                    'response_data' => array_merge($payment->response_data ?? [], [
-                        'rejected_by' => $adminName,
-                        'rejected_at' => now()->toIso8601String(),
-                        'reason' => $reason
-                    ])
-                ]);
-            }
-
-            // Create status history
-            $order->statusHistory()->create([
-                'status' => 'cancelled',
-                'notes' => 'UPI Payment rejected by admin. Reason: ' . $reason,
-                'admin_id' => auth('admin')->id(),
-            ]);
-
-            DB::commit();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'UPI payment rejected. Order marked as Cancelled.',
-                'order' => [
-                    'id' => $order->id,
-                    'status' => $order->status,
-                    'payment_status' => $order->payment_status,
-                ]
-            ]);
-        } catch (\Throwable $e) {
-            DB::rollBack();
-            Log::error('Error rejecting payment: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to reject payment: ' . $e->getMessage()
             ], 500);
         }
     }
