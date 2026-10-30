@@ -2,7 +2,7 @@
 # ==============================================================================
 # KNOTELLE INDIA - PRODUCTION PERFORMANCE DEPLOYMENT & RECOVERY SCRIPT
 # Safe, isolated deployment for knotelle-app without affecting neighboring containers
-# Target Commits: ce82a6fd & 12c54d7a
+# Target Commits: ce82a6fd, 12c54d7a, da057e0b
 # ==============================================================================
 
 set -e
@@ -40,9 +40,9 @@ if [ -f "$ENV_FILE" ]; then
     DB_USER=$(grep -E '^DB_USERNAME=' "$ENV_FILE" | head -n 1 | cut -d '=' -f2- | tr -d '\r"' )
     DB_NAME=$(grep -E '^DB_DATABASE=' "$ENV_FILE" | head -n 1 | cut -d '=' -f2- | tr -d '\r"' )
     
-    echo "Configuring MySQL permissions for user: ${DB_USER} on database: ${DB_NAME}..."
+    echo "Configuring MySQL permissions for user: '${DB_USER}' on database: '${DB_NAME}'..."
     
-    mysql -e "
+    SQL_COMMANDS="
     CREATE USER IF NOT EXISTS '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASS}';
     CREATE USER IF NOT EXISTS '${DB_USER}'@'127.0.0.1' IDENTIFIED BY '${DB_PASS}';
     CREATE USER IF NOT EXISTS '${DB_USER}'@'%' IDENTIFIED BY '${DB_PASS}';
@@ -53,11 +53,24 @@ if [ -f "$ENV_FILE" ]; then
     GRANT ALL PRIVILEGES ON \`${DB_NAME}\`.* TO '${DB_USER}'@'127.0.0.1';
     GRANT ALL PRIVILEGES ON \`${DB_NAME}\`.* TO '${DB_USER}'@'%';
     FLUSH PRIVILEGES;
-    " || echo "Notice: MySQL command completed."
+    "
+
+    # Try applying with root privileges
+    mysql -e "$SQL_COMMANDS" 2>/dev/null || mysql -u root -e "$SQL_COMMANDS" 2>/dev/null || echo "Notice: Direct mysql root execution prompted or failed."
+
+    # Test loopback connection explicitly
+    echo "Verifying '${DB_USER}' database connection to 127.0.0.1:3306..."
+    if mysql -h 127.0.0.1 -u "${DB_USER}" -p"${DB_PASS}" "${DB_NAME}" -e "SELECT 1;" >/dev/null 2>&1; then
+        echo -e "${GREEN}Database connection verified successfully for '${DB_USER}'@'127.0.0.1'.${NC}"
+    else
+        echo -e "${RED}Warning: Direct loopback authentication test failed for '${DB_USER}'@'127.0.0.1'.${NC}"
+        echo "Diagnosing existing grants in mysql.user:"
+        mysql -e "SELECT User, Host FROM mysql.user WHERE User = '${DB_USER}';" 2>/dev/null || mysql -u root -e "SELECT User, Host FROM mysql.user WHERE User = '${DB_USER}';" 2>/dev/null || true
+    fi
 fi
 
 # Check if MySQL has skip-name-resolve
-SKIP_RESOLVE_ACTIVE=$(mysql -e "SHOW VARIABLES LIKE 'skip_name_resolve';" 2>/dev/null | awk 'NR==2 {print $2}' || echo "UNKNOWN")
+SKIP_RESOLVE_ACTIVE=$(mysql -e "SHOW VARIABLES LIKE 'skip_name_resolve';" 2>/dev/null | awk 'NR==2 {print $2}' || mysql -u root -e "SHOW VARIABLES LIKE 'skip_name_resolve';" 2>/dev/null | awk 'NR==2 {print $2}' || echo "UNKNOWN")
 
 if [ "$SKIP_RESOLVE_ACTIVE" != "ON" ]; then
     echo "MySQL skip_name_resolve is currently OFF or UNKNOWN ($SKIP_RESOLVE_ACTIVE). Applying fix..."
