@@ -191,13 +191,31 @@ class SettingController extends Controller
             $file = $request->file('file');
             $key = $request->input('key', 'logo_url');
 
-            $folder = $key === 'favicon_url' ? 'images/logo' : 'images/logo';
+            if ($key === 'upi_qr_image') {
+                $folder = 'images/payments';
+                $prefix = 'upi_qr_';
+                $group = 'payment';
+                $label = 'Custom UPI QR Code Image';
+                $type = 'image';
+            } elseif ($key === 'favicon_url') {
+                $folder = 'images/logo';
+                $prefix = 'favicon_';
+                $group = 'appearance';
+                $label = 'Favicon URL';
+                $type = 'text';
+            } else {
+                $folder = 'images/logo';
+                $prefix = 'store_logo_';
+                $group = 'appearance';
+                $label = 'Logo URL';
+                $type = 'text';
+            }
+
             $targetDir = public_path($folder);
             if (!file_exists($targetDir)) {
                 mkdir($targetDir, 0777, true);
             }
 
-            $prefix = $key === 'favicon_url' ? 'favicon_' : 'store_logo_';
             $filename = $prefix . time() . '_' . \Illuminate\Support\Str::random(4) . '.' . $file->getClientOriginalExtension();
             $file->move($targetDir, $filename);
 
@@ -209,12 +227,14 @@ class SettingController extends Controller
                 ['key' => $key],
                 [
                     'value' => $fullUrl,
-                    'group' => 'appearance',
-                    'type' => 'text',
-                    'label' => $key === 'favicon_url' ? 'Favicon URL' : 'Logo URL',
+                    'group' => $group,
+                    'type' => $type,
+                    'label' => $label,
                     'is_public' => true
                 ]
             );
+
+            \App\Helpers\SettingsHelper::clearCache();
 
             return response()->json([
                 'success' => true,

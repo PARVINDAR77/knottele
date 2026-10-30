@@ -37,8 +37,10 @@ export interface Order {
   estimatedDelivery: string;
   items: CartItem[];
   shippingAddress: ShippingAddress;
-  paymentMethod: "Razorpay Online Payment" | "Razorpay" | "UPI" | "Credit/Debit Card" | "Net Banking" | "Cash on Delivery" | string;
-  paymentStatus: "Paid" | "Pending" | "Failed";
+  paymentMethod: "UPI QR Online Payment" | "Instant UPI QR" | "Cash on Delivery" | string;
+  paymentStatus: "Paid" | "Pending" | "Pending Verification" | "Failed" | string;
+  rawPaymentStatus?: string;
+  utrNumber?: string;
   subtotal: number;
   shipping: number;
   discount: number;

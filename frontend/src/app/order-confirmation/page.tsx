@@ -3,7 +3,7 @@
 import React, { Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { CheckCircle2, Heart, Sparkles, ArrowRight, Package, Printer, Download } from "lucide-react";
+import { CheckCircle2, Heart, Sparkles, ArrowRight, Package, Printer, Download, Clock } from "lucide-react";
 import { BotanicalFlourish, FlowerIcon } from "@/components/ui/BotanicalDecorations";
 import { getFullPath } from "@/lib/api";
 
@@ -11,6 +11,7 @@ function ConfirmationContent() {
   const searchParams = useSearchParams();
   const orderNumber = searchParams.get("orderNumber") || "KN-ORDER";
   const orderId = searchParams.get("orderId") || "";
+  const method = searchParams.get("method") || "";
 
   return (
     <div className="bg-[#FFF9F6] min-h-screen py-10 lg:py-16">
@@ -52,9 +53,16 @@ function ConfirmationContent() {
                 {orderNumber}
               </p>
             </div>
-            <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold">
-              Payment Confirmed
-            </span>
+            {method === "upi_qr" ? (
+              <span className="px-3 py-1 rounded-full bg-amber-50 text-amber-900 border border-amber-300 text-xs font-bold flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-amber-700 animate-spin" />
+                Payment Verification Pending
+              </span>
+            ) : (
+              <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold">
+                Payment Confirmed
+              </span>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4 text-xs text-[#786864]">
@@ -71,6 +79,19 @@ function ConfirmationContent() {
               </p>
             </div>
           </div>
+
+          {/* UPI Pending Verification Callout */}
+          {method === "upi_qr" && (
+            <div className="p-4 rounded-2xl bg-amber-50/90 border border-amber-200 text-left space-y-1.5">
+              <div className="flex items-center gap-2 text-amber-950 font-bold text-xs sm:text-sm">
+                <Clock className="w-4 h-4 text-amber-700 shrink-0" />
+                <span>UPI Payment Verification Pending Admin Approval</span>
+              </div>
+              <p className="text-xs text-amber-900/90 leading-relaxed">
+                Thank you! Your UPI reference number has been received and is waiting for admin verification. Once verified by our team, your order status will be updated to confirmed and crafting will begin.
+              </p>
+            </div>
+          )}
 
           {/* Handmade Progress Callout */}
           <div className="p-4 rounded-2xl bg-[#FFF9F6] border border-[#E7D1CC] flex items-center gap-3 text-xs text-[#2E211E]">

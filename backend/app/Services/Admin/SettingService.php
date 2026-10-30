@@ -302,37 +302,70 @@ class SettingService
             ],
             'payment' => [
                 [
-                    'key' => 'razorpay_enabled',
-                    'label' => 'Enable Razorpay Payments',
+                    'key' => 'upi_qr_enabled',
+                    'label' => 'Enable UPI QR Online Payment',
                     'value' => '1',
                     'type' => 'checkbox',
                     'default' => '1',
-                    'description' => 'Enable or disable Razorpay (UPI, Cards, Netbanking)',
+                    'description' => 'Show instant UPI QR Code payment option during checkout',
                     'is_encrypted' => false,
-                    'is_public' => false,
+                    'is_public' => true,
                     'sort_order' => 10
                 ],
                 [
-                    'key' => 'razorpay_key_id',
-                    'label' => 'Razorpay Key ID',
-                    'value' => '',
+                    'key' => 'upi_id',
+                    'label' => 'UPI ID / VPA',
+                    'value' => 'knotelle@upi',
                     'type' => 'text',
-                    'default' => '',
-                    'description' => 'Razorpay API Key ID',
-                    'is_encrypted' => true,
-                    'is_public' => false,
+                    'default' => 'knotelle@upi',
+                    'description' => 'Your official UPI ID (e.g. storename@icici, mobile@paytm)',
+                    'is_encrypted' => false,
+                    'is_public' => true,
                     'sort_order' => 20
                 ],
                 [
-                    'key' => 'razorpay_key_secret',
-                    'label' => 'Razorpay Key Secret',
-                    'value' => '',
+                    'key' => 'upi_account_name',
+                    'label' => 'Payee Account / Business Name',
+                    'value' => 'KNOTELLE BOUTIQUE',
                     'type' => 'text',
-                    'default' => '',
-                    'description' => 'Razorpay API Key Secret',
-                    'is_encrypted' => true,
-                    'is_public' => false,
+                    'default' => 'KNOTELLE BOUTIQUE',
+                    'description' => 'Name shown to customers when scanning the UPI QR code',
+                    'is_encrypted' => false,
+                    'is_public' => true,
                     'sort_order' => 30
+                ],
+                [
+                    'key' => 'upi_qr_image',
+                    'label' => 'Custom UPI QR Code Image',
+                    'value' => '/images/payments/upi-qr.png',
+                    'type' => 'image',
+                    'default' => '/images/payments/upi-qr.png',
+                    'description' => 'Upload your custom UPI QR code image (PhonePe, Google Pay, Paytm, or Bank QR)',
+                    'is_encrypted' => false,
+                    'is_public' => true,
+                    'sort_order' => 40
+                ],
+                [
+                    'key' => 'upi_timer_minutes',
+                    'label' => 'Payment Session Timer (Minutes)',
+                    'value' => '5',
+                    'type' => 'number',
+                    'default' => '5',
+                    'description' => 'Countdown timer duration in minutes displayed on the QR modal (default: 5)',
+                    'is_encrypted' => false,
+                    'is_public' => true,
+                    'sort_order' => 50
+                ],
+                [
+                    'key' => 'upi_instructions',
+                    'label' => 'UPI Payment Notice / Instructions',
+                    'value' => 'Scan the QR code using any UPI app (Google Pay, PhonePe, Paytm, BHIM). After paying, enter the 12-digit UTR / Reference number below to verify your order.',
+                    'type' => 'textarea',
+                    'default' => 'Scan the QR code using any UPI app (Google Pay, PhonePe, Paytm, BHIM). After paying, enter the 12-digit UTR / Reference number below to verify your order.',
+                    'description' => 'Instructions displayed to the customer inside the QR payment modal',
+                    'is_encrypted' => false,
+                    'is_public' => true,
+                    'sort_order' => 60
                 ],
                 [
                     'key' => 'cod_enabled',
@@ -343,7 +376,7 @@ class SettingService
                     'description' => 'Enable or disable Cash on Delivery payment method',
                     'is_encrypted' => false,
                     'is_public' => true,
-                    'sort_order' => 40
+                    'sort_order' => 70
                 ]
             ],
             'shipping' => [

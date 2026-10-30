@@ -55,18 +55,59 @@
                         <div class="flex items-center space-x-4">
                             <div class="text-sm text-stone-600">Payment Status:</div>
                             <span class="px-3 py-1 rounded-full text-sm font-medium
-                                @if($order->payment_status == 'pending') bg-amber-100 text-amber-800
-                                @elseif($order->payment_status == 'paid') bg-red-100 text-red-800
+                                @if($order->payment_status == 'pending_verification') bg-amber-100 text-amber-900 border border-amber-300 font-semibold
+                                @elseif($order->payment_status == 'pending') bg-yellow-100 text-yellow-800
+                                @elseif($order->payment_status == 'paid') bg-green-100 text-green-800 font-semibold
                                 @elseif($order->payment_status == 'failed') bg-rose-100 text-rose-800
                                 @else bg-stone-100 text-stone-800 @endif">
-                                {{ ucfirst(str_replace('_', ' ', $order->payment_status)) }}
+                                {{ ucwords(str_replace('_', ' ', $order->payment_status)) }}
                             </span>
                         </div>
-                        <button onclick="updatePaymentStatus({{ $order->id }})" class="text-red-600 hover:text-red-900 text-sm font-medium">
-                            <i class="fas fa-edit mr-1"></i>Update Payment
+                        <div class="flex items-center gap-2">
+                            @if($order->payment_status == 'pending_verification')
+                            <button onclick="approveUpiPayment({{ $order->id }})" class="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg shadow-sm flex items-center gap-1.5 transition-colors">
+                                <i class="fas fa-check"></i> Approve UPI
+                            </button>
+                            <button onclick="rejectUpiPayment({{ $order->id }})" class="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-lg shadow-sm flex items-center gap-1.5 transition-colors">
+                                <i class="fas fa-times"></i> Reject
+                            </button>
+                            @endif
+                            <button onclick="updatePaymentStatus({{ $order->id }})" class="text-red-600 hover:text-red-900 text-sm font-medium">
+                                <i class="fas fa-edit mr-1"></i>Update Payment
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                @if($order->payment_status == 'pending_verification')
+                <!-- UPI Pending Verification Alert Banner -->
+                <div class="mb-6 p-4 bg-amber-50/90 border-2 border-amber-300 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+                    <div class="flex items-center gap-3.5">
+                        <div class="w-11 h-11 bg-amber-100 rounded-xl flex items-center justify-center text-amber-700 shrink-0">
+                            <i class="fas fa-qrcode text-xl"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h5 class="text-sm font-bold text-amber-950">UPI QR Payment Pending Verification</h5>
+                                <span class="px-2 py-0.5 text-[11px] font-bold bg-amber-200 text-amber-900 rounded-full">Action Required</span>
+                            </div>
+                            <p class="text-xs text-amber-800 mt-0.5">
+                                Customer submitted <strong>UPI QR</strong> payment. Verify receipt in your UPI app / bank statement.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0 w-full sm:w-auto">
+                        <button type="button" onclick="approveUpiPayment({{ $order->id }})" class="flex-1 sm:flex-none px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded-xl shadow transition-all flex items-center justify-center gap-2">
+                            <i class="fas fa-check-circle"></i>
+                            Approve Payment & Confirm Order
+                        </button>
+                        <button type="button" onclick="rejectUpiPayment({{ $order->id }})" class="flex-1 sm:flex-none px-3.5 py-2 bg-white hover:bg-rose-50 text-rose-600 border border-rose-300 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5">
+                            <i class="fas fa-times-circle"></i>
+                            Reject
                         </button>
                     </div>
                 </div>
+                @endif
 
                 <!-- Order Items -->
                 <div class="mb-6">
@@ -200,19 +241,67 @@
 
         <!-- Payment Information -->
         <div class="bg-white rounded-2xl shadow-sm border border-red-100 overflow-hidden">
-            <div class="px-6 py-4 border-b border-stone-200 bg-stone-50/50">
+            <div class="px-6 py-4 border-b border-stone-200 bg-stone-50/50 flex items-center justify-between">
                 <h3 class="text-lg font-semibold text-stone-800">Payment Information</h3>
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold
+                    @if($order->payment_status == 'paid') bg-green-100 text-green-800
+                    @elseif($order->payment_status == 'pending_verification') bg-amber-100 text-amber-900 border border-amber-300
+                    @elseif($order->payment_status == 'failed') bg-rose-100 text-rose-800
+                    @else bg-yellow-100 text-yellow-800 @endif">
+                    {{ ucwords(str_replace('_', ' ', $order->payment_status)) }}
+                </span>
             </div>
             <div class="p-6">
+                @php
+                    $methodName = match($order->payment_method) {
+                        'cod' => 'Cash on Delivery',
+                        'upi_qr', 'upi' => 'Instant UPI QR Online Payment',
+                        'online' => 'UPI QR Online Payment',
+                        default => ucfirst(str_replace('_', ' ', $order->payment_method ?? 'UPI QR Payment'))
+                    };
+                    $latestPayment = $order->payments->last();
+                    $utr = $latestPayment?->transaction_id;
+                @endphp
                 <div class="space-y-4">
                     <div>
-                        <div class="text-sm text-stone-600">Payment Method</div>
-                        <div class="font-medium text-stone-900">{{ $order->paymentMethod->name ?? 'N/A' }}</div>
+                        <div class="text-xs uppercase tracking-wider text-stone-500 font-semibold">Payment Method</div>
+                        <div class="font-semibold text-stone-900 text-base mt-0.5 flex items-center gap-2">
+                            @if(in_array($order->payment_method, ['upi_qr', 'upi', 'online']))
+                                <i class="fas fa-qrcode text-[#913638]"></i>
+                            @else
+                                <i class="fas fa-money-bill-wave text-green-600"></i>
+                            @endif
+                            {{ $methodName }}
+                        </div>
                     </div>
+
+                    @if($utr)
+                    <div class="p-3 bg-stone-50 rounded-xl border border-stone-200">
+                        <div class="text-xs uppercase tracking-wider text-stone-500 font-semibold">Submitted UPI UTR / Ref Number</div>
+                        <div class="font-mono text-base font-bold text-stone-900 mt-1 flex items-center justify-between">
+                            <span class="bg-white px-3 py-1 rounded-lg border border-stone-200 tracking-wider">{{ $utr }}</span>
+                            <button type="button" onclick="navigator.clipboard.writeText('{{ $utr }}'); toastr.success('UTR copied to clipboard!');" class="text-stone-500 hover:text-[#913638] text-xs font-sans font-medium flex items-center gap-1 px-2 py-1 bg-white rounded border border-stone-200 shadow-xs">
+                                <i class="far fa-copy"></i> Copy
+                            </button>
+                        </div>
+                    </div>
+                    @endif
+
                     <div>
-                        <div class="text-sm text-stone-600">Payment Status</div>
-                        <div class="font-medium text-stone-900">{{ ucfirst(str_replace('_', ' ', $order->payment_status)) }}</div>
+                        <div class="text-xs uppercase tracking-wider text-stone-500 font-semibold">Payment Status</div>
+                        <div class="font-medium text-stone-900 mt-0.5">{{ ucwords(str_replace('_', ' ', $order->payment_status)) }}</div>
                     </div>
+
+                    @if($order->payment_status == 'pending_verification')
+                    <div class="pt-3 border-t border-stone-200 flex flex-col gap-2">
+                        <button type="button" onclick="approveUpiPayment({{ $order->id }})" class="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center justify-center gap-2">
+                            <i class="fas fa-check-circle"></i> Approve Payment
+                        </button>
+                        <button type="button" onclick="rejectUpiPayment({{ $order->id }})" class="w-full px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5">
+                            <i class="fas fa-times-circle"></i> Reject Payment
+                        </button>
+                    </div>
+                    @endif
                 </div>
             </div>
         </div>
@@ -329,6 +418,7 @@
                     <div>
                         <label class="block text-sm font-medium text-stone-700 mb-2">Payment Status</label>
                         <select id="paymentStatus" class="w-full border border-stone-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500">
+                            <option value="pending_verification" {{ $order->payment_status == 'pending_verification' ? 'selected' : '' }}>Pending Verification</option>
                             <option value="pending" {{ $order->payment_status == 'pending' ? 'selected' : '' }}>Pending</option>
                             <option value="paid" {{ $order->payment_status == 'paid' ? 'selected' : '' }}>Paid</option>
                             <option value="partially_paid" {{ $order->payment_status == 'partially_paid' ? 'selected' : '' }}>Partially Paid</option>
@@ -383,6 +473,91 @@
                 .catch(error => {
                     console.error('Error:', error);
                     toastr.error(error.message || 'Error updating payment status');
+                });
+            }
+        });
+    }
+
+    function approveUpiPayment(orderId) {
+        Swal.fire({
+            title: 'Approve UPI Payment?',
+            text: 'This will verify customer payment, mark payment as Paid, and confirm the order for processing.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: '<i class="fas fa-check-circle mr-1"></i> Yes, Approve & Confirm',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#16a34a',
+            customClass: {
+                confirmButton: 'px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium',
+                cancelButton: 'px-4 py-2 bg-stone-200 hover:bg-stone-300 text-stone-800 rounded-lg font-medium'
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch(`{{ route('admin.orders.approve-payment', $order) }}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        toastr.success(data.message);
+                        setTimeout(() => location.reload(), 800);
+                    } else {
+                        toastr.error(data.message || 'Failed to approve payment');
+                    }
+                })
+                .catch(err => {
+                    console.error('Approve payment error:', err);
+                    toastr.error(err.message || 'Error approving payment');
+                });
+            }
+        });
+    }
+
+    function rejectUpiPayment(orderId) {
+        Swal.fire({
+            title: 'Reject UPI Payment',
+            text: 'Enter a reason for rejection (e.g. UTR reference not received in bank statement):',
+            input: 'textarea',
+            inputValue: 'UTR not received or verified in bank statement.',
+            inputPlaceholder: 'Reason for rejection...',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: '<i class="fas fa-times-circle mr-1"></i> Reject Payment',
+            confirmButtonColor: '#e11d48',
+            cancelButtonText: 'Cancel',
+            inputValidator: (value) => {
+                if (!value || !value.trim()) {
+                    return 'Please enter a rejection reason!';
+                }
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch(`{{ route('admin.orders.reject-payment', $order) }}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({ reason: result.value })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        toastr.warning(data.message);
+                        setTimeout(() => location.reload(), 800);
+                    } else {
+                        toastr.error(data.message || 'Failed to reject payment');
+                    }
+                })
+                .catch(err => {
+                    console.error('Reject payment error:', err);
+                    toastr.error(err.message || 'Error rejecting payment');
                 });
             }
         });

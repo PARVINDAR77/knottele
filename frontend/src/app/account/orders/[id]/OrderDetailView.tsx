@@ -284,6 +284,22 @@ export default function OrderDetailView({ id: propId }: OrderDetailViewProps) {
               <p className="text-[10px] text-[#786864] pt-1">
                 Mode: {order.paymentMethod} ({order.paymentStatus})
               </p>
+              {order.paymentStatus?.toLowerCase().includes("pending") && (
+                <div className="mt-2 p-3 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs space-y-1">
+                  <div className="flex items-center gap-1.5 font-bold text-amber-950">
+                    <Clock className="w-3.5 h-3.5 text-amber-700 animate-spin" />
+                    <span>Payment Verification Pending</span>
+                  </div>
+                  <p className="text-[11px] text-amber-800 leading-relaxed">
+                    Our team is verifying your payment receipt. Once approved, order crafting will commence.
+                  </p>
+                  {order.utrNumber && (
+                    <p className="text-[11px] font-mono text-amber-950 font-semibold pt-0.5">
+                      UTR: <span className="bg-white/80 px-1.5 py-0.5 rounded border border-amber-300">{order.utrNumber}</span>
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="pt-3 border-t border-[#E7D1CC]">

@@ -32,25 +32,10 @@ import {
   saveCustomerAddress,
   normalizeImageUrl,
   fetchActiveOffers,
-  createRazorpayOrder,
-  verifyRazorpayPayment,
+  fetchStoreSettings,
   getFullPath,
 } from "@/lib/api";
-import { KNOTELLE_LOGO_BASE64 } from "@/lib/brandLogo";
-
-const loadRazorpayScript = (): Promise<boolean> => {
-  return new Promise((resolve) => {
-    if (typeof window === "undefined") return resolve(false);
-    if ((window as any).Razorpay) return resolve(true);
-
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.async = true;
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
-    document.body.appendChild(script);
-  });
-};
+import UpiQrPaymentModal from "@/components/checkout/UpiQrPaymentModal";
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -156,7 +141,22 @@ export default function CheckoutPage() {
   const [pincode, setPincode] = useState(defaultSavedAddr?.pincode || "");
 
   // Form State: 03 Payment
-  const [paymentMethod, setPaymentMethod] = useState<"Razorpay" | "Cash on Delivery">("Razorpay");
+  const [paymentMethod, setPaymentMethod] = useState<"UPI QR" | "Cash on Delivery">("UPI QR");
+  const [storeSettings, setStoreSettings] = useState<Record<string, any>>({});
+  const [isUpiModalOpen, setIsUpiModalOpen] = useState(false);
+  const [isSubmittingUpi, setIsSubmittingUpi] = useState(false);
+
+  // Fetch public store settings (UPI QR configs, COD status)
+  useEffect(() => {
+    fetchStoreSettings().then((data) => {
+      if (data) {
+        setStoreSettings(data);
+        if (data.upi_qr_enabled === false && data.cod_enabled !== false) {
+          setPaymentMethod("Cash on Delivery");
+        }
+      }
+    });
+  }, []);
 
   // Redirect guest users to login when accessing checkout ONLY after auth initialization finishes
   useEffect(() => {
@@ -244,6 +244,128 @@ export default function CheckoutPage() {
     );
   }
 
+  const handleUpiOrderSubmit = async (utrNumber: string) => {
+    const cleanName = fullName.trim();
+    const cleanEmail = email.trim();
+    const cleanPhone = phone.replace(/\D/g, "").slice(-10);
+    const cleanAddr1 = addressLine1.trim();
+    const cleanCity = city.trim();
+    const cleanPin = pincode.trim();
+
+    const orderItemsPayload = items.map((item) => {
+      let variantId = 1;
+      const numMatch = String(item.product?.id || "").match(/\d+/);
+      if (numMatch) {
+        const parsed = parseInt(numMatch[0], 10);
+        if (parsed >= 1 && parsed <= 50) {
+          variantId = parsed;
+        }
+      }
+      return {
+        variant_id: variantId,
+        product_id: item.product?.id || item.productId,
+        product_code: item.product?.id || item.productId,
+        name: item.product?.name || "Handmade Product",
+        unit_price: item.price,
+        quantity: item.quantity || 1,
+      };
+    });
+
+    try {
+      setIsSubmittingUpi(true);
+
+      const res = await submitOrder({
+        items: orderItemsPayload.length > 0 ? orderItemsPayload : [{ variant_id: 1, quantity: 1, unit_price: subtotal }],
+        shipping_address: {
+          name: cleanName,
+          email: cleanEmail,
+          phone: cleanPhone,
+          address_line_1: `${cleanAddr1}${addressLine2 ? ', ' + addressLine2.trim() : ''}`,
+          city: cleanCity,
+          pin_code: cleanPin,
+        },
+        payment_method: "upi_qr",
+        payment_status: "pending_verification",
+        utr_number: utrNumber,
+        offer_code: promoCode || undefined,
+        discount_total: discount || 0,
+        shipping_total: shipping || 0,
+        grand_total: total,
+      });
+
+      if (!res || !res.success) {
+        showToast("Order Submission Failed", res?.message || "Failed to record order. Please try again.", "error");
+        setIsSubmittingUpi(false);
+        return;
+      }
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem("knotelle_guest_email", cleanEmail);
+      }
+
+      const realOrderId = String(res.orderId || `ord-${Date.now()}`);
+      const realOrderNumber = res.orderNumber || `KNT-${Math.floor(1000 + Math.random() * 9000)}-IN`;
+
+      const newOrder: Order = {
+        id: realOrderId,
+        orderNumber: realOrderNumber,
+        orderDate: new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+        estimatedDelivery: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+        items: items.length > 0 ? [...items] : [],
+        shippingAddress: {
+          fullName: cleanName,
+          email: cleanEmail,
+          phone: cleanPhone,
+          addressLine1: cleanAddr1,
+          addressLine2: addressLine2 || "",
+          city: cleanCity,
+          state: state || "Gujarat",
+          pincode: cleanPin,
+          country: "India",
+        },
+        paymentMethod: "UPI QR Online Payment",
+        paymentStatus: "Pending Verification",
+        rawPaymentStatus: "pending_verification",
+        utrNumber: utrNumber,
+        subtotal,
+        shipping,
+        discount,
+        total,
+        status: "Order Placed",
+        timeline: [
+          { status: "Order Placed", date: "Just now", description: `UPI QR payment submitted (UTR: ${utrNumber}). Verification pending admin approval.`, completed: true, current: true },
+          { status: "Order Confirmed", date: "Upcoming", description: "Natural cotton yarns prepared upon payment approval.", completed: false },
+          { status: "Crafting Your Order", date: "Upcoming", description: "Handcrafting your bespoke crochet items.", completed: false },
+          { status: "Shipped", date: "Upcoming", description: "Handed to premium courier express.", completed: false },
+          { status: "Delivered", date: "Upcoming", description: "Handmade joy delivered with love.", completed: false },
+        ],
+      };
+
+      try {
+        confetti({
+          particleCount: 120,
+          spread: 80,
+          origin: { y: 0.6 },
+          colors: ["#8F3032", "#F4C7C1", "#C69A5A", "#FDE9E5"],
+        });
+      } catch (e) {}
+
+      addOrder(newOrder);
+      try {
+        await refetchOrders();
+      } catch {}
+      clearCart();
+      setIsUpiModalOpen(false);
+
+      window.location.href = getFullPath(`/order-confirmation?orderNumber=${encodeURIComponent(realOrderNumber)}&orderId=${encodeURIComponent(realOrderId)}&method=upi_qr`);
+    } catch (err: any) {
+      console.error("UPI order submission error:", err);
+      showToast("Order Submission Error", err?.message || "Failed to submit order.", "error");
+    } finally {
+      setIsSubmittingUpi(false);
+    }
+  };
+
   const handlePlaceOrder = async () => {
     // Client-side validation
     const cleanName = fullName.trim();
@@ -299,164 +421,10 @@ export default function CheckoutPage() {
       };
     });
 
-    // RAZORPAY ONLINE PAYMENT FLOW
-    if (paymentMethod === "Razorpay") {
-      try {
-        const isLoaded = await loadRazorpayScript();
-        if (!isLoaded) {
-          showToast("SDK Load Failed", "Unable to load Razorpay Checkout JS SDK. Check your internet connection.", "error");
-          setIsSubmitting(false);
-          return;
-        }
-
-        const razorpayOrder = await createRazorpayOrder(total);
-        if (!razorpayOrder || !razorpayOrder.success || !razorpayOrder.order_id) {
-          showToast("Payment Initiation Failed", razorpayOrder?.message || "Could not create Razorpay order.", "error");
-          setIsSubmitting(false);
-          return;
-        }
-
-        const razorpayKeyId = razorpayOrder.key_id || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_1DP5A3y5551234";
-
-        const options = {
-          key: razorpayKeyId,
-          amount: razorpayOrder.amount,
-          currency: razorpayOrder.currency || "INR",
-          name: "KNOTELLE Boutique",
-          description: "Artisanal Handmade Order",
-          image: KNOTELLE_LOGO_BASE64,
-          order_id: razorpayOrder.order_id,
-          prefill: {
-            name: cleanName,
-            email: cleanEmail,
-            contact: cleanPhone,
-          },
-          theme: {
-            color: "#913638",
-          },
-          handler: async function (response: any) {
-            try {
-              // 1. Verify Razorpay signature on backend FIRST
-              const verifyRes = await verifyRazorpayPayment({
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_signature: response.razorpay_signature,
-              });
-
-              if (!verifyRes.success) {
-                showToast("Payment Verification Failed", verifyRes.message || "Invalid Razorpay payment signature.", "error");
-                setIsSubmitting(false);
-                return;
-              }
-
-              // 2. Signature verified! Create/mark order as Paid
-              const res = await submitOrder({
-                items: orderItemsPayload.length > 0 ? orderItemsPayload : [{ variant_id: 1, quantity: 1, unit_price: subtotal }],
-                shipping_address: {
-                  name: cleanName,
-                  email: cleanEmail,
-                  phone: cleanPhone,
-                  address_line_1: `${cleanAddr1}${addressLine2 ? ', ' + addressLine2.trim() : ''}`,
-                  city: cleanCity,
-                  pin_code: cleanPin,
-                },
-                payment_method: "razorpay",
-                payment_status: "paid",
-                offer_code: promoCode || undefined,
-                discount_total: discount || 0,
-                shipping_total: shipping || 0,
-                grand_total: total,
-              });
-
-              if (!res || !res.success) {
-                showToast("Order Submission Failed", res?.message || "Payment verified, but failed to record order.", "error");
-                setIsSubmitting(false);
-                return;
-              }
-
-              if (typeof window !== "undefined") {
-                localStorage.setItem("knotelle_guest_email", cleanEmail);
-              }
-
-              const realOrderId = String(res.orderId || `ord-${Date.now()}`);
-              const realOrderNumber = res.orderNumber || `KNT-${Math.floor(1000 + Math.random() * 9000)}-IN`;
-
-              const newOrder: Order = {
-                id: realOrderId,
-                orderNumber: realOrderNumber,
-                orderDate: new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
-                estimatedDelivery: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
-                items: items.length > 0 ? [...items] : [],
-                shippingAddress: {
-                  fullName: cleanName,
-                  email: cleanEmail,
-                  phone: cleanPhone,
-                  addressLine1: cleanAddr1,
-                  addressLine2: addressLine2 || "",
-                  city: cleanCity,
-                  state: state || "Gujarat",
-                  pincode: cleanPin,
-                  country: "India",
-                },
-                paymentMethod: "Razorpay Online Payment",
-                paymentStatus: "Paid",
-                subtotal,
-                shipping,
-                discount,
-                total,
-                status: "Order Placed",
-                timeline: [
-                  { status: "Order Placed", date: "Just now", description: "Order placed and payment signature verified successfully.", completed: true, current: true },
-                  { status: "Order Confirmed", date: "Upcoming", description: "Natural cotton yarns prepared for crafting.", completed: false },
-                  { status: "Crafting Your Order", date: "Upcoming", description: "Handcrafting your bespoke crochet items.", completed: false },
-                  { status: "Shipped", date: "Upcoming", description: "Handed to premium courier express.", completed: false },
-                  { status: "Delivered", date: "Upcoming", description: "Handmade joy delivered with love.", completed: false },
-                ],
-              };
-
-              try {
-                confetti({
-                  particleCount: 120,
-                  spread: 80,
-                  origin: { y: 0.6 },
-                  colors: ["#8F3032", "#F4C7C1", "#C69A5A", "#FDE9E5"],
-                });
-              } catch (e) {}
-
-              addOrder(newOrder);
-              try {
-                await refetchOrders();
-              } catch {}
-              clearCart();
-
-              window.location.href = getFullPath(`/order-confirmation?orderNumber=${encodeURIComponent(realOrderNumber)}&orderId=${encodeURIComponent(realOrderId)}`);
-            } catch (err: any) {
-              console.error("Razorpay verification callback exception:", err);
-              showToast("Order Submission Error", err?.message || "Payment verified, but failed to save order.", "error");
-            } finally {
-              setIsSubmitting(false);
-            }
-          },
-          modal: {
-            ondismiss: function () {
-              setIsSubmitting(false);
-              showToast("Payment Cancelled", "Razorpay checkout was cancelled.", "info");
-            },
-          },
-        };
-
-        const rzp = new (window as any).Razorpay(options);
-        rzp.on("payment.failed", function (response: any) {
-          setIsSubmitting(false);
-          showToast("Payment Failed", response.error?.description || "Razorpay payment failed. Please try again.", "error");
-        });
-        rzp.open();
-
-      } catch (err: any) {
-        console.error("Razorpay payment error:", err);
-        showToast("Payment Initiation Error", err?.message || "An unexpected error occurred launching Razorpay.", "error");
-        setIsSubmitting(false);
-      }
+    // UPI QR ONLINE PAYMENT FLOW
+    if (paymentMethod === "UPI QR") {
+      setIsSubmitting(false);
+      setIsUpiModalOpen(true);
       return;
     }
 
@@ -573,7 +541,7 @@ export default function CheckoutPage() {
       } catch {}
       clearCart();
 
-      window.location.href = getFullPath(`/order-confirmation?orderNumber=${encodeURIComponent(realOrderNumber)}&orderId=${encodeURIComponent(realOrderId)}`);
+      window.location.href = getFullPath(`/order-confirmation?orderNumber=${encodeURIComponent(realOrderNumber)}&orderId=${encodeURIComponent(realOrderId)}&method=cod`);
     } catch (err: any) {
       console.error("Order submission exception:", err);
       showToast("Order Submission Error", err?.message || "An unexpected error occurred.", "error");
@@ -1105,33 +1073,35 @@ export default function CheckoutPage() {
                   
                   {/* Payment Options */}
                   <div className="space-y-3">
-                    {/* Razorpay Online Payment */}
-                    <label className={`flex items-start gap-3 p-4 rounded-2xl border cursor-pointer transition-all ${paymentMethod === "Razorpay" ? "border-[#913638] bg-[#FCE9E5]/50 ring-1 ring-[#913638]" : "border-[#E7D1CC] hover:bg-[#FFF9F6]"}`}>
-                      <input
-                        type="radio"
-                        name="payment"
-                        checked={paymentMethod === "Razorpay"}
-                        onChange={() => setPaymentMethod("Razorpay")}
-                        className="mt-1 text-[#913638] focus:ring-[#913638]"
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-[#2E211E] flex items-center gap-2">
-                            <QrCode className="w-4 h-4 text-[#913638]" />
-                            <span>Razorpay Online Payment</span>
-                          </span>
-                          <span className="text-[10px] text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full font-bold">
-                            Fast & Secure
-                          </span>
+                    {/* Instant UPI QR Online Payment */}
+                    {storeSettings?.upi_qr_enabled !== false && (
+                      <label className={`flex items-start gap-3 p-4 rounded-2xl border cursor-pointer transition-all ${paymentMethod === "UPI QR" ? "border-[#913638] bg-[#FCE9E5]/50 ring-1 ring-[#913638]" : "border-[#E7D1CC] hover:bg-[#FFF9F6]"}`}>
+                        <input
+                          type="radio"
+                          name="payment"
+                          checked={paymentMethod === "UPI QR"}
+                          onChange={() => setPaymentMethod("UPI QR")}
+                          className="mt-1 text-[#913638] focus:ring-[#913638]"
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-[#2E211E] flex items-center gap-2">
+                              <QrCode className="w-4 h-4 text-[#913638]" />
+                              <span>Instant UPI QR Code Payment</span>
+                            </span>
+                            <span className="text-[10px] text-[#913638] bg-[#FCE9E5] px-2 py-0.5 rounded-full font-bold">
+                              Direct Artisan
+                            </span>
+                          </div>
+                          <p className="text-[11px] font-semibold text-[#913638] mt-1">
+                            Scan with Google Pay &bull; PhonePe &bull; Paytm &bull; BHIM &bull; Any UPI App
+                          </p>
+                          <p className="text-[10px] text-[#786864] mt-0.5">
+                            A beautiful boutique QR window will open with a countdown timer to scan & pay directly.
+                          </p>
                         </div>
-                        <p className="text-[11px] font-semibold text-[#913638] mt-1">
-                          UPI &bull; GPay &bull; PhonePe &bull; Paytm &bull; Cards &bull; NetBanking &bull; QR
-                        </p>
-                        <p className="text-[10px] text-[#786864] mt-0.5">
-                          Pay safely using official 256-bit encrypted Razorpay Checkout.
-                        </p>
-                      </div>
-                    </label>
+                      </label>
+                    )}
 
                     {/* Cash on Delivery */}
                     <label className={`flex items-start gap-3 p-4 rounded-2xl border cursor-pointer transition-all ${paymentMethod === "Cash on Delivery" ? "border-[#913638] bg-[#FCE9E5]/50 ring-1 ring-[#913638]" : "border-[#E7D1CC] hover:bg-[#FFF9F6]"}`}>
@@ -1377,6 +1347,19 @@ export default function CheckoutPage() {
         </div>
 
       </div>
+      {/* Instant UPI QR Code Payment Modal */}
+      <UpiQrPaymentModal
+        isOpen={isUpiModalOpen}
+        onClose={() => setIsUpiModalOpen(false)}
+        amount={total}
+        upiId={storeSettings?.upi_id || "knotelle@upi"}
+        accountName={storeSettings?.upi_account_name || "KNOTELLE BOUTIQUE"}
+        qrImageUrl={storeSettings?.upi_qr_image || "/images/payments/upi-qr.png"}
+        timerMinutes={Number(storeSettings?.upi_timer_minutes) || 5}
+        instructions={storeSettings?.upi_instructions}
+        onSubmitUtr={handleUpiOrderSubmit}
+        isSubmitting={isSubmittingUpi}
+      />
     </div>
   );
 }

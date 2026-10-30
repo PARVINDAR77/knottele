@@ -286,8 +286,12 @@ export interface HomepageMedia {
     free_shipping_min?: number;
     tax_rate?: number;
     cod_enabled?: boolean;
-    razorpay_enabled?: boolean;
-    razorpay_key_id?: string;
+    upi_qr_enabled?: boolean;
+    upi_id?: string;
+    upi_account_name?: string;
+    upi_qr_image?: string;
+    upi_timer_minutes?: number;
+    upi_instructions?: string;
   };
   settings?: Record<string, any>;
   shop?: {
@@ -1963,51 +1967,24 @@ export async function setDefaultCustomerAddress(id: string): Promise<{ success: 
   }
 }
 
-export async function createRazorpayOrder(amount: number): Promise<{
-  success: boolean;
-  order_id?: string;
-  key_id?: string;
-  amount?: number;
-  currency?: string;
-  message?: string;
-}> {
+
+
+
+/**
+ * Fetch public store settings (UPI QR configs, COD status, etc.)
+ */
+export async function fetchStoreSettings(): Promise<Record<string, any>> {
   try {
-    const res = await fetch(`${getApiBaseUrl()}/customer/payment/razorpay/order`, {
-      method: "POST",
+    const res = await fetch(`${getApiBaseUrl()}/customer/settings?t=${Date.now()}`, {
       headers: {
-        "Content-Type": "application/json",
         Accept: "application/json",
       },
-      body: JSON.stringify({ amount }),
+      next: { revalidate: 30 },
     });
-    const data = await res.json();
-    return data;
+    const json = await res.json();
+    return json?.data || {};
   } catch (err) {
-    console.error("Create Razorpay Order error:", err);
-    return { success: false, message: "Network error creating Razorpay order." };
+    console.warn("fetchStoreSettings error:", err);
+    return {};
   }
 }
-
-export async function verifyRazorpayPayment(payload: {
-  razorpay_payment_id: string;
-  razorpay_order_id: string;
-  razorpay_signature: string;
-}): Promise<{ success: boolean; message?: string }> {
-  try {
-    const res = await fetch(`${getApiBaseUrl()}/customer/payment/razorpay/verify`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
-    const data = await res.json();
-    return data;
-  } catch (err) {
-    console.error("Verify Razorpay Payment error:", err);
-    return { success: false, message: "Network error verifying Razorpay payment." };
-  }
-}
-
-

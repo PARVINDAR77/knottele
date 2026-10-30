@@ -184,9 +184,12 @@ class SettingsHelper
     public static function paymentSettings(): array
     {
         return [
-            'razorpay_enabled' => self::get('razorpay_enabled', true),
-            'razorpay_key_id' => self::get('razorpay_key_id', ''),
-            'razorpay_key_secret' => self::get('razorpay_key_secret', ''),
+            'upi_qr_enabled' => self::get('upi_qr_enabled', true),
+            'upi_id' => self::get('upi_id', 'knotelle@upi'),
+            'upi_account_name' => self::get('upi_account_name', 'KNOTELLE BOUTIQUE'),
+            'upi_qr_image' => self::get('upi_qr_image', '/images/payments/upi-qr.png'),
+            'upi_timer_minutes' => self::get('upi_timer_minutes', 5),
+            'upi_instructions' => self::get('upi_instructions', 'Scan the QR code using any UPI app (Google Pay, PhonePe, Paytm, BHIM). After paying, enter the 12-digit UTR / Reference number to verify your order.'),
             'cod_enabled' => self::get('cod_enabled', true),
             'cod_min_order_value' => self::get('cod_min_order_value', 0.00)
         ];
