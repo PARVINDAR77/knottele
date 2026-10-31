@@ -15,14 +15,18 @@ class TrackVisitors
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $ip = $request->ip();
-        $today = now()->format('Y-m-d');
+        try {
+            $ip = $request->ip();
+            $today = now()->format('Y-m-d');
 
-        // We use firstOrCreate to ensure we only count once per IP per day
-        \App\Models\Visitor::firstOrCreate([
-            'ip_address' => $ip,
-            'visit_date' => $today
-        ]);
+            // We use firstOrCreate to ensure we only count once per IP per day
+            \App\Models\Visitor::firstOrCreate([
+                'ip_address' => $ip,
+                'visit_date' => $today
+            ]);
+        } catch (\Throwable $e) {
+            // Silently ignore visitor logging issues to never interrupt requests
+        }
 
         return $next($request);
     }

@@ -113,18 +113,20 @@ docker exec -w /var/www/html knotelle-app chmod -R 775 /var/www/html/storage /va
 docker exec knotelle-app supervisorctl restart laravel-worker:* 2>/dev/null || true
 
 # Verify API output
-echo -e "\n${YELLOW}Verifying API responses...${NC}"
+echo -e "\n${YELLOW}Verifying API & Admin responses...${NC}"
 MEDIA_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8090/api/customer/media || true)
 ORDER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://127.0.0.1:8090/api/customer/payment/razorpay/order -H "Content-Type: application/json" -H "Accept: application/json" -d '{"amount":100}' || true)
+ADMIN_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8090/admin/signin || true)
 
 echo -e "Media API HTTP Status: ${GREEN}$MEDIA_STATUS${NC}"
 echo -e "Razorpay Order API HTTP Status: ${GREEN}$ORDER_STATUS${NC}"
+echo -e "Admin Signin HTTP Status: ${GREEN}$ADMIN_STATUS${NC}"
 
-if [ "$MEDIA_STATUS" = "200" ] && [ "$ORDER_STATUS" = "200" ]; then
+if [ "$MEDIA_STATUS" = "200" ] && [ "$ORDER_STATUS" = "200" ] && [ "$ADMIN_STATUS" = "200" ]; then
     echo -e "\n${GREEN}====================================================================${NC}"
-    echo -e "${GREEN}   ALL FIXES APPLIED SUCCESSFULLY! CHECKOUT IS NOW FULLY LIVE!      ${NC}"
+    echo -e "${GREEN}   ALL FIXES APPLIED SUCCESSFULLY! ADMIN & STORE ARE FULLY LIVE!    ${NC}"
     echo -e "${GREEN}====================================================================${NC}"
 else
-    echo -e "\n${YELLOW}Notice: One or more APIs returned status: Media=$MEDIA_STATUS, Order=$ORDER_STATUS${NC}"
+    echo -e "\n${YELLOW}Notice: One or more endpoints returned status: Media=$MEDIA_STATUS, Order=$ORDER_STATUS, Admin=$ADMIN_STATUS${NC}"
     docker exec knotelle-app tail -n 20 /var/www/html/storage/logs/laravel.log 2>/dev/null || true
 fi

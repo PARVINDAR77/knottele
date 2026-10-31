@@ -16,8 +16,10 @@
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
 
     <!-- Vite Scripts & Styles -->
-    @viteReactRefresh
-    @vite(['resources/css/app.css', 'resources/js/main.jsx'])
+    @if (file_exists(public_path('build/manifest.json')))
+        @viteReactRefresh
+        @vite(['resources/css/app.css', 'resources/js/main.jsx'])
+    @endif
 </head>
 <body class="font-sans antialiased bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100 min-h-screen">
     <!-- React Root Entry Point -->

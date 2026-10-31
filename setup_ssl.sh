@@ -91,3 +91,4 @@ echo -e "${GREEN}   SUCCESS! SSL CERTIFICATE INSTALLED & HTTPS IS NOW FULLY ACTI
 echo -e "${GREEN}====================================================================${NC}"
 echo -e "You can now safely open in your browser:"
 echo -e "${GREEN}https://knotelleindia.com${NC}"
+

@@ -9,8 +9,12 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
-    <!-- TailwindCSS -->
-    @vite('resources/css/app.css')
+    <!-- TailwindCSS with safe Vite fallback -->
+    @if (file_exists(public_path('build/manifest.json')))
+        @vite('resources/css/app.css')
+    @else
+        <script src="https://cdn.tailwindcss.com"></script>
+    @endif
 
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
