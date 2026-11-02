@@ -397,8 +397,15 @@
         // Form submission loading state
         const form = document.querySelector('form');
         const submitButton = form.querySelector('button[type="submit"]');
+
+        if (form) {
+            form.action = window.location.origin + '/admin/signin';
+        }
         
         form.addEventListener('submit', function() {
+            if (form) {
+                form.action = window.location.origin + '/admin/signin';
+            }
             submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> SIGNING IN...';
             submitButton.disabled = true;
             submitButton.classList.add('opacity-90');

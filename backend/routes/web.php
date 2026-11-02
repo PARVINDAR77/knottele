@@ -447,6 +447,45 @@ $adminRoutes = function () {
     });
 };
 
+// =========================================================================
+// UNIVERSAL ADMIN SIGNIN / LOGIN RESILIENCE ROUTES
+// Handles any combination of /knottele/ or /knottele/knottele/ prefixes
+// =========================================================================
+Route::match(['get', 'head'], '/knottele/admin', function () {
+    return redirect()->to('/admin/signin');
+});
+Route::match(['get', 'head'], '/knottele/admin/', function () {
+    return redirect()->to('/admin/signin');
+});
+Route::match(['get', 'head'], '/knottele/knottele/admin', function () {
+    return redirect()->to('/admin/signin');
+});
+Route::match(['get', 'head'], '/knottele/knottele/admin/', function () {
+    return redirect()->to('/admin/signin');
+});
+
+Route::match(['get', 'head'], '/knottele/admin/signin', function () {
+    return redirect()->to('/admin/signin');
+});
+Route::post('/knottele/admin/signin', [AdminAuth::class, 'login']);
+Route::post('/knottele/admin/signin/{any}', [AdminAuth::class, 'login'])->where('any', '.*');
+
+Route::match(['get', 'head'], '/knottele/knottele/admin/signin', function () {
+    return redirect()->to('/admin/signin');
+});
+Route::post('/knottele/knottele/admin/signin', [AdminAuth::class, 'login']);
+Route::post('/knottele/knottele/admin/signin/{any}', [AdminAuth::class, 'login'])->where('any', '.*');
+
+Route::match(['get', 'head'], '/knottele/admin/login', function () {
+    return redirect()->to('/admin/signin');
+});
+Route::post('/knottele/admin/login', [AdminAuth::class, 'login']);
+
+Route::match(['get', 'head'], '/knottele/knottele/admin/login', function () {
+    return redirect()->to('/admin/signin');
+});
+Route::post('/knottele/knottele/admin/login', [AdminAuth::class, 'login']);
+
 Route::prefix('admin')->group($adminRoutes);
 Route::prefix('knottele/admin')->as('knottele.')->group($adminRoutes);
 Route::prefix('knottele/knottele/admin')->group($adminRoutes);
