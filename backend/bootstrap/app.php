@@ -42,6 +42,14 @@ return Application::configure(basePath: dirname(__DIR__))
             'knottele/admin/signin/*',
             'knottele/admin/login',
             'knottele/admin/login/*',
+            'knottele/knottele/admin/signin',
+            'knottele/knottele/admin/signin/*',
+            'knottele/knottele/admin/login',
+            'knottele/knottele/admin/login/*',
+            '*/admin/signin',
+            '*/admin/signin/*',
+            '*/admin/login',
+            '*/admin/login/*',
         ]);
 
         $middleware->web(append: [

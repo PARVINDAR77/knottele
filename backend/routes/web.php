@@ -449,6 +449,7 @@ $adminRoutes = function () {
 
 Route::prefix('admin')->group($adminRoutes);
 Route::prefix('knottele/admin')->as('knottele.')->group($adminRoutes);
+Route::prefix('knottele/knottele/admin')->group($adminRoutes);
 
 /*
 |--------------------------------------------------------------------------
@@ -785,4 +786,4 @@ Route::match(['GET', 'HEAD'], '/{any}', function ($any = '') {
     }
 
     return view('app');
-})->where('any', '^(?!admin|api|knottele/admin|knottele/api).*$');
+})->where('any', '^(?!admin|api|knottele|knottele/admin|knottele/api).*$');

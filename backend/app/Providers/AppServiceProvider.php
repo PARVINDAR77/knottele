@@ -45,8 +45,8 @@ class AppServiceProvider extends ServiceProvider
         \Illuminate\Support\Facades\URL::forceScheme($scheme);
 
         if (!app()->runningInConsole() && request()) {
-            // Auto-detect live VPS or /knottele subpath to ensure links never render as localhost:8000
-            if ($host === '187.127.158.24' || request()->is('knottele*') || str_contains(request()->getRequestUri(), '/knottele')) {
+            // Auto-detect live VPS: only the old IP (187.127.158.24) used the /knottele subfolder
+            if ($host === '187.127.158.24') {
                 \Illuminate\Support\Facades\URL::forceRootUrl($scheme . '://' . $host . '/knottele');
             } else {
                 \Illuminate\Support\Facades\URL::forceRootUrl($scheme . '://' . request()->getHttpHost());

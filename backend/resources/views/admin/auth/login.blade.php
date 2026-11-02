@@ -292,7 +292,7 @@
                     </div>
                 @endif
 
-                <form method="POST" action="{{ url()->current() }}" class="space-y-6" autocomplete="off">
+                <form method="POST" action="{{ route('admin.signin.submit') }}" class="space-y-6" autocomplete="off">
                     @csrf
                     
                     <div>
