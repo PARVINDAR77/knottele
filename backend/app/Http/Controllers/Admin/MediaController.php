@@ -1836,7 +1836,22 @@ class MediaController extends Controller
         $targetFolder = 'images/' . ($section === 'hero' ? 'hero' : ($section === 'categories' ? 'categories' : ($section === 'footer' ? 'footer' : 'products')));
         $targetDirectory = public_path($targetFolder);
         if (!File::isDirectory($targetDirectory)) {
-            File::makeDirectory($targetDirectory, 0755, true, true);
+            @File::makeDirectory($targetDirectory, 0777, true, true);
+        }
+        @chmod($targetDirectory, 0777);
+
+        // Fallback: If public/images/... is not writable, fall back to storage/app/public
+        $useStorageFallback = false;
+        if (!is_writable($targetDirectory)) {
+            $storageFolder = storage_path('app/public/' . $targetFolder);
+            if (!File::isDirectory($storageFolder)) {
+                @File::makeDirectory($storageFolder, 0777, true, true);
+            }
+            @chmod($storageFolder, 0777);
+            if (is_writable($storageFolder)) {
+                $targetDirectory = $storageFolder;
+                $useStorageFallback = true;
+            }
         }
 
         foreach ($files as $file) {
@@ -1848,15 +1863,16 @@ class MediaController extends Controller
                 $uniqueName = ($cleanSlug ?: 'knotelle-media') . '_' . time() . '_' . Str::random(4) . '.' . $extension;
 
                 $file->move($targetDirectory, $uniqueName);
-                $relPath = $targetFolder . '/' . $uniqueName;
+                $relPath = $useStorageFallback ? ('storage/' . $targetFolder . '/' . $uniqueName) : ($targetFolder . '/' . $uniqueName);
                 $fullDiskPath = $targetDirectory . DIRECTORY_SEPARATOR . $uniqueName;
                 $fileSize = file_exists($fullDiskPath) ? filesize($fullDiskPath) : 0;
+                @chmod($fullDiskPath, 0666);
 
                 $media = Media::create([
                     'file_name' => $originalName,
                     'file_path' => $relPath,
-                    'disk' => 'local',
-                    'mime_type' => 'image/' . ($extension === 'png' ? 'png' : ($extension === 'webp' ? 'webp' : 'jpeg')),
+                    'disk' => $useStorageFallback ? 'public' : 'local',
+                    'mime_type' => 'image/' . ($extension === 'png' ? 'png' : ($extension === 'webp' ? 'webp' : ($extension === 'svg' ? 'svg+xml' : 'jpeg'))),
                     'file_type' => 'image',
                     'file_size' => $fileSize,
                     'alt_text' => $rawName,
@@ -1880,6 +1896,7 @@ class MediaController extends Controller
                     'size_formatted' => $this->formatSize($fileSize),
                 ];
             } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("Media upload error: " . $e->getMessage());
                 $errors[] = "Failed to upload {$file->getClientOriginalName()}: " . $e->getMessage();
             }
         }
@@ -1888,11 +1905,11 @@ class MediaController extends Controller
 
         return response()->json([
             'success' => $success,
-            'message' => $success ? 'Files uploaded successfully!' : 'Failed to upload files',
+            'message' => $success ? 'Files uploaded successfully!' : (!empty($errors) ? implode('; ', $errors) : 'Failed to upload files'),
             'data' => $success ? $uploadedMedia[0] : null,
             'all_uploaded' => $uploadedMedia,
             'errors' => $errors,
-        ]);
+        ], $success ? 200 : 422);
     }
 
     /**

@@ -852,11 +852,13 @@
                 }
                 toastr.success(`${uploaded.length} photo(s) attached to product slots!`);
             } else {
-                toastr.error('Failed to upload photos.');
+                const msg = response.data?.message || 'Failed to upload photos.';
+                toastr.error(msg);
             }
         } catch (error) {
             console.error('Batch upload error:', error);
-            toastr.error('Failed to upload photos.');
+            const msg = error.response?.data?.message || 'Failed to upload photos.';
+            toastr.error(msg);
         } finally {
             event.target.value = '';
         }
