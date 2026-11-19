@@ -136,10 +136,10 @@ docker exec knotelle-app php artisan view:cache
 docker exec knotelle-app php artisan storage:link 2>/dev/null || true
 
 echo -e "\n${YELLOW}[Step 8/8] Warming Up Cache & Verifying Internal Latency...${NC}"
-UP_TIME=$(docker exec knotelle-app curl -s -o /dev/null -w "%{time_total}" http://127.0.0.1:8090/up 2>/dev/null || echo "0")
-SET_TIME=$(docker exec knotelle-app curl -s -o /dev/null -w "%{time_total}" http://127.0.0.1:8090/api/customer/settings 2>/dev/null || echo "0")
-CAT_TIME=$(docker exec knotelle-app curl -s -o /dev/null -w "%{time_total}" http://127.0.0.1:8090/api/customer/categories 2>/dev/null || echo "0")
-MED_TIME=$(docker exec knotelle-app curl -s -o /dev/null -w "%{time_total}" http://127.0.0.1:8090/api/customer/media 2>/dev/null || echo "0")
+UP_TIME=$(docker exec knotelle-app curl -s -o /dev/null -w "%{time_total}" http://127.0.0.1:8095/up 2>/dev/null || echo "0")
+SET_TIME=$(docker exec knotelle-app curl -s -o /dev/null -w "%{time_total}" http://127.0.0.1:8095/api/customer/settings 2>/dev/null || echo "0")
+CAT_TIME=$(docker exec knotelle-app curl -s -o /dev/null -w "%{time_total}" http://127.0.0.1:8095/api/customer/categories 2>/dev/null || echo "0")
+MED_TIME=$(docker exec knotelle-app curl -s -o /dev/null -w "%{time_total}" http://127.0.0.1:8095/api/customer/media 2>/dev/null || echo "0")
 
 echo -e "${GREEN}Warm-up Complete:${NC}"
 echo "  - /up latency: ${UP_TIME}s"

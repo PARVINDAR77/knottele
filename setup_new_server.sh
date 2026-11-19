@@ -176,7 +176,7 @@ docker exec knotelle-app php artisan route:cache
 docker exec knotelle-app php artisan view:cache
 docker exec knotelle-app php artisan storage:link 2>/dev/null || true
 
-echo -e "\n${YELLOW}[Step 7/7] Configuring Host Nginx Reverse Proxy (Port 8090)...${NC}"
+echo -e "\n${YELLOW}[Step 7/7] Configuring Host Nginx Reverse Proxy (Port 8095)...${NC}"
 NGINX_CONF_DIR="/etc/nginx/conf.d"
 if [ ! -d "$NGINX_CONF_DIR" ]; then
     NGINX_CONF_DIR="/etc/nginx/sites-available"
@@ -186,12 +186,12 @@ cat <<'EOF' > /tmp/knotelle_proxy.conf
 server {
     listen 80;
     listen [::]:80;
-    server_name knotelleindia.com www.knotelleindia.com 95.111.242.173;
+    server_name knotelleindia.com www.knotelleindia.com;
 
     client_max_body_size 256M;
 
     location / {
-        proxy_pass http://127.0.0.1:8090;
+        proxy_pass http://127.0.0.1:8095;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
