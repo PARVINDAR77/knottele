@@ -297,6 +297,30 @@ class OrderController extends Controller
                     $variant = ProductVariant::with('product.taxClass')->first();
                 }
 
+                if (!$variant) {
+                    // Fail-safe: ensure a valid fallback product and variant exists to satisfy foreign key constraints
+                    $defaultProduct = \App\Models\Product::firstOrCreate(
+                        ['slug' => 'handmade-boutique-creation'],
+                        [
+                            'name' => !empty($itemName) ? $itemName : 'Handmade Boutique Item',
+                            'product_code' => 'KNT-GEN-01',
+                            'status' => 'published',
+                            'description' => 'Bespoke handmade crochet item.',
+                        ]
+                    );
+
+                    $variant = ProductVariant::firstOrCreate(
+                        ['product_id' => $defaultProduct->id],
+                        [
+                            'sku' => 'KNT-DEFAULT',
+                            'price' => isset($item['unit_price']) ? (float) $item['unit_price'] : 100,
+                            'stock_quantity' => 999,
+                            'is_default' => 1,
+                            'status' => 1,
+                        ]
+                    );
+                }
+
                 $quantity = (int) $item['quantity'];
                 $unitPrice = isset($item['unit_price']) ? (float) $item['unit_price'] : ($variant ? (float) $variant->price : 0);
                 $productName = !empty($itemName) ? $itemName : ($variant->product->name ?? 'Handmade Product');
@@ -311,9 +335,9 @@ class OrderController extends Controller
                 }
 
                 $orderItemsData[] = [
-                    'product_variant_id' => $variant ? $variant->id : 1,
+                    'product_variant_id' => $variant->id,
                     'product_name' => $productName,
-                    'sku' => $variant ? $variant->sku : 'KNT-ITEM',
+                    'sku' => $variant->sku ?? 'KNT-ITEM',
                     'quantity' => $quantity,
                     'unit_price' => $unitPrice,
                     'total' => $total,
