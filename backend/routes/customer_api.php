@@ -13,12 +13,12 @@ Route::prefix('customer')->group(function () {
     Route::get('contact', [\App\Http\Controllers\Api\Customer\MediaController::class, 'getContactPage']);
     Route::get('homepage/media', [\App\Http\Controllers\Api\Customer\MediaController::class, 'index']);
     Route::post('media/video/{id}/view', [\App\Http\Controllers\Api\Customer\MediaController::class, 'incrementView']);
-    Route::post('login', [CustomerApiAuthController::class, 'login']);
-    Route::post('register', [CustomerApiAuthController::class, 'register']);
-    Route::post('verify-otp', [CustomerApiAuthController::class, 'verifyOtp']);
-    Route::post('resend-otp', [CustomerApiAuthController::class, 'resendOtp']);
-    Route::post('forgot-password', [CustomerApiAuthController::class, 'forgotPassword']);
-    Route::post('reset-password', [CustomerApiAuthController::class, 'resetPassword']);
+    Route::post('login', [CustomerApiAuthController::class, 'login'])->middleware('throttle:auth');
+    Route::post('register', [CustomerApiAuthController::class, 'register'])->middleware('throttle:auth');
+    Route::post('verify-otp', [CustomerApiAuthController::class, 'verifyOtp'])->middleware('throttle:auth');
+    Route::post('resend-otp', [CustomerApiAuthController::class, 'resendOtp'])->middleware('throttle:auth');
+    Route::post('forgot-password', [CustomerApiAuthController::class, 'forgotPassword'])->middleware('throttle:auth');
+    Route::post('reset-password', [CustomerApiAuthController::class, 'resetPassword'])->middleware('throttle:auth');
 
     // Public payment routes (Razorpay)
     Route::post('payment/razorpay/order', [\App\Http\Controllers\Api\Customer\RazorpayPaymentController::class, 'createOrder']);
@@ -37,7 +37,7 @@ Route::prefix('customer')->group(function () {
     // Settings & Contact form routes
     Route::get('settings', [\App\Http\Controllers\Api\Customer\SettingController::class, 'index']);
     Route::get('contact/settings', [\App\Http\Controllers\Api\ContactController::class, 'settings']);
-    Route::post('contact', [\App\Http\Controllers\Api\ContactController::class, 'submit']);
+    Route::post('contact', [\App\Http\Controllers\Api\ContactController::class, 'submit'])->middleware('throttle:contact');
     
     Route::prefix('products')->group(function () {
         Route::get('/', [ProductController::class, 'index']);
@@ -49,7 +49,7 @@ Route::prefix('customer')->group(function () {
     });
 
     // Order checkout and details (public for guests with email / authenticated customers)
-    Route::post('orders', [\App\Http\Controllers\Api\Customer\OrderController::class, 'store']);
+    Route::post('orders', [\App\Http\Controllers\Api\Customer\OrderController::class, 'store'])->middleware('throttle:api-orders');
     Route::get('orders/{id}', [\App\Http\Controllers\Api\Customer\OrderController::class, 'show']);
     Route::get('orders/{id}/invoice/{filename?}', [\App\Http\Controllers\Api\Customer\OrderController::class, 'printInvoice']);
     Route::post('cart/validate', [\App\Http\Controllers\Api\Customer\OrderController::class, 'validateCart']);

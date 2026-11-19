@@ -1806,8 +1806,8 @@ class MediaController extends Controller
     {
         $request->validate([
             'files' => 'nullable|array',
-            'files.*' => 'file|max:20480',
-            'file' => 'nullable|file|max:20480',
+            'files.*' => 'file|mimes:jpeg,jpg,png,webp,gif|max:20480',
+            'file' => 'nullable|file|mimes:jpeg,jpg,png,webp,gif|max:20480',
             'page' => 'nullable|string',
             'section' => 'nullable|string',
             'slot' => 'nullable|string',
@@ -1857,7 +1857,10 @@ class MediaController extends Controller
         foreach ($files as $file) {
             try {
                 $originalName = $file->getClientOriginalName();
-                $extension = strtolower($file->getClientOriginalExtension() ?: $file->guessExtension() ?: 'jpg');
+                $extension = strtolower($file->guessExtension() ?: $file->getClientOriginalExtension() ?: 'jpg');
+                if (!in_array($extension, ['jpeg', 'jpg', 'png', 'webp', 'gif'])) {
+                    throw new \Exception("File extension .{$extension} is not permitted.");
+                }
                 $rawName = pathinfo($originalName, PATHINFO_FILENAME);
                 $cleanSlug = Str::slug($rawName);
                 $uniqueName = ($cleanSlug ?: 'knotelle-media') . '_' . time() . '_' . Str::random(4) . '.' . $extension;

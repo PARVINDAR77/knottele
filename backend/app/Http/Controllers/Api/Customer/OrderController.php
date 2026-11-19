@@ -108,6 +108,13 @@ class OrderController extends Controller
             $customer = auth('customer_api')->user();
             $email = trim($request->query('email') ?? '');
 
+            if (!$customer && empty($email)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized. Please sign in or provide verification credentials.'
+                ], 401);
+            }
+
             $order = Order::with(['items.variant.product', 'items.variant.images'])
                 ->where(function ($q) use ($id) {
                     $q->where('id', $id)->orWhere('order_number', $id);
@@ -123,7 +130,7 @@ class OrderController extends Controller
 
             // Security check: Order MUST belong to the authenticated customer if customer is logged in
             if ($customer) {
-                $orderCustomerEmail = strtolower($order->shipping_address['email'] ?? '');
+                $orderCustomerEmail = strtolower($order->shipping_address['email'] ?? ($order->customer->email ?? ''));
                 $authCustomerEmail = strtolower($customer->email);
                 $isOwner = ($order->customer_id == $customer->id) || ($orderCustomerEmail && $orderCustomerEmail === $authCustomerEmail);
 
@@ -133,12 +140,13 @@ class OrderController extends Controller
                         'message' => 'Forbidden. You cannot view orders belonging to another account.'
                     ], 403);
                 }
-            } elseif (!empty($email)) {
-                $orderCustomerEmail = strtolower($order->shipping_address['email'] ?? '');
-                if ($orderCustomerEmail !== strtolower($email)) {
+            } else {
+                // Guest verification: Email must match shipping address on the order
+                $orderCustomerEmail = strtolower($order->shipping_address['email'] ?? ($order->customer->email ?? ''));
+                if (empty($orderCustomerEmail) || $orderCustomerEmail !== strtolower($email)) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'Forbidden.'
+                        'message' => 'Forbidden. Email does not match order record.'
                     ], 403);
                 }
             }
@@ -186,20 +194,26 @@ class OrderController extends Controller
             // Security check: If authenticated customer, verify ownership
             $customer = auth('customer_api')->user() ?? auth('customer')->user() ?? auth()->user();
             $email = trim($request->query('email') ?? '');
+            $isAdmin = auth('admin')->check() || auth()->guard('admin')->check();
 
-            if ($customer) {
-                $orderCustomerEmail = strtolower($order->shipping_address['email'] ?? ($order->customer->email ?? ''));
-                $authCustomerEmail = strtolower($customer->email ?? '');
-                $isOwner = ($order->customer_id == $customer->id) || (!empty($orderCustomerEmail) && !empty($authCustomerEmail) && $orderCustomerEmail === $authCustomerEmail);
-                $isAdmin = auth('admin')->check() || auth()->guard('admin')->check();
-
-                if (!$isOwner && !$isAdmin) {
-                    abort(403, 'Unauthorized access to this order invoice.');
+            if (!$isAdmin) {
+                if (!$customer && empty($email)) {
+                    abort(401, 'Unauthorized access to this order invoice.');
                 }
-            } elseif (!empty($email)) {
-                $orderCustomerEmail = strtolower($order->shipping_address['email'] ?? ($order->customer->email ?? ''));
-                if (!empty($orderCustomerEmail) && $orderCustomerEmail !== strtolower($email)) {
-                    abort(403, 'Unauthorized access to this order invoice.');
+
+                if ($customer) {
+                    $orderCustomerEmail = strtolower($order->shipping_address['email'] ?? ($order->customer->email ?? ''));
+                    $authCustomerEmail = strtolower($customer->email ?? '');
+                    $isOwner = ($order->customer_id == $customer->id) || (!empty($orderCustomerEmail) && !empty($authCustomerEmail) && $orderCustomerEmail === $authCustomerEmail);
+
+                    if (!$isOwner) {
+                        abort(403, 'Unauthorized access to this order invoice.');
+                    }
+                } else {
+                    $orderCustomerEmail = strtolower($order->shipping_address['email'] ?? ($order->customer->email ?? ''));
+                    if (empty($orderCustomerEmail) || $orderCustomerEmail !== strtolower($email)) {
+                        abort(403, 'Unauthorized access to this order invoice.');
+                    }
                 }
             }
 
@@ -322,7 +336,10 @@ class OrderController extends Controller
                 }
 
                 $quantity = (int) $item['quantity'];
-                $unitPrice = isset($item['unit_price']) ? (float) $item['unit_price'] : ($variant ? (float) $variant->price : 0);
+                // Enforce canonical variant price from database; do not allow client price tampering
+                $unitPrice = ($variant && (float) $variant->price > 0)
+                    ? (float) $variant->price
+                    : (isset($item['unit_price']) ? (float) $item['unit_price'] : 100);
                 $productName = !empty($itemName) ? $itemName : ($variant->product->name ?? 'Handmade Product');
 
                 $total = $unitPrice * $quantity;
@@ -374,14 +391,6 @@ class OrderController extends Controller
                 }
             }
 
-            // Fallback: If discount value is explicitly sent from frontend
-            if ($discountTotal == 0 && ($request->filled('discount_total') || $request->filled('discount_amount') || $request->filled('discount'))) {
-                $discountTotal = (float) ($request->discount_total ?? $request->discount_amount ?? $request->discount ?? 0);
-                if ($discountTotal > $subtotal) {
-                    $discountTotal = $subtotal;
-                }
-            }
-
             // Shipping rule: Free (0rs) for subtotal >= 999rs or 0rs; otherwise 99rs
             if ($request->has('shipping_total') || $request->has('shipping')) {
                 $shippingTotal = (float) ($request->shipping_total ?? $request->shipping ?? 0);
@@ -428,6 +437,30 @@ class OrderController extends Controller
                 }
             }
 
+            // Secure payment verification: Never mark non-COD orders as 'paid' without verified Razorpay cryptographic signature
+            $paymentStatus = 'pending';
+            if ($request->payment_method === 'cod') {
+                $paymentStatus = 'pending';
+            } else {
+                $paymentId = $request->input('razorpay_payment_id') ?: $request->input('payment_id');
+                $orderId = $request->input('razorpay_order_id') ?: $request->input('order_id');
+                $signature = $request->input('razorpay_signature') ?: $request->input('signature');
+
+                if (!empty($paymentId) && !empty($orderId) && !empty($signature)) {
+                    try {
+                        $razorpayService = app(\App\Services\Payment\RazorpayService::class);
+                        $verification = $razorpayService->verifyPayment($paymentId, $orderId, $signature);
+                        if (!empty($verification['success'])) {
+                            $paymentStatus = 'paid';
+                        } else {
+                            Log::warning("Razorpay verification failed for online order checkout.", ['order_id' => $orderId]);
+                        }
+                    } catch (\Throwable $rzpEx) {
+                        Log::warning('Razorpay verification error during checkout: ' . $rzpEx->getMessage());
+                    }
+                }
+            }
+
             // 2. Create the Order
             $order = Order::create([
                 'order_number' => 'KN' . strtoupper(uniqid()),
@@ -436,7 +469,7 @@ class OrderController extends Controller
                 'shipping_method' => 'custom',
                 'currency' => 'INR',
                 'status' => 'pending',
-                'payment_status' => $request->payment_method === 'cod' ? 'pending' : 'paid',
+                'payment_status' => $paymentStatus,
                 'subtotal' => $subtotal,
                 'tax_total' => $totalTaxAmount,
                 'shipping_total' => $shippingTotal,

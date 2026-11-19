@@ -68,5 +68,18 @@ class AppServiceProvider extends ServiceProvider
             $cartHelper = app(\App\Helpers\CartHelper::class);
             $view->with('cartCount', $cartHelper->getCartCount());
         });
+
+        // Configure Production Security Rate Limiters
+        \Illuminate\Support\Facades\RateLimiter::for('auth', function ($request) {
+            return \Illuminate\Cache\RateLimiting\Limit::perMinute(5)->by($request->ip());
+        });
+
+        \Illuminate\Support\Facades\RateLimiter::for('api-orders', function ($request) {
+            return \Illuminate\Cache\RateLimiting\Limit::perMinute(15)->by($request->ip());
+        });
+
+        \Illuminate\Support\Facades\RateLimiter::for('contact', function ($request) {
+            return \Illuminate\Cache\RateLimiting\Limit::perMinute(5)->by($request->ip());
+        });
     }
 }

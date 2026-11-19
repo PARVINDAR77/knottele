@@ -71,19 +71,18 @@ class AuthController extends Controller
 
         session()->save();
 
-        $redirectUrl = !empty($token)
-            ? route('admin.dashboard', ['auth_token' => $token])
-            : route('admin.dashboard');
+        $redirectUrl = route('admin.dashboard');
 
         $response = redirect($redirectUrl);
         $cookieName = config('session.cookie', 'knotelle-session');
+        $isSecure = app()->environment('production') || (bool) config('session.secure', false);
         $response->withCookie(cookie(
             $cookieName,
             session()->getId(),
             config('session.lifetime', 120),
             '/',
             config('session.domain'),
-            false,
+            $isSecure,
             true,
             false,
             'lax'

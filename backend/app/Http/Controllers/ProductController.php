@@ -13,6 +13,6 @@ class ProductController extends Controller
      */
     public function index()
     {
-        return response()->json(Product::all());
+        return response()->json(Product::where('status', true)->paginate(24));
     }
 }

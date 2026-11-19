@@ -17,7 +17,7 @@ use App\Http\Controllers\Api\Admin\InventoryController;
 Route::prefix('admin')->middleware('api')->group(function () {
 
     // Public
-    Route::post('login', [AdminApiAuthController::class, 'login']);
+    Route::post('login', [AdminApiAuthController::class, 'login'])->middleware('throttle:auth');
 
     // Protected
     Route::middleware('admin.api')->group(function () {

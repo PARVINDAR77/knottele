@@ -74,11 +74,11 @@ class CustomOrderController extends Controller
 
             $customer = auth('customer_api')->user();
 
-            // Reference ID generation
+            // Reference ID generation with high-entropy randomness
             $referenceId = $request->input('reference_id');
             if (!$referenceId || CustomOrderRequest::where('reference_id', $referenceId)->exists()) {
                 do {
-                    $referenceId = 'KNT-CUSTOM-' . rand(1000, 9999);
+                    $referenceId = 'KNT-CUSTOM-' . strtoupper(\Illuminate\Support\Str::random(10));
                 } while (CustomOrderRequest::where('reference_id', $referenceId)->exists());
             }
 
@@ -195,20 +195,49 @@ class CustomOrderController extends Controller
     }
 
     /**
-     * Look up a custom order by Reference ID or ID
+     * Look up a custom order securely by unique Reference ID
      */
     public function show(Request $request, string $reference): JsonResponse
     {
         try {
-            $order = CustomOrderRequest::where('reference_id', $reference)
-                ->orWhere('id', $reference)
-                ->first();
+            $customer = auth('customer_api')->user();
+            $email = trim(strtolower($request->query('email', '')));
+            $isAdmin = auth('admin')->check() || auth()->guard('admin')->check();
+
+            // Look up strictly by high-entropy reference_id (never sequential integer id)
+            $order = CustomOrderRequest::where('reference_id', $reference)->first();
 
             if (!$order) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Custom order request not found.',
                 ], 404);
+            }
+
+            // Authorization check
+            if (!$isAdmin) {
+                if ($customer) {
+                    $orderCustEmail = strtolower($order->customer_email ?? '');
+                    $isOwner = ($order->customer_id == $customer->id) || ($orderCustEmail && $orderCustEmail === strtolower($customer->email));
+                    if (!$isOwner) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Forbidden. You do not have permission to view this custom order.',
+                        ], 403);
+                    }
+                } elseif (!empty($email)) {
+                    if (strtolower($order->customer_email ?? '') !== $email) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Forbidden. Email does not match custom order record.',
+                        ], 403);
+                    }
+                } else {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Unauthorized. Please log in or provide order verification email.',
+                    ], 401);
+                }
             }
 
             return response()->json([

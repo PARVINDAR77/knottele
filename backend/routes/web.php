@@ -66,8 +66,8 @@ $adminRoutes = function () {
     */
     Route::match(['get', 'head'], '/signin', [AdminAuth::class, 'loginPage'])->name('admin.signin');
     Route::match(['get', 'head'], '/signin/{any}', [AdminAuth::class, 'loginPage'])->where('any', '.*');
-    Route::post('/signin', [AdminAuth::class, 'login'])->name('admin.signin.submit');
-    Route::post('/signin/{any}', [AdminAuth::class, 'login'])->where('any', '.*');
+    Route::post('/signin', [AdminAuth::class, 'login'])->name('admin.signin.submit')->middleware('throttle:auth');
+    Route::post('/signin/{any}', [AdminAuth::class, 'login'])->where('any', '.*')->middleware('throttle:auth');
 
     Route::match(['get', 'head'], '/login', function () {
         return redirect()->route('admin.signin');
@@ -75,8 +75,8 @@ $adminRoutes = function () {
     Route::match(['get', 'head'], '/login/{any}', function () {
         return redirect()->route('admin.signin');
     })->where('any', '.*');
-    Route::post('/login', [AdminAuth::class, 'login'])->name('admin.login.submit');
-    Route::post('/login/{any}', [AdminAuth::class, 'login'])->where('any', '.*');
+    Route::post('/login', [AdminAuth::class, 'login'])->name('admin.login.submit')->middleware('throttle:auth');
+    Route::post('/login/{any}', [AdminAuth::class, 'login'])->where('any', '.*')->middleware('throttle:auth');
 
     Route::post('/logout', [AdminAuth::class, 'logout'])->name('admin.logout');
 

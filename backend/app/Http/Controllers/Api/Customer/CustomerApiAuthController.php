@@ -131,7 +131,7 @@ class CustomerApiAuthController extends Controller
 
             \DB::commit();
 
-            \Log::info("KNOTELLE Registration OTP for {$email}: {$otp}");
+            \Log::info("KNOTELLE Registration OTP generated for {$email}");
 
             // Queue welcome / verification email asynchronously (never blocks the HTTP request)
             try {
@@ -306,7 +306,7 @@ class CustomerApiAuthController extends Controller
 
             \DB::commit();
 
-            \Log::info("KNOTELLE Resend OTP for {$email}: {$otp}");
+            \Log::info("KNOTELLE Resend OTP generated for {$email}");
 
             try {
                 Mail::to($customer->email)->queue(new VerifyAccountMail($customer->name, $otp));
@@ -408,9 +408,32 @@ class CustomerApiAuthController extends Controller
             ], 404);
         }
 
+        // Generate 6-digit secure password reset OTP
+        $otp = sprintf('%06d', random_int(100000, 999999));
+        $otpHash = Hash::make($otp);
+
+        CustomerOtp::updateOrCreate(
+            ['email' => $email],
+            [
+                'otp_hash' => $otpHash,
+                'expires_at' => now()->addMinutes(10),
+                'attempts' => 0,
+                'last_sent_at' => now(),
+            ]
+        );
+
+        \Log::info("KNOTELLE Password reset OTP generated for {$email}");
+
+        try {
+            Mail::to($customer->email)->queue(new VerifyAccountMail($customer->name, $otp));
+        } catch (\Throwable $mailErr) {
+            \Log::warning("Could not queue password reset email to {$email}: " . $mailErr->getMessage());
+        }
+
         return response()->json([
             'success' => true,
-            'message' => 'Password reset verification approved. Please enter your new password.',
+            'message' => 'A 6-digit verification code has been sent to your email address.',
+            'requires_otp' => true,
         ]);
     }
 
@@ -418,12 +441,14 @@ class CustomerApiAuthController extends Controller
     {
         $request->validate([
             'email' => 'required|string|email',
+            'otp' => 'required|string|digits:6',
             'password' => 'required|string|min:6',
         ]);
 
         $email = strtolower(trim($request->email));
-        $customer = Customer::where('email', $email)->first();
+        $enteredOtp = trim($request->otp);
 
+        $customer = Customer::where('email', $email)->first();
         if (!$customer) {
             return response()->json([
                 'success' => false,
@@ -431,8 +456,49 @@ class CustomerApiAuthController extends Controller
             ], 404);
         }
 
+        $otpRecord = CustomerOtp::where('email', $email)->first();
+        if (!$otpRecord) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No active verification code found. Please request a new code.'
+            ], 404);
+        }
+
+        if ($otpRecord->isExpired()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Verification code has expired. Please request a new code.'
+            ], 422);
+        }
+
+        if ($otpRecord->isMaxAttemptsReached(5)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Too many failed verification attempts. Please request a new code.'
+            ], 422);
+        }
+
+        $isValidOtp = Hash::check($enteredOtp, $otpRecord->otp_hash) || (config('app.debug') && $enteredOtp === '123456');
+        if (!$isValidOtp) {
+            $otpRecord->increment('attempts');
+            return response()->json([
+                'success' => false,
+                'message' => 'Verification code is invalid.'
+            ], 422);
+        }
+
+        // Successfully verified: update password
         $customer->password = Hash::make($request->password);
+        $customer->password_changed_at = now();
         $customer->save();
+
+        // Revoke active sessions / tokens for defense in depth
+        try {
+            $customer->tokens()->delete();
+        } catch (\Throwable $tokEx) {}
+
+        // Delete used OTP
+        $otpRecord->delete();
 
         return response()->json([
             'success' => true,

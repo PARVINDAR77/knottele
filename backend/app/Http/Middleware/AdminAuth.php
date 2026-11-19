@@ -12,7 +12,7 @@ class AdminAuth
     public function handle($request, Closure $next)
     {
         if (!Auth::guard('admin')->check()) {
-            $tokenParam = urldecode($request->query('auth_token') ?: $request->header('X-Admin-Token', ''));
+            $tokenParam = $request->header('X-Admin-Token') ?: $request->bearerToken() ?: urldecode($request->query('auth_token', ''));
             if ($tokenParam) {
                 try {
                     $accessToken = Sanctum::$personalAccessTokenModel::findToken($tokenParam);
