@@ -488,7 +488,7 @@ Route::post('/knottele/knottele/admin/login', [AdminAuth::class, 'login']);
 
 Route::prefix('admin')->group($adminRoutes);
 Route::prefix('knottele/admin')->as('knottele.')->group($adminRoutes);
-Route::prefix('knottele/knottele/admin')->group($adminRoutes);
+Route::prefix('knottele/knottele/admin')->as('knottele_double.')->group($adminRoutes);
 
 /*
 |--------------------------------------------------------------------------
