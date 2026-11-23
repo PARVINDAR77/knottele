@@ -3,17 +3,40 @@ set -e
 
 echo "🚀 Starting KNOTELLE Deployment..."
 
+# Helper functions for Docker vs Host commands
+run_artisan() {
+    if command -v php &>/dev/null; then
+        php artisan "$@"
+    elif command -v docker &>/dev/null && docker ps -q --filter "name=knotelle-app" 2>/dev/null | grep -q .; then
+        docker exec knotelle-app php artisan "$@"
+    elif command -v docker &>/dev/null && docker compose ps -q knotelle 2>/dev/null | grep -q .; then
+        docker compose exec -T knotelle php artisan "$@"
+    else
+        echo "Notice: php artisan could not be executed (neither host PHP nor knotelle-app container available)."
+    fi
+}
+
+run_composer() {
+    if command -v composer &>/dev/null; then
+        composer "$@"
+    elif command -v docker &>/dev/null && docker ps -q --filter "name=knotelle-app" 2>/dev/null | grep -q .; then
+        docker exec knotelle-app composer "$@" 2>/dev/null || true
+    else
+        echo "Notice: composer not found on host or container, skipping."
+    fi
+}
+
 # 1. Move to project root
 cd "$(dirname "$0")"
 PROJECT_ROOT="$(pwd)"
 
 # Ensure backend is brought out of maintenance mode even if an unexpected error occurs
-trap 'if [ -d "$PROJECT_ROOT/backend" ]; then cd "$PROJECT_ROOT/backend" && php artisan up 2>/dev/null || true; fi' EXIT
+trap 'if [ -d "$PROJECT_ROOT/backend" ]; then cd "$PROJECT_ROOT/backend" && run_artisan up 2>/dev/null || true; fi' EXIT
 
 # 2. Ensure application is running smoothly (zero downtime deploy)
 if [ -d "$PROJECT_ROOT/backend" ]; then
     cd "$PROJECT_ROOT/backend"
-    php artisan up 2>/dev/null || true
+    run_artisan up 2>/dev/null || true
 fi
 
 # 3. Pull latest code from Git
@@ -32,31 +55,35 @@ fi
 
 # 4. Install Composer dependencies
 if [ -d "$PROJECT_ROOT/backend" ]; then
-    echo "📦 Installing Composer dependencies..."
+    echo "📦 Checking Composer dependencies..."
     cd "$PROJECT_ROOT/backend"
-    composer install --no-dev --optimize-autoloader --no-interaction
+    run_composer install --no-dev --optimize-autoloader --no-interaction
 fi
 
 # 4b. Export all live product & category slugs to frontend
 if [ -d "$PROJECT_ROOT/backend" ]; then
     echo "📋 Exporting live database slugs to frontend..."
     cd "$PROJECT_ROOT/backend"
-    php artisan tinker --execute="file_put_contents('$PROJECT_ROOT/frontend/src/data/db-slugs.json', json_encode(['products' => \App\Models\Product::pluck('slug')->filter()->values(), 'categories' => \App\Models\Category::pluck('slug')->filter()->values()]));" 2>/dev/null || true
+    run_artisan tinker --execute="file_put_contents('$PROJECT_ROOT/frontend/src/data/db-slugs.json', json_encode(['products' => \App\Models\Product::pluck('slug')->filter()->values(), 'categories' => \App\Models\Category::pluck('slug')->filter()->values()]));" 2>/dev/null || true
 fi
 
 # 5. Build Next.js customer frontend and sync to Laravel public
 if [ -d "$PROJECT_ROOT/frontend" ]; then
-    echo "🛍️ Building Frontend (Next.js -> Laravel public)..."
+    echo "🛍️ Verifying Frontend assets..."
     cd "$PROJECT_ROOT/frontend"
-    export INTERNAL_API_URL="http://127.0.0.1/knottele/api"
-    npm install
-    npm run build:laravel
+    if command -v npm &>/dev/null; then
+        export INTERNAL_API_URL="http://127.0.0.1/knottele/api"
+        npm install
+        npm run build:laravel
+    else
+        echo "Notice: npm not found on host, using pre-built repository static assets in backend/public."
+    fi
 fi
 
 # 6. Build Blade Admin Vite assets
 if [ -d "$PROJECT_ROOT/backend" ]; then
     cd "$PROJECT_ROOT/backend"
-    if [ -f "package.json" ]; then
+    if [ -f "package.json" ] && command -v npm &>/dev/null; then
         echo "⚙️ Building Admin assets..."
         npm install
         npm run build
@@ -75,23 +102,23 @@ if [ -d "$PROJECT_ROOT/backend" ]; then
 
     # 7. Database Migrations
     echo "🗄️ Running Migrations..."
-    php artisan migrate --force
+    run_artisan migrate --force
 
     # 8. Storage Symlink
     echo "🔗 Linking Storage..."
-    php artisan storage:link || true
+    run_artisan storage:link 2>/dev/null || true
 
     # 9. Clear and rebuild Laravel caches
     echo "⚡ Optimizing Laravel Caches..."
-    php artisan optimize:clear
-    php artisan config:cache
-    php artisan route:cache
-    php artisan view:cache
-    php artisan event:cache
+    run_artisan optimize:clear
+    run_artisan config:cache
+    run_artisan route:cache
+    run_artisan view:cache
+    run_artisan event:cache 2>/dev/null || true
 
     # 10. Restart queue workers
     echo "🔄 Restarting Queue..."
-    php artisan queue:restart || true
+    run_artisan queue:restart 2>/dev/null || true
 
     # 11. Folder permissions & storage/image/video directories
     echo "🔒 Updating permissions..."
@@ -109,7 +136,14 @@ if [ -d "$PROJECT_ROOT/backend" ]; then
     fi
 
     # 12. Bring application out of maintenance mode
-    php artisan up
+    run_artisan up
+
+    # 12b. Recreate/reload Docker container if Docker is used
+    if command -v docker &>/dev/null; then
+        echo "🐳 Reloading Docker container..."
+        docker compose up -d knotelle 2>/dev/null || docker restart knotelle-app 2>/dev/null || true
+    fi
+fi
 fi
 
 # 13. Restart PM2 & Nginx & PHP-FPM
