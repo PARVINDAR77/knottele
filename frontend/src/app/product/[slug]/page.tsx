@@ -23,7 +23,7 @@ export async function generateStaticParams() {
         if (s) allSlugs.add(s);
       });
     }
-  } catch {}
+  } catch { }
 
   // 2. Slugs from live API if reachable
   try {

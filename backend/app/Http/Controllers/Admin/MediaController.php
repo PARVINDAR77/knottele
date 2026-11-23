@@ -1806,8 +1806,8 @@ class MediaController extends Controller
     {
         $request->validate([
             'files' => 'nullable|array',
-            'files.*' => 'file|mimes:jpeg,jpg,png,webp,gif|max:20480',
-            'file' => 'nullable|file|mimes:jpeg,jpg,png,webp,gif|max:20480',
+            'files.*' => 'file|mimes:jpeg,jpg,png,webp,gif,svg,jfif,avif,heic|max:20480',
+            'file' => 'nullable|file|mimes:jpeg,jpg,png,webp,gif,svg,jfif,avif,heic|max:20480',
             'page' => 'nullable|string',
             'section' => 'nullable|string',
             'slot' => 'nullable|string',
@@ -1857,9 +1857,15 @@ class MediaController extends Controller
         foreach ($files as $file) {
             try {
                 $originalName = $file->getClientOriginalName();
+                $allowedExtensions = ['jpeg', 'jpg', 'png', 'webp', 'gif', 'svg', 'jfif', 'avif', 'heic'];
                 $extension = strtolower($file->guessExtension() ?: $file->getClientOriginalExtension() ?: 'jpg');
-                if (!in_array($extension, ['jpeg', 'jpg', 'png', 'webp', 'gif'])) {
-                    throw new \Exception("File extension .{$extension} is not permitted.");
+                if (!in_array($extension, $allowedExtensions)) {
+                    $clientExt = strtolower($file->getClientOriginalExtension());
+                    if (in_array($clientExt, $allowedExtensions)) {
+                        $extension = $clientExt;
+                    } else {
+                        throw new \Exception("File extension .{$extension} is not permitted.");
+                    }
                 }
                 $rawName = pathinfo($originalName, PATHINFO_FILENAME);
                 $cleanSlug = Str::slug($rawName);
@@ -1871,11 +1877,21 @@ class MediaController extends Controller
                 $fileSize = file_exists($fullDiskPath) ? filesize($fullDiskPath) : 0;
                 @chmod($fullDiskPath, 0666);
 
+                $mimeType = match ($extension) {
+                    'png' => 'image/png',
+                    'webp' => 'image/webp',
+                    'gif' => 'image/gif',
+                    'svg' => 'image/svg+xml',
+                    'avif' => 'image/avif',
+                    'heic' => 'image/heic',
+                    default => 'image/jpeg',
+                };
+
                 $media = Media::create([
                     'file_name' => $originalName,
                     'file_path' => $relPath,
                     'disk' => $useStorageFallback ? 'public' : 'local',
-                    'mime_type' => 'image/' . ($extension === 'png' ? 'png' : ($extension === 'webp' ? 'webp' : ($extension === 'svg' ? 'svg+xml' : 'jpeg'))),
+                    'mime_type' => $mimeType,
                     'file_type' => 'image',
                     'file_size' => $fileSize,
                     'alt_text' => $rawName,

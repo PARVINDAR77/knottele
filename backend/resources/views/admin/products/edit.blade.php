@@ -571,6 +571,8 @@
 
         const formData = new FormData();
         formData.append('files[]', file);
+        formData.append('section', 'products');
+        formData.append('page', 'products');
 
         try {
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
@@ -591,7 +593,11 @@
             }
         } catch (error) {
             console.error('Upload error:', error);
-            const msg = error.response?.data?.message || 'Failed to upload photo.';
+            let msg = error.response?.data?.message || 'Failed to upload photo.';
+            if (error.response?.data?.errors) {
+                const detailedErrors = Object.values(error.response.data.errors).flat().join(' ');
+                if (detailedErrors) msg = detailedErrors;
+            }
             toastr.error(msg);
         } finally {
             if (loading) loading.classList.add('hidden');
@@ -606,6 +612,8 @@
         for (let i = 0; i < files.length; i++) {
             formData.append('files[]', files[i]);
         }
+        formData.append('section', 'products');
+        formData.append('page', 'products');
 
         toastr.info(`Uploading ${files.length} photo(s)...`);
 
@@ -638,7 +646,11 @@
             }
         } catch (error) {
             console.error('Batch upload error:', error);
-            const msg = error.response?.data?.message || 'Failed to upload photos.';
+            let msg = error.response?.data?.message || 'Failed to upload photos.';
+            if (error.response?.data?.errors) {
+                const detailedErrors = Object.values(error.response.data.errors).flat().join(' ');
+                if (detailedErrors) msg = detailedErrors;
+            }
             toastr.error(msg);
         } finally {
             event.target.value = '';

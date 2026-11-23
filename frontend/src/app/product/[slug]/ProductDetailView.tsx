@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { notFound, useRouter, useParams } from "next/navigation";
+import { notFound, useRouter, useParams, usePathname } from "next/navigation";
 import {
   Heart,
   ShoppingBag,
@@ -38,18 +38,36 @@ interface ProductDetailViewProps {
 export default function ProductDetailView({ slug: propSlug }: ProductDetailViewProps) {
   const router = useRouter();
   const params = useParams();
-  const rawParamSlug = typeof params?.slug === "string" ? params.slug : Array.isArray(params?.slug) ? params.slug[0] : "";
-  const pathnameSlug = typeof window !== "undefined"
-    ? window.location.pathname.replace(/^.*\/product\//, "").replace(/\/.*$/, "")
-    : "";
-  const slug = propSlug || rawParamSlug || pathnameSlug;
+  const pathname = usePathname();
 
-  const fallbackProduct = PRODUCTS.find(
-    (p) =>
-      p.slug === slug ||
-      (slug === "cute-bunny-amigurumi-keychain" && p.slug === "cute-bunny-keychain") ||
-      (slug === "cute-bunny-keychain" && p.slug === "cute-bunny-amigurumi-keychain")
+  // 1. Extract pathname slug from current URL (e.g. "/product/rose-keychain/" -> "rose-keychain")
+  const clientPathnameSlug = typeof window !== "undefined"
+    ? window.location.pathname.replace(/^.*\/product\//, "").replace(/\/.*$/, "").trim()
+    : (pathname ? pathname.replace(/^.*\/product\//, "").replace(/\/.*$/, "").trim() : "");
+
+  const rawParamSlug = typeof params?.slug === "string" ? params.slug : Array.isArray(params?.slug) ? params.slug[0] : "";
+  const decodedPathSlug = clientPathnameSlug ? decodeURIComponent(clientPathnameSlug) : "";
+
+  // 2. Authoritative slug: On client, pathname represents the actual product the user clicked.
+  // In Next.js SSG fallback template serving, propSlug was baked into the static HTML template (e.g. "botanical-sprout-bookmark").
+  // So if decodedPathSlug exists, it overrides propSlug whenever they differ.
+  const slug = (decodedPathSlug && decodedPathSlug !== "index")
+    ? decodedPathSlug
+    : (rawParamSlug || propSlug);
+
+  // Detect if this page was loaded as a fallback HTML template for a different dynamic database product
+  const isFallbackTemplateMismatch = Boolean(
+    decodedPathSlug && propSlug && decodedPathSlug !== propSlug
   );
+
+  const fallbackProduct = isFallbackTemplateMismatch
+    ? PRODUCTS.find((p) => p.slug === slug)
+    : PRODUCTS.find(
+        (p) =>
+          p.slug === slug ||
+          (slug === "cute-bunny-amigurumi-keychain" && p.slug === "cute-bunny-keychain") ||
+          (slug === "cute-bunny-keychain" && p.slug === "cute-bunny-amigurumi-keychain")
+      );
   const [liveProduct, setLiveProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(!fallbackProduct);
   const [fetchAttempted, setFetchAttempted] = useState<boolean>(false);
@@ -73,14 +91,20 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
 
   useEffect(() => {
     let isMounted = true;
-    if (!fallbackProduct) {
+    if (!fallbackProduct || isFallbackTemplateMismatch) {
+      setLiveProduct(null);
       setIsLoading(true);
+      setFetchAttempted(false);
     }
     fetchProductBySlug(slug)
       .then((apiProd) => {
         if (isMounted) {
           if (apiProd) {
             setLiveProduct(apiProd);
+            setSelectedImageIndex(0);
+            if (apiProd.name && typeof document !== "undefined") {
+              document.title = `${apiProd.name} | Knotelle`;
+            }
             if (apiProd.colors && apiProd.colors[0]) {
               setSelectedColor(apiProd.colors[0]);
             }
@@ -110,7 +134,13 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
     return () => {
       isMounted = false;
     };
-  }, [slug, fallbackProduct]);
+  }, [slug, fallbackProduct, isFallbackTemplateMismatch]);
+
+  useEffect(() => {
+    if (product?.name && typeof document !== "undefined") {
+      document.title = `${product.name} | Knotelle`;
+    }
+  }, [product?.name]);
 
   if (isLoading && !product) {
     return (
