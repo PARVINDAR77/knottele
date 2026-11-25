@@ -35,6 +35,32 @@ interface ProductDetailViewProps {
   slug: string;
 }
 
+function FormattedHtmlText({ content, className = "" }: { content?: string; className?: string }) {
+  if (!content) return null;
+
+  // Check if content contains HTML tags (e.g. <p>, <br>, <strong>, etc.)
+  const hasHtml = /<[a-z][\s\S]*>/i.test(content);
+
+  if (hasHtml) {
+    return (
+      <div
+        className={className}
+        dangerouslySetInnerHTML={{ __html: content }}
+      />
+    );
+  }
+
+  return (
+    <div className={className}>
+      {content.split("\n\n").map((para, i) => (
+        <p key={i} className="mb-2 last:mb-0">
+          {para}
+        </p>
+      ))}
+    </div>
+  );
+}
+
 export default function ProductDetailView({ slug: propSlug }: ProductDetailViewProps) {
   const router = useRouter();
   const params = useParams();
@@ -339,10 +365,11 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
                 </span>
               </div>
 
-              {/* Short Description */}
-              <p className="text-sm text-[#786864] leading-relaxed">
-                {product.description}
-              </p>
+              {/* Product Overview / Description */}
+              <FormattedHtmlText
+                content={product.description}
+                className="text-sm text-[#786864] leading-relaxed space-y-2 [&_p]:mb-2 [&_p:last-child]:mb-0 [&_strong]:text-[#2E211E] [&_strong]:font-semibold [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-1"
+              />
 
               {/* Color Selection */}
               {product.colors && product.colors.length > 0 && (
@@ -544,7 +571,10 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
           {/* Tab 1: Description */}
           {activeTab === "desc" && (
             <div className="space-y-4 text-sm text-[#786864] leading-relaxed max-w-3xl">
-              <p>{product.description}</p>
+              <FormattedHtmlText
+                content={product.description}
+                className="space-y-3 [&_p]:mb-2 [&_p:last-child]:mb-0 [&_strong]:text-[#2E211E] [&_strong]:font-semibold [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-1"
+              />
               <p>
                 Each stitch is tightly looped by hand to ensure longevity, color fastness, and structure retention. Unlike factory machine-made knits, our artisanal crochet possesses unmistakable warmth, depth, and personality.
               </p>
