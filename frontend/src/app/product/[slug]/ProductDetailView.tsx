@@ -196,6 +196,22 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
   }
 
   const isWishlisted = isInWishlist(product.id);
+  const maxStock = typeof product.stock === "number" ? product.stock : 99;
+  const isOutOfStock = maxStock <= 0 || product.inStock === false;
+
+  useEffect(() => {
+    if (product) {
+      const availStock = typeof product.stock === "number" ? product.stock : 99;
+      if (availStock <= 0 || product.inStock === false) {
+        setQuantity(0);
+      } else if (quantity > availStock) {
+        setQuantity(availStock);
+      } else if (quantity === 0) {
+        setQuantity(1);
+      }
+    }
+  }, [product?.id, product?.stock, product?.inStock]);
+
   const relatedProducts =
     relatedProductsList.length > 0
       ? relatedProductsList
@@ -204,6 +220,14 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
         ).slice(0, 4);
 
   const handleAddToCart = () => {
+    if (isOutOfStock) {
+      showToast("Out of Stock", "This item is currently out of stock.", "error");
+      return;
+    }
+    if (quantity > maxStock) {
+      showToast("Stock Limit Exceeded", `Only ${maxStock} items available in stock.`, "warning");
+      return;
+    }
     addItem(product, quantity, {
       color: selectedColor,
       size: selectedSize,
@@ -213,6 +237,14 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
   };
 
   const handleBuyNow = () => {
+    if (isOutOfStock) {
+      showToast("Out of Stock", "This item is currently out of stock.", "error");
+      return;
+    }
+    if (quantity > maxStock) {
+      showToast("Stock Limit Exceeded", `Only ${maxStock} items available in stock.`, "warning");
+      return;
+    }
     addItem(product, quantity, {
       color: selectedColor,
       size: selectedSize,
@@ -345,9 +377,19 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
               {/* Star Rating & Review count */}
               <div className="flex items-center gap-3">
                 <StarRating rating={product.rating} size="md" showNumber reviewCount={product.reviewCount} />
-                <span className="text-xs text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full font-medium border border-emerald-200">
-                  {product.stock > 0 ? "In Stock & Ready to Ship" : "Made to Order"}
-                </span>
+                {isOutOfStock ? (
+                  <span className="text-xs text-rose-700 bg-rose-50 px-2.5 py-0.5 rounded-full font-medium border border-rose-200">
+                    Out of Stock
+                  </span>
+                ) : maxStock <= 5 ? (
+                  <span className="text-xs text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full font-semibold border border-amber-200 animate-pulse">
+                    Only {maxStock} left in stock!
+                  </span>
+                ) : (
+                  <span className="text-xs text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full font-medium border border-emerald-200">
+                    In Stock ({maxStock} available)
+                  </span>
+                )}
               </div>
 
               {/* Price */}
@@ -465,39 +507,73 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
                   <div className="flex items-center border border-[#E7D1CC] rounded-full bg-white overflow-hidden shadow-xs">
                     <button
                       onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      className="px-3 py-1.5 text-[#786864] hover:text-[#2E211E] hover:bg-[#FCE9E5] transition-colors cursor-pointer"
+                      disabled={isOutOfStock || quantity <= 1}
+                      className="px-3 py-1.5 text-[#786864] hover:text-[#2E211E] hover:bg-[#FCE9E5] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                       aria-label="Decrease quantity"
                     >
                       <Minus className="w-3.5 h-3.5" />
                     </button>
                     <span className="px-3 text-xs font-bold text-[#2E211E] min-w-[24px] text-center">
-                      {quantity}
+                      {isOutOfStock ? 0 : quantity}
                     </span>
                     <button
-                      onClick={() => setQuantity(quantity + 1)}
-                      className="px-3 py-1.5 text-[#786864] hover:text-[#2E211E] hover:bg-[#FCE9E5] transition-colors cursor-pointer"
+                      onClick={() => {
+                        if (quantity >= maxStock) {
+                          showToast("Stock Limit Reached", `Only ${maxStock} items available in stock.`, "warning");
+                          return;
+                        }
+                        setQuantity(Math.min(maxStock, quantity + 1));
+                      }}
+                      disabled={isOutOfStock || quantity >= maxStock}
+                      className="px-3 py-1.5 text-[#786864] hover:text-[#2E211E] hover:bg-[#FCE9E5] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                       aria-label="Increase quantity"
                     >
                       <Plus className="w-3.5 h-3.5" />
                     </button>
                   </div>
+                  {!isOutOfStock && maxStock <= 10 && (
+                    <span className="text-[11px] text-[#913638] font-medium">
+                      Max {maxStock} available
+                    </span>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                  <button
-                    onClick={handleAddToCart}
-                    className="w-full py-3.5 px-6 rounded-full bg-[#913638] text-white text-xs sm:text-sm font-semibold hover:bg-[#74292B] active:scale-[0.98] shadow-xs hover:shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    <ShoppingBag className="w-4 h-4" />
-                    <span>Add to Cart</span>
-                  </button>
-                  <button
-                    onClick={handleBuyNow}
-                    className="w-full py-3.5 px-6 rounded-full bg-white text-[#2E211E] hover:bg-[#FCE9E5] hover:text-[#913638] border border-[#E7D1CC] hover:border-[#EFB8B0] text-xs sm:text-sm font-semibold active:scale-[0.98] shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    <span>Buy Now</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
+                  {isOutOfStock ? (
+                    <>
+                      <button
+                        disabled
+                        className="w-full py-3.5 px-6 rounded-full bg-stone-200 text-stone-500 text-xs sm:text-sm font-semibold cursor-not-allowed flex items-center justify-center gap-2"
+                      >
+                        <ShoppingBag className="w-4 h-4" />
+                        <span>Out of Stock</span>
+                      </button>
+                      <button
+                        disabled
+                        className="w-full py-3.5 px-6 rounded-full bg-stone-100 text-stone-400 border border-stone-200 text-xs sm:text-sm font-semibold cursor-not-allowed flex items-center justify-center gap-2"
+                      >
+                        <span>Sold Out</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={handleAddToCart}
+                        className="w-full py-3.5 px-6 rounded-full bg-[#913638] text-white text-xs sm:text-sm font-semibold hover:bg-[#74292B] active:scale-[0.98] shadow-xs hover:shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <ShoppingBag className="w-4 h-4" />
+                        <span>Add to Cart</span>
+                      </button>
+                      <button
+                        onClick={handleBuyNow}
+                        className="w-full py-3.5 px-6 rounded-full bg-white text-[#2E211E] hover:bg-[#FCE9E5] hover:text-[#913638] border border-[#E7D1CC] hover:border-[#EFB8B0] text-xs sm:text-sm font-semibold active:scale-[0.98] shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <span>Buy Now</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
 

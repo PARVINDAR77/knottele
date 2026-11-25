@@ -222,17 +222,33 @@ export function CartDrawer() {
                           {item.quantity}
                         </span>
                         <button
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                          className="px-2 py-1 text-[#786864] hover:text-[#2E211E] hover:bg-[#FCE9E5] transition-colors cursor-pointer"
+                          onClick={() => {
+                            const maxStock = typeof item.product?.stock === "number" ? item.product.stock : 99;
+                            if (item.quantity >= maxStock) {
+                              showToast("Stock Limit Reached", `Only ${maxStock} items available in stock.`, "warning");
+                              return;
+                            }
+                            updateQuantity(item.id, item.quantity + 1);
+                          }}
+                          disabled={item.quantity >= (typeof item.product?.stock === "number" ? item.product.stock : 99)}
+                          className="px-2 py-1 text-[#786864] hover:text-[#2E211E] hover:bg-[#FCE9E5] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                           aria-label="Increase quantity"
                         >
                           <Plus className="w-3 h-3" />
                         </button>
                       </div>
 
-                      <span className="text-sm font-bold text-[#913638]">
-                        ₹{(item.price * item.quantity).toLocaleString("en-IN")}
-                      </span>
+                      <div className="text-right">
+                        <span className="text-sm font-bold text-[#913638]">
+                          ₹{(item.price * item.quantity).toLocaleString("en-IN")}
+                        </span>
+                        {typeof item.product?.stock === "number" && item.product.stock <= 5 && item.product.stock > 0 && (
+                          <p className="text-[10px] text-amber-700 font-medium">Only {item.product.stock} left</p>
+                        )}
+                        {(item.product?.stock === 0 || item.product?.inStock === false) && (
+                          <p className="text-[10px] text-rose-600 font-medium">Out of stock</p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>

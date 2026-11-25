@@ -247,6 +247,7 @@ class ProductController extends Controller
                     'discount_percent' => $discountPercent,
                     'is_in_stock' => $isInStock,
                     'stock_quantity' => $totalStock,
+                    'stock' => $totalStock,
                     'sku' => $defaultVariant ? $defaultVariant->sku : 'N/A',
                     'brand' => $product->brand ? $product->brand->name : null,
                     'brand_id' => $product->brand_id,
@@ -491,6 +492,7 @@ public function show($slug): JsonResponse
             'discount_percent' => $discountPercent,
             'is_in_stock' => $isInStock,
             'stock_quantity' => $totalStock,
+            'stock' => $totalStock,
             'sku' => $defaultVariant ? $defaultVariant->sku : 'N/A',
             'brand' => $product->brand ? [
                 'id' => $product->brand->id,

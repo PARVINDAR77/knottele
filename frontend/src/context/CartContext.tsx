@@ -83,21 +83,46 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const addItem = (product: Product, quantity = 1, customization?: CartItemCustomization) => {
     const id = generateCartItemId(product.id, customization);
-    
+    const availableStock = typeof product.stock === "number" ? product.stock : 99;
+
+    if (availableStock <= 0 || product.inStock === false) {
+      showToast("Out of Stock", `${product.name} is currently out of stock.`, "error");
+      return;
+    }
+
+    let limitExceeded = false;
+
     setItems((prevItems) => {
       const existingItemIndex = prevItems.findIndex((item) => item.id === id);
       if (existingItemIndex > -1) {
+        const currentQty = prevItems[existingItemIndex].quantity;
+        const desiredQty = currentQty + quantity;
+        const cappedQty = Math.min(availableStock, desiredQty);
+
+        if (desiredQty > availableStock) {
+          limitExceeded = true;
+          if (currentQty >= availableStock) {
+            return prevItems;
+          }
+        }
+
         const updated = [...prevItems];
-        updated[existingItemIndex].quantity += quantity;
+        updated[existingItemIndex].quantity = cappedQty;
+        updated[existingItemIndex].product = product;
         return updated;
       } else {
+        const cappedQty = Math.min(availableStock, quantity);
+        if (quantity > availableStock) {
+          limitExceeded = true;
+        }
+
         return [
           ...prevItems,
           {
             id,
             productId: product.id,
             product,
-            quantity,
+            quantity: cappedQty,
             customization,
             price: product.price,
           },
@@ -105,7 +130,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    showToast("Added to Your Cart 🧺", `${quantity}x ${product.name} ready for you.`, "cart");
+    if (limitExceeded) {
+      showToast(
+        "Stock Limit Reached ⚠️",
+        `Only ${availableStock} units of ${product.name} available in stock.`,
+        "warning"
+      );
+    } else {
+      showToast("Added to Your Cart 🧺", `${quantity}x ${product.name} ready for you.`, "cart");
+    }
   };
 
   const removeItem = (cartItemId: string, silent = false) => {
@@ -121,7 +154,21 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     setItems((prev) =>
-      prev.map((item) => (item.id === cartItemId ? { ...item, quantity } : item))
+      prev.map((item) => {
+        if (item.id === cartItemId) {
+          const availableStock = typeof item.product?.stock === "number" ? item.product.stock : 99;
+          if (quantity > availableStock) {
+            showToast(
+              "Stock Limit Reached ⚠️",
+              `Cannot exceed maximum available stock (${availableStock}).`,
+              "warning"
+            );
+            return { ...item, quantity: availableStock };
+          }
+          return { ...item, quantity };
+        }
+        return item;
+      })
     );
   };
 

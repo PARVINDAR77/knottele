@@ -641,7 +641,14 @@ export function transformApiProductToProduct(apiProduct: ApiProduct): Product {
     isNew: Boolean(apiProduct.is_new),
     rating: apiProduct.rating ? Number(apiProduct.rating) : 4.9,
     reviewCount: apiProduct.review_count ? Number(apiProduct.review_count) : 16,
-    stock: apiProduct.stock_quantity ?? 25,
+    stock:
+      apiProduct.stock_quantity !== undefined && apiProduct.stock_quantity !== null
+        ? Number(apiProduct.stock_quantity)
+        : (apiProduct.is_in_stock === false ? 0 : 25),
+    inStock:
+      apiProduct.is_in_stock !== undefined
+        ? Boolean(apiProduct.is_in_stock)
+        : ((apiProduct.stock_quantity ?? 0) > 0),
     tags: [categorySlug, "handmade", "crochet", "boutique", "gift"],
     reviews:
       apiProduct.reviews_data && apiProduct.reviews_data.length > 0

@@ -246,8 +246,16 @@ export default function CartPage() {
                           {item.quantity}
                         </span>
                         <button
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                          className="px-2.5 py-1 text-[#786864] hover:text-[#2E211E] hover:bg-[#FCE9E5] transition-colors cursor-pointer"
+                          onClick={() => {
+                            const maxStock = typeof item.product?.stock === "number" ? item.product.stock : 99;
+                            if (item.quantity >= maxStock) {
+                              showToast("Stock Limit Reached", `Only ${maxStock} items available in stock.`, "warning");
+                              return;
+                            }
+                            updateQuantity(item.id, item.quantity + 1);
+                          }}
+                          disabled={item.quantity >= (typeof item.product?.stock === "number" ? item.product.stock : 99)}
+                          className="px-2.5 py-1 text-[#786864] hover:text-[#2E211E] hover:bg-[#FCE9E5] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                           <Plus className="w-3 h-3" />
                         </button>
@@ -260,6 +268,12 @@ export default function CartPage() {
                         <p className="text-[10px] text-[#786864]">
                           (₹{item.price.toLocaleString("en-IN")} each)
                         </p>
+                        {typeof item.product?.stock === "number" && item.product.stock <= 5 && item.product.stock > 0 && (
+                          <p className="text-[10px] text-amber-700 font-medium">Only {item.product.stock} in stock</p>
+                        )}
+                        {(item.product?.stock === 0 || item.product?.inStock === false) && (
+                          <p className="text-[10px] text-rose-600 font-medium">Out of stock</p>
+                        )}
                       </div>
                     </div>
 

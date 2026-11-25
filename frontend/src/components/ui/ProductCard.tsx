@@ -7,6 +7,7 @@ import { Heart, ShoppingBag, Eye, Sparkles } from "lucide-react";
 import { Product } from "@/types/product";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
+import { useToast } from "@/context/ToastContext";
 import { normalizeImageUrl } from "@/lib/api";
 import { StarRating } from "./StarRating";
 import { Badge } from "./Badge";
@@ -19,6 +20,7 @@ interface ProductCardProps {
 export function ProductCard({ product, priority = false }: ProductCardProps) {
   const { addItem, setIsCartOpen } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
+  const { showToast } = useToast();
   const [isHovered, setIsHovered] = useState(false);
   const isWishlisted = isInWishlist(product.id);
 
@@ -32,9 +34,16 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
     setImgSrc(initialImg);
   }, [initialImg]);
 
+  const maxStock = typeof product.stock === "number" ? product.stock : 99;
+  const isOutOfStock = maxStock <= 0 || product.inStock === false;
+
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (isOutOfStock) {
+      showToast("Out of Stock", `${product.name} is currently out of stock.`, "error");
+      return;
+    }
     addItem(product, 1, {
       color: product.colors[0],
       size: product.sizes?.[0],
@@ -74,21 +83,29 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
 
         {/* Badges Top-Left */}
         <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10 pointer-events-none">
-          {product.isBestSeller && (
-            <Badge variant="rose" className="shadow-xs text-[10px] uppercase font-bold tracking-wider">
-              Best Seller
+          {isOutOfStock ? (
+            <Badge variant="rose" className="bg-[#4A3B32] text-white border-none shadow-xs text-[10px] uppercase font-bold tracking-wider">
+              Sold Out
             </Badge>
-          )}
-          {product.isNew && !product.isBestSeller && (
-            <Badge variant="pink" className="shadow-xs text-[10px] uppercase font-bold tracking-wider">
-              New
-            </Badge>
-          )}
-          {product.isCustomizable && (
-            <Badge variant="gold" className="shadow-xs text-[10px] uppercase font-bold tracking-wider flex items-center gap-1">
-              <Sparkles className="w-2.5 h-2.5" />
-              Customizable
-            </Badge>
+          ) : (
+            <>
+              {product.isBestSeller && (
+                <Badge variant="rose" className="shadow-xs text-[10px] uppercase font-bold tracking-wider">
+                  Best Seller
+                </Badge>
+              )}
+              {product.isNew && !product.isBestSeller && (
+                <Badge variant="pink" className="shadow-xs text-[10px] uppercase font-bold tracking-wider">
+                  New
+                </Badge>
+              )}
+              {product.isCustomizable && (
+                <Badge variant="gold" className="shadow-xs text-[10px] uppercase font-bold tracking-wider flex items-center gap-1">
+                  <Sparkles className="w-2.5 h-2.5" />
+                  Customizable
+                </Badge>
+              )}
+            </>
           )}
         </div>
 
@@ -111,10 +128,15 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
         <div className="absolute inset-x-3 bottom-3 hidden sm:flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-10">
           <button
             onClick={handleQuickAdd}
-            className="flex-1 py-2 px-3 rounded-full bg-[#913638] hover:bg-[#74292B] active:scale-[0.98] text-white text-xs font-semibold tracking-normal flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer"
+            disabled={isOutOfStock}
+            className={`flex-1 py-2 px-3 rounded-full text-white text-xs font-semibold tracking-normal flex items-center justify-center gap-1.5 shadow-xs transition-all ${
+              isOutOfStock
+                ? "bg-stone-400 cursor-not-allowed opacity-80"
+                : "bg-[#913638] hover:bg-[#74292B] active:scale-[0.98] cursor-pointer"
+            }`}
           >
             <ShoppingBag className="w-3.5 h-3.5" />
-            <span>Quick Add</span>
+            <span>{isOutOfStock ? "Sold Out" : "Quick Add"}</span>
           </button>
           <Link
             href={`/product/${product.slug}`}
@@ -155,10 +177,15 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
         {/* Mobile-only Direct Add to Cart Button */}
         <button
           onClick={handleQuickAdd}
-          className="mt-3 sm:hidden w-full py-2 px-3 rounded-full bg-white text-[#2E211E] hover:bg-[#FCE9E5] hover:text-[#913638] border border-[#E7D1CC] active:bg-[#913638] active:text-white active:scale-[0.98] text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer"
+          disabled={isOutOfStock}
+          className={`mt-3 sm:hidden w-full py-2 px-3 rounded-full border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-xs ${
+            isOutOfStock
+              ? "bg-stone-100 text-stone-400 border-stone-200 cursor-not-allowed"
+              : "bg-white text-[#2E211E] hover:bg-[#FCE9E5] hover:text-[#913638] border-[#E7D1CC] active:bg-[#913638] active:text-white active:scale-[0.98] cursor-pointer"
+          }`}
         >
-          <ShoppingBag className="w-3.5 h-3.5 text-[#913638]" />
-          <span>Add to Cart</span>
+          <ShoppingBag className={`w-3.5 h-3.5 ${isOutOfStock ? "text-stone-400" : "text-[#913638]"}`} />
+          <span>{isOutOfStock ? "Sold Out" : "Add to Cart"}</span>
         </button>
       </div>
     </div>

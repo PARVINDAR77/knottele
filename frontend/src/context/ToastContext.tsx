@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useCallback } from "react";
 import { CheckCircle2, Heart, ShoppingBag, AlertCircle, Info, X } from "lucide-react";
 
-export type ToastType = "success" | "cart" | "wishlist" | "info" | "error";
+export type ToastType = "success" | "cart" | "wishlist" | "info" | "error" | "warning";
 
 interface Toast {
   id: string;
@@ -67,6 +67,11 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               )}
               {toast.type === "error" && (
                 <div className="w-8 h-8 rounded-full bg-[#FCE9E5] text-[#913638] flex items-center justify-center">
+                  <AlertCircle className="w-4 h-4" />
+                </div>
+              )}
+              {toast.type === "warning" && (
+                <div className="w-8 h-8 rounded-full bg-[#FFFBEB] text-[#B45309] flex items-center justify-center">
                   <AlertCircle className="w-4 h-4" />
                 </div>
               )}

@@ -258,18 +258,32 @@ export default function CheckoutPage() {
     const cleanCity = city.trim();
     const cleanPin = pincode.trim();
 
+    // Pre-flight Inventory Stock Verification
+    for (const item of items) {
+      const availableStock = typeof item.product?.stock === "number" ? item.product.stock : 99;
+      if (availableStock <= 0 || item.product?.inStock === false) {
+        showToast("Out of Stock Item", `"${item.product?.name || "Item"}" is out of stock. Please remove it from your cart before checkout.`, "error");
+        return;
+      }
+      if (item.quantity > availableStock) {
+        showToast("Stock Quantity Exceeded", `Only ${availableStock} units of "${item.product?.name || "Item"}" available. Please reduce the quantity in your cart.`, "error");
+        return;
+      }
+    }
+
     const orderItemsPayload = items.map((item) => {
       let variantId = 1;
       const numMatch = String(item.product?.id || "").match(/\d+/);
       if (numMatch) {
         const parsed = parseInt(numMatch[0], 10);
-        if (parsed >= 1 && parsed <= 50) {
+        if (parsed >= 1 && parsed <= 500) {
           variantId = parsed;
         }
       }
       return {
         variant_id: variantId,
         product_id: item.product?.id || item.productId,
+        slug: item.product?.slug,
         product_code: item.product?.id || item.productId,
         name: item.product?.name || "Handmade Product",
         unit_price: item.price,
@@ -406,6 +420,19 @@ export default function CheckoutPage() {
       return;
     }
 
+    // Pre-flight Inventory Stock Verification
+    for (const item of items) {
+      const availableStock = typeof item.product?.stock === "number" ? item.product.stock : 99;
+      if (availableStock <= 0 || item.product?.inStock === false) {
+        showToast("Out of Stock Item", `"${item.product?.name || "Item"}" is out of stock. Please remove it from your cart before checkout.`, "error");
+        return;
+      }
+      if (item.quantity > availableStock) {
+        showToast("Stock Quantity Exceeded", `Only ${availableStock} units of "${item.product?.name || "Item"}" available. Please reduce the quantity in your cart.`, "error");
+        return;
+      }
+    }
+
     setIsSubmitting(true);
 
     const orderItemsPayload = items.map((item) => {
@@ -413,13 +440,14 @@ export default function CheckoutPage() {
       const numMatch = String(item.product?.id || "").match(/\d+/);
       if (numMatch) {
         const parsed = parseInt(numMatch[0], 10);
-        if (parsed >= 1 && parsed <= 50) {
+        if (parsed >= 1 && parsed <= 500) {
           variantId = parsed;
         }
       }
       return {
         variant_id: variantId,
         product_id: item.product?.id || item.productId,
+        slug: item.product?.slug,
         product_code: item.product?.id || item.productId,
         name: item.product?.name || "Handmade Product",
         unit_price: item.price,
