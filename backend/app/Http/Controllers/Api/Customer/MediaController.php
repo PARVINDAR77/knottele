@@ -98,7 +98,7 @@ class MediaController extends Controller
                 ['id' => 1, 'desktop' => asset('images/hero/hero-enhanced.jpg'), 'desktop_image' => asset('images/hero/hero-enhanced.jpg'), 'mobile' => asset('images/hero/hero-enhanced.jpg'), 'mobile_image' => asset('images/hero/hero-enhanced.jpg'), 'title' => 'Little Stitches Big Happiness', 'tagline' => 'Good Things Are Handmade', 'subtitle' => 'Handmade crochet products that add warmth to your everyday life.', 'description' => 'Handmade crochet products that add warmth to your everyday life.', 'primary_button_text' => 'Shop All Collections', 'primary_button_link' => '/shop', 'secondary_button_text' => 'Explore Collections', 'secondary_button_link' => '/shop', 'cta_text' => 'Shop All Collections', 'cta_link' => '/shop', 'tag_text' => 'Good Things Are Handmade', 'alt' => 'Little Stitches Big Happiness', 'status' => true, 'is_active' => true, 'sort_order' => 1],
                 ['id' => 2, 'desktop' => asset('images/hero/2image.png'), 'desktop_image' => asset('images/hero/2image.png'), 'mobile' => asset('images/hero/2image.png'), 'mobile_image' => asset('images/hero/2image.png'), 'title' => 'Everyday Elegance Handcrafted Bags', 'tagline' => 'Every Stitch Has A Story', 'subtitle' => 'Artisanal granny square bags & wearable creations woven with love.', 'description' => 'Artisanal granny square bags & wearable creations woven with love.', 'primary_button_text' => 'Explore Bags', 'primary_button_link' => '/category/bags', 'secondary_button_text' => 'Shop Collections', 'secondary_button_link' => '/shop', 'cta_text' => 'Explore Bags', 'cta_link' => '/category/bags', 'tag_text' => 'Every Stitch Has A Story', 'alt' => 'Everyday Elegance Handcrafted Bags', 'status' => true, 'is_active' => true, 'sort_order' => 2],
                 ['id' => 3, 'desktop' => asset('images/hero/3image.png'), 'desktop_image' => asset('images/hero/3image.png'), 'mobile' => asset('images/hero/3image.png'), 'mobile_image' => asset('images/hero/3image.png'), 'title' => 'Everlasting Blooms Made With Love', 'tagline' => 'Crafted Just For You', 'subtitle' => 'Bespoke everlasting flower bouquets crafted to brighten every moment.', 'description' => 'Bespoke everlasting flower bouquets crafted to brighten every moment.', 'primary_button_text' => 'Shop Flowers', 'primary_button_link' => '/category/flower', 'secondary_button_text' => 'Explore Collections', 'secondary_button_link' => '/shop', 'cta_text' => 'Shop Flowers', 'cta_link' => '/category/flower', 'tag_text' => 'Crafted Just For You', 'alt' => 'Everlasting Blooms Made With Love', 'status' => true, 'is_active' => true, 'sort_order' => 3],
-                ['id' => 4, 'desktop' => asset('images/hero/4image.png'), 'desktop_image' => asset('images/hero/4image.png'), 'mobile' => asset('images/hero/4image.png'), 'mobile_image' => asset('images/hero/4image.png'), 'title' => 'Bespoke Creations Custom Crafted', 'tagline' => 'Pure Artisan Warmth', 'subtitle' => 'Personalized crochet treasures tailored specially for your memorable moments.', 'description' => 'Personalized crochet treasures tailored specially for your memorable moments.', 'primary_button_text' => 'Request Custom Order', 'primary_button_link' => '/custom-order', 'secondary_button_text' => 'Shop Now', 'secondary_button_link' => '/shop', 'cta_text' => 'Request Custom Order', 'cta_link' => '/custom-order', 'tag_text' => 'Pure Artisan Warmth', 'alt' => 'Bespoke Creations Custom Crafted', 'status' => true, 'is_active' => true, 'sort_order' => 4],
+                ['id' => 4, 'desktop' => asset('images/hero/4image.png'), 'desktop_image' => asset('images/hero/4image.png'), 'mobile' => asset('images/hero/4image.png'), 'mobile_image' => asset('images/hero/4image.png'), 'title' => 'Bespoke Creations Custom Crafted', 'tagline' => 'Pure Artisan Warmth', 'subtitle' => 'Personalized crochet treasures tailored specially for your memorable moments.', 'description' => 'Personalized crochet treasures tailored specially for your memorable moments.', 'primary_button_text' => 'Explore Collections', 'primary_button_link' => '/shop', 'secondary_button_text' => 'Shop Now', 'secondary_button_link' => '/shop', 'cta_text' => 'Explore Collections', 'cta_link' => '/shop', 'tag_text' => 'Pure Artisan Warmth', 'alt' => 'Bespoke Creations Custom Crafted', 'status' => true, 'is_active' => true, 'sort_order' => 4],
             ];
             $heroSlides = $fallbackSlides;
             $heroDesktop = $fallbackSlides[0]['desktop'];
@@ -284,6 +284,18 @@ class MediaController extends Controller
             $footerBg = asset('images/categories/footer.png');
         }
 
+        $footerCol1Raw = $footerMeta['col1_links'] ?? [
+            ['label' => 'Home', 'url' => '/', 'is_active' => true],
+            ['label' => 'Shop', 'url' => '/shop', 'is_active' => true],
+            ['label' => 'About', 'url' => '/about', 'is_active' => true],
+            ['label' => 'Contact', 'url' => '/contact', 'is_active' => true],
+        ];
+        $footerCol1Filtered = array_values(array_filter($footerCol1Raw, function ($link) {
+            $url = $link['url'] ?? $link['href'] ?? '';
+            $label = $link['label'] ?? $link['name'] ?? '';
+            return !str_contains($url, 'custom-order') && !str_contains(strtolower($label), 'custom order');
+        }));
+
         $footer = [
             'bg' => $footerBg,
             'image' => $footerBg,
@@ -320,13 +332,7 @@ class MediaController extends Controller
             ],
             'column_1' => [
                 'title' => $footerMeta['col1_title'] ?? 'Quick Links',
-                'links' => $footerMeta['col1_links'] ?? [
-                    ['label' => 'Home', 'url' => '/', 'is_active' => true],
-                    ['label' => 'Shop', 'url' => '/shop', 'is_active' => true],
-                    ['label' => 'Custom Order', 'url' => '/custom-order', 'is_active' => true],
-                    ['label' => 'About', 'url' => '/about', 'is_active' => true],
-                    ['label' => 'Contact', 'url' => '/contact', 'is_active' => true],
-                ],
+                'links' => $footerCol1Filtered,
             ],
             'column_2' => [
                 'title' => $footerMeta['col2_title'] ?? 'Customer Care',
@@ -368,6 +374,19 @@ class MediaController extends Controller
         $freeMinThreshold = !empty($storeSettings['free_shipping_min']) ? (float)$storeSettings['free_shipping_min'] : 999;
         $defaultAnnouncement = '✨ Free Pan-India Delivery on all Orders above ₹' . number_format($freeMinThreshold);
 
+        $rawNavLinks = $navbarMeta['nav_links'] ?? [
+            ['name' => 'Home', 'href' => '/', 'is_highlighted' => false, 'is_active' => true],
+            ['name' => 'Shop', 'href' => '/shop', 'is_highlighted' => false, 'is_active' => true],
+            ['name' => 'About', 'href' => '/about', 'is_highlighted' => false, 'is_active' => true],
+            ['name' => 'Contact', 'href' => '/contact', 'is_highlighted' => false, 'is_active' => true],
+        ];
+
+        $filteredNavLinks = array_values(array_filter($rawNavLinks, function ($link) {
+            $href = $link['href'] ?? $link['url'] ?? '';
+            $name = $link['name'] ?? $link['label'] ?? '';
+            return !str_contains($href, 'custom-order') && !str_contains(strtolower($name), 'custom order');
+        }));
+
         $navbar = [
             'logo' => $mainLogo,
             'announcement' => [
@@ -375,13 +394,7 @@ class MediaController extends Controller
                 'link' => $navbarMeta['announcement_link'] ?? '/shop',
                 'is_active' => isset($navbarMeta['announcement_active']) ? (bool)$navbarMeta['announcement_active'] : false,
             ],
-            'nav_links' => $navbarMeta['nav_links'] ?? [
-                ['name' => 'Home', 'href' => '/', 'is_highlighted' => false, 'is_active' => true],
-                ['name' => 'Shop', 'href' => '/shop', 'is_highlighted' => false, 'is_active' => true],
-                ['name' => 'Custom Order', 'href' => '/custom-order', 'is_highlighted' => true, 'is_active' => true],
-                ['name' => 'About', 'href' => '/about', 'is_highlighted' => false, 'is_active' => true],
-                ['name' => 'Contact', 'href' => '/contact', 'is_highlighted' => false, 'is_active' => true],
-            ],
+            'nav_links' => $filteredNavLinks,
             'actions' => [
                 'show_search' => isset($navbarMeta['show_search']) ? (bool)$navbarMeta['show_search'] : true,
                 'show_wishlist' => isset($navbarMeta['show_wishlist']) ? (bool)$navbarMeta['show_wishlist'] : true,

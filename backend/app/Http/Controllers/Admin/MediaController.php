@@ -455,7 +455,6 @@ class MediaController extends Controller
                         'col1_links' => $meta['col1_links'] ?? [
                             ['label' => 'Home', 'url' => '/', 'is_active' => true],
                             ['label' => 'Shop', 'url' => '/shop', 'is_active' => true],
-                            ['label' => 'Custom Order', 'url' => '/custom-order', 'is_active' => true],
                             ['label' => 'About', 'url' => '/about', 'is_active' => true],
                             ['label' => 'Contact', 'url' => '/contact', 'is_active' => true],
                         ],
@@ -521,9 +520,8 @@ class MediaController extends Controller
                         'nav_links' => $meta['nav_links'] ?? [
                             ['name' => 'Home', 'href' => '/', 'is_highlighted' => false, 'is_active' => true, 'sort_order' => 1],
                             ['name' => 'Shop', 'href' => '/shop', 'is_highlighted' => false, 'is_active' => true, 'sort_order' => 2],
-                            ['name' => 'Custom Order', 'href' => '/custom-order', 'is_highlighted' => true, 'is_active' => true, 'sort_order' => 3],
-                            ['name' => 'About', 'href' => '/about', 'is_highlighted' => false, 'is_active' => true, 'sort_order' => 4],
-                            ['name' => 'Contact', 'href' => '/contact', 'is_highlighted' => false, 'is_active' => true, 'sort_order' => 5],
+                            ['name' => 'About', 'href' => '/about', 'is_highlighted' => false, 'is_active' => true, 'sort_order' => 3],
+                            ['name' => 'Contact', 'href' => '/contact', 'is_highlighted' => false, 'is_active' => true, 'sort_order' => 4],
                         ],
                         'show_search' => isset($meta['show_search']) ? (bool)$meta['show_search'] : true,
                         'show_wishlist' => isset($meta['show_wishlist']) ? (bool)$meta['show_wishlist'] : true,
