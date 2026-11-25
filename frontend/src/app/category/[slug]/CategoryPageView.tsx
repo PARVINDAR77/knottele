@@ -3,9 +3,10 @@
 import React, { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { notFound, useParams } from "next/navigation";
+import { useParams, usePathname } from "next/navigation";
 import { Product } from "@/types/product";
 import { fetchProducts, fetchCategories } from "@/lib/api";
+import { CATEGORIES } from "@/data/categories";
 import { ProductCard } from "@/components/ui/ProductCard";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { BotanicalFlourish } from "@/components/ui/BotanicalDecorations";
@@ -21,16 +22,31 @@ interface CategoryPageViewProps {
 }
 
 export default function CategoryPageView({ slug: propSlug }: CategoryPageViewProps) {
+  const pathname = usePathname();
   const params = useParams();
+
+  // 1. Authoritative client pathname slug:
+  // When static HTML template fallback is served (e.g. bags/index.html),
+  // propSlug was baked in at build time. On the client, window.location.pathname
+  // is the authoritative source of the actual category the user requested.
+  const clientPathnameSlug = typeof window !== "undefined"
+    ? window.location.pathname.replace(/^.*\/category\//, "").replace(/\/.*$/, "").trim()
+    : (pathname ? pathname.replace(/^.*\/category\//, "").replace(/\/.*$/, "").trim() : "");
+
   const rawParamSlug = typeof params?.slug === "string" ? params.slug : Array.isArray(params?.slug) ? params.slug[0] : "";
-  const pathnameSlug = typeof window !== "undefined"
-    ? window.location.pathname.replace(/^.*\/category\//, "").replace(/\/.*$/, "")
-    : "";
-  const slug = propSlug || rawParamSlug || pathnameSlug;
+  const decodedPathSlug = clientPathnameSlug ? decodeURIComponent(clientPathnameSlug) : "";
+
+  // Dynamic slug: decoded client path overrides pre-baked SSG template slug
+  const slug = (decodedPathSlug && decodedPathSlug !== "index")
+    ? decodedPathSlug
+    : (rawParamSlug || propSlug);
+
+  const normalizedSlug = (slug || "").toLowerCase().trim();
 
   const { media } = useWebsiteMedia();
   const [categoriesList, setCategoriesList] = useState<any[]>([]);
   const [productsList, setProductsList] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const cachedCats = media?.categories && media.categories.length > 0
@@ -42,6 +58,7 @@ export default function CategoryPageView({ slug: propSlug }: CategoryPageViewPro
     const cachedProds = getLocalCache<Product[]>(PRODUCTS_CACHE_KEY, []);
     if (cachedProds && cachedProds.length > 0) {
       setProductsList(cachedProds);
+      setIsLoading(false);
     }
 
     let isMounted = true;
@@ -61,9 +78,13 @@ export default function CategoryPageView({ slug: propSlug }: CategoryPageViewPro
           if (isMounted && res.products && res.products.length > 0) {
             setProductsList(res.products);
             setLocalCache(PRODUCTS_CACHE_KEY, res.products);
+            setIsLoading(false);
           }
         })
-        .catch((err) => console.warn("Live products fetch notice:", err));
+        .catch((err) => {
+          console.warn("Live products fetch notice:", err);
+          if (isMounted) setIsLoading(false);
+        });
     };
 
     loadData();
@@ -73,7 +94,7 @@ export default function CategoryPageView({ slug: propSlug }: CategoryPageViewPro
       isMounted = false;
       cleanupListeners();
     };
-  }, []);
+  }, [media?.categories]);
 
   useEffect(() => {
     if (media?.categories && media.categories.length > 0) {
@@ -81,20 +102,42 @@ export default function CategoryPageView({ slug: propSlug }: CategoryPageViewPro
     }
   }, [media?.categories]);
 
-  const category = categoriesList.find((c) => c.slug === slug);
+  const category = categoriesList.find(
+    (c) => (c.slug || "").toLowerCase() === normalizedSlug || c.slug === slug
+  );
 
-  const currentCat = category || {
-    name: slug.charAt(0).toUpperCase() + slug.slice(1).replace(/-/g, " "),
+  const fallbackCategory = CATEGORIES.find(
+    (c) => (c.slug || "").toLowerCase() === normalizedSlug || c.slug === slug
+  );
+
+  const matchedCat = category || fallbackCategory;
+
+  const currentCat = matchedCat || {
+    name: slug
+      ? slug
+          .split("-")
+          .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(" ")
+      : "Category",
     slug: slug,
     description: `Discover our artisanal handcrafted ${slug.replace(/-/g, " ")} creations.`,
     image: "/images/logo/Logo_1.png",
   };
 
   const categoryProducts = useMemo(() => {
-    return productsList.filter(
-      (p) => p.categorySlug === slug || p.category.toLowerCase().includes(slug.replace(/-/g, " ").toLowerCase())
-    );
-  }, [productsList, slug]);
+    const targetSlug = normalizedSlug;
+    const targetName = (currentCat.name || "").toLowerCase();
+    return productsList.filter((p) => {
+      const pCatSlug = (p.categorySlug || "").toLowerCase();
+      const pCat = (p.category || "").toLowerCase();
+      return (
+        pCatSlug === targetSlug ||
+        pCat === targetName ||
+        pCat.includes(targetSlug.replace(/-/g, " ")) ||
+        (targetSlug === "combo-packs" && (pCatSlug.includes("combo") || pCat.includes("combo")))
+      );
+    });
+  }, [productsList, normalizedSlug, currentCat.name]);
 
   return (
     <div className="bg-[#FFF9F6] min-h-screen py-8 lg:py-12">
@@ -144,7 +187,7 @@ export default function CategoryPageView({ slug: propSlug }: CategoryPageViewPro
             <div className="md:col-span-4 flex justify-center">
               <div className="relative w-36 h-36 sm:w-44 sm:h-44 rounded-full overflow-hidden border-4 border-white shadow-lg bg-[#FFF9F6]">
                 <Image
-                  src={currentCat.image}
+                  src={currentCat.image || "/images/logo/Logo_1.png"}
                   alt={currentCat.name}
                   fill
                   sizes="180px"
@@ -168,6 +211,7 @@ export default function CategoryPageView({ slug: propSlug }: CategoryPageViewPro
             <Link
               key={cat.id || cat.slug}
               href={`/category/${cat.slug}`}
+              prefetch={false}
               className={`px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap active:scale-[0.98] transition-all ${
                 cat.slug === currentCat.slug
                   ? "bg-[#913638] text-white shadow-xs"
@@ -184,6 +228,12 @@ export default function CategoryPageView({ slug: propSlug }: CategoryPageViewPro
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
             {categoryProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        ) : isLoading ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="bg-white rounded-3xl border border-[#E7D1CC] p-4 h-64 animate-pulse" />
             ))}
           </div>
         ) : (

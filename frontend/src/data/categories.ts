@@ -11,6 +11,16 @@ export interface Category {
 
 export const CATEGORIES: Category[] = [
   {
+    id: "cat-12",
+    slug: "combo-packs",
+    name: "Combo Packs",
+    priceFrom: "From ₹299 →",
+    itemCount: 2,
+    description: "Curated gift boxes and crochet combo bundles featuring handcrafted accessories and keepsakes.",
+    image: "/images/categories/combo-packs.jpg",
+    featured: true,
+  },
+  {
     id: "cat-1",
     slug: "keychain",
     name: "Keychain",

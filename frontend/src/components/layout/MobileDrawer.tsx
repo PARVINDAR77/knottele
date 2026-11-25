@@ -280,7 +280,7 @@ export function MobileDrawer({
                       <Link
                         key={cat.id || cat.slug}
                         href={catHref}
-                        prefetch={true}
+                        prefetch={false}
                         onClick={handleDrawerNavClick(catHref)}
                         className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg bg-[#FFF9F6] border border-[#E7D1CC]/60 text-xs text-[#2E211E] hover:bg-[#FCE9E5] hover:text-[#913638] transition-colors truncate"
                       >

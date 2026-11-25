@@ -40,6 +40,14 @@ export async function generateStaticParams() {
     if (category.slug) allSlugs.add(category.slug);
   });
 
+  // 4. Critical guaranteed active database categories
+  allSlugs.add("combo-packs");
+  allSlugs.add("keychain");
+  allSlugs.add("flower");
+  allSlugs.add("cup-tea-coffee");
+  allSlugs.add("hair-accessories");
+  allSlugs.add("clothing");
+
   return Array.from(allSlugs)
     .filter(Boolean)
     .map((slug) => ({ slug }));

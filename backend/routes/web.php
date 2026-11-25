@@ -675,12 +675,20 @@ Route::match(['GET', 'HEAD'], '/{any}', function ($any = '') {
     if (str_starts_with($path, 'category/')) {
         if (request()->has('_rsc') || str_contains($path, '__next.') || str_ends_with($path, '.txt')) {
             $txtFile = str_ends_with($path, '.txt') ? basename($path) : 'index.txt';
+            if (file_exists(public_path('category/keychain/' . $txtFile))) {
+                return response()->file(public_path('category/keychain/' . $txtFile), [
+                    'Content-Type' => 'text/plain; charset=utf-8',
+                ]);
+            }
             $fallbackTxt = glob(public_path('category/*/' . $txtFile));
             if (!empty($fallbackTxt)) {
                 return response()->file($fallbackTxt[0], [
                     'Content-Type' => 'text/plain; charset=utf-8',
                 ]);
             }
+        }
+        if (file_exists(public_path('category/keychain/index.html'))) {
+            return response()->file(public_path('category/keychain/index.html'));
         }
         $catIndex = glob(public_path('category/*/index.html'));
         if (!empty($catIndex)) {

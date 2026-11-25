@@ -48,6 +48,7 @@ export function CategoryGrid() {
             <Link
               key={category.id || category.slug}
               href={`/category/${category.slug}`}
+              prefetch={false}
               className="group flex flex-col items-center text-center p-2 sm:p-3 rounded-2xl transition-all duration-300 transform hover:-translate-y-1"
             >
               {/* Soft Pink Circular Image Container */}

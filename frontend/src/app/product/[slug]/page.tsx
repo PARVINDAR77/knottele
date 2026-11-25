@@ -39,6 +39,24 @@ export async function generateStaticParams() {
   allSlugs.add("rose-keychain");
   allSlugs.add("cute-bunny-keychain");
   allSlugs.add("cute-bunny-amigurumi-keychain");
+  allSlugs.add("crochet-gift-box");
+  allSlugs.add("red-love-crochet-gift-box");
+  allSlugs.add("rose-pot");
+  allSlugs.add("sun-flower-pot");
+  allSlugs.add("tulip-pot");
+  allSlugs.add("coaster");
+  allSlugs.add("bandana");
+  allSlugs.add("head-band");
+  allSlugs.add("scrunchies");
+  allSlugs.add("bow-hair-band");
+  allSlugs.add("sun-flower-hair-band");
+  allSlugs.add("rose-hair-band");
+  allSlugs.add("marigold");
+  allSlugs.add("clips");
+  allSlugs.add("evil-eye-key-chain");
+  allSlugs.add("white-daisy-key-chain");
+  allSlugs.add("sun-flower-key-chain");
+  allSlugs.add("heart-keychain");
   allSlugs.add("nistha-1");
 
   return Array.from(allSlugs)
