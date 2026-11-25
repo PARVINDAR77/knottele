@@ -187,7 +187,7 @@ function SearchContent() {
             </h3>
 
             <p className="text-xs sm:text-sm text-[#786864] mb-6 leading-relaxed">
-              Try another search keyword, browse our curated category collections, or request a custom order crafted just for you.
+              Try another search keyword or browse our curated category collections.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -196,12 +196,6 @@ function SearchContent() {
                 className="w-full sm:w-auto px-6 py-2.5 rounded-full bg-[#913638] text-white text-xs font-semibold hover:bg-[#74292B] active:scale-[0.98] transition-all"
               >
                 Explore All Products →
-              </Link>
-              <Link
-                href="/custom-order"
-                className="w-full sm:w-auto px-6 py-2.5 rounded-full bg-white text-[#2E211E] border border-[#E7D1CC] hover:border-[#EFB8B0] text-xs font-semibold hover:bg-[#FCE9E5] hover:text-[#913638] active:scale-[0.98] transition-all shadow-xs"
-              >
-                Create Custom Order ✨
               </Link>
             </div>
           </div>

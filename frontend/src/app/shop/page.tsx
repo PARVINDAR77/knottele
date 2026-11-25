@@ -416,7 +416,7 @@ function ShopContent() {
                   No little stitches match your filters
                 </h3>
                 <p className="text-xs sm:text-sm text-[#78635E] max-w-sm mx-auto mb-6">
-                  Try adjusting your price range or clearing selected colors. Alternatively, request a custom creation!
+                  Try adjusting your price range or clearing selected filters to see all handcrafted creations.
                 </p>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                   <button
@@ -425,12 +425,6 @@ function ShopContent() {
                   >
                     Reset Filters
                   </button>
-                  <Link
-                    href="/custom-order"
-                    className="px-6 py-2.5 rounded-full bg-white text-[#2E211E] hover:bg-[#FCE9E5] hover:text-[#913638] border border-[#E7D1CC] text-xs font-semibold active:scale-[0.98] shadow-xs transition-all"
-                  >
-                    Request Custom Order ✨
-                  </Link>
                 </div>
               </div>
             )}

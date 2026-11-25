@@ -89,12 +89,14 @@ export function MobileDrawer({
   const defaultItems: MobileNavItem[] = [
     { name: "Home", href: "/", is_highlighted: false },
     { name: "Shop", href: "/shop/", is_highlighted: false },
-    { name: "Custom Order", href: "/custom-order/", is_highlighted: true },
     { name: "About", href: "/about/", is_highlighted: false },
     { name: "Contact", href: "/contact/", is_highlighted: false },
   ];
 
-  const items = navLinks && navLinks.length > 0 ? navLinks : defaultItems;
+  const rawItems = navLinks && navLinks.length > 0 ? navLinks : defaultItems;
+  const items = rawItems.filter(
+    (link) => !link.href.includes("custom-order") && !link.name.toLowerCase().includes("custom order")
+  );
 
   const handleDrawerNavClick = (targetHref: string) => (e: React.MouseEvent<HTMLAnchorElement>) => {
     onClose();
@@ -363,26 +365,7 @@ export function MobileDrawer({
               )}
             </div>
 
-            {/* 4. Custom Order Promotion Box */}
-            <div className="p-3.5 rounded-2xl bg-gradient-to-br from-[#FCE9E5] to-[#EFB8B0]/30 border border-[#E7D1CC] text-center space-y-1">
-              <Sparkles className="w-4 h-4 text-[#913638] mx-auto" />
-              <h4 className="font-serif-luxury text-xs font-bold text-[#2E211E]">
-                Need Custom Crochet?
-              </h4>
-              <p className="text-[10px] text-[#786864] leading-tight">
-                Send us your design ideas and our artisans will craft it for you.
-              </p>
-              <div className="pt-1.5">
-                <Link
-                  href={normalizeInternalLink("/custom-order")}
-                  prefetch={true}
-                  onClick={handleDrawerNavClick(normalizeInternalLink("/custom-order"))}
-                  className="inline-block w-full py-1.5 px-3 rounded-full bg-[#913638] text-white text-[11px] font-semibold hover:bg-[#74292B] active:scale-[0.98] transition-all text-center cursor-pointer shadow-2xs"
-                >
-                  Start Custom Order →
-                </Link>
-              </div>
-            </div>
+
 
           </div>
 

@@ -195,15 +195,15 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                     No little stitch found for &quot;{query}&quot;
                   </p>
                   <p className="text-xs text-[#78635E] mt-1">
-                    Try searching for &quot;bouquet&quot;, &quot;bunny&quot;, or request a custom order!
+                    Try searching for &quot;bouquet&quot;, &quot;bunny&quot;, or explore our catalogue!
                   </p>
                   <Link
-                    href="/custom-order"
+                    href="/shop"
                     onClick={onClose}
                     className="inline-flex items-center gap-1.5 mt-4 px-4 py-2 rounded-full bg-[#FDE9E5] text-[#8F3032] text-xs font-semibold hover:bg-[#F4C7C1] transition-colors"
                   >
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>Create Custom Order</span>
+                    <span>Browse All Creations</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
                 </div>
               )}
@@ -225,24 +225,6 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                     {tag}
                   </button>
                 ))}
-              </div>
-
-              <div className="p-4 rounded-2xl bg-[#FFF8F5] border border-[#E8D4CF] flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-semibold text-[#3A211D]">
-                    Can&apos;t find what you&apos;re dreaming of?
-                  </p>
-                  <p className="text-[11px] text-[#78635E]">
-                    We specialize in custom handmade creations tailored to you.
-                  </p>
-                </div>
-                <Link
-                  href="/custom-order"
-                  onClick={onClose}
-                  className="px-3.5 py-1.5 rounded-full bg-[#8F3032] text-white text-xs font-medium hover:bg-[#722628] transition-colors shrink-0 ml-3"
-                >
-                  Custom Order →
-                </Link>
               </div>
             </div>
           )}

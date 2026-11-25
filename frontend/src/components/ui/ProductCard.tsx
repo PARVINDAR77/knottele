@@ -99,12 +99,7 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
                   New
                 </Badge>
               )}
-              {product.isCustomizable && (
-                <Badge variant="gold" className="shadow-xs text-[10px] uppercase font-bold tracking-wider flex items-center gap-1">
-                  <Sparkles className="w-2.5 h-2.5" />
-                  Customizable
-                </Badge>
-              )}
+
             </>
           )}
         </div>
@@ -116,11 +111,10 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
           className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-white/90 backdrop-blur-md border border-[#E7D1CC] flex items-center justify-center text-[#786864] hover:text-[#913638] hover:bg-white transition-all shadow-xs active:scale-90"
         >
           <Heart
-            className={`w-4 h-4 transition-all ${
-              isWishlisted
-                ? "fill-[#913638] text-[#913638] scale-110"
-                : "hover:scale-110"
-            }`}
+            className={`w-4 h-4 transition-all ${isWishlisted
+              ? "fill-[#913638] text-[#913638] scale-110"
+              : "hover:scale-110"
+              }`}
           />
         </button>
 
@@ -129,11 +123,10 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
           <button
             onClick={handleQuickAdd}
             disabled={isOutOfStock}
-            className={`flex-1 py-2 px-3 rounded-full text-white text-xs font-semibold tracking-normal flex items-center justify-center gap-1.5 shadow-xs transition-all ${
-              isOutOfStock
-                ? "bg-stone-400 cursor-not-allowed opacity-80"
-                : "bg-[#913638] hover:bg-[#74292B] active:scale-[0.98] cursor-pointer"
-            }`}
+            className={`flex-1 py-2 px-3 rounded-full text-white text-xs font-semibold tracking-normal flex items-center justify-center gap-1.5 shadow-xs transition-all ${isOutOfStock
+              ? "bg-stone-400 cursor-not-allowed opacity-80"
+              : "bg-[#913638] hover:bg-[#74292B] active:scale-[0.98] cursor-pointer"
+              }`}
           >
             <ShoppingBag className="w-3.5 h-3.5" />
             <span>{isOutOfStock ? "Sold Out" : "Quick Add"}</span>
@@ -178,11 +171,10 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
         <button
           onClick={handleQuickAdd}
           disabled={isOutOfStock}
-          className={`mt-3 sm:hidden w-full py-2 px-3 rounded-full border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-xs ${
-            isOutOfStock
-              ? "bg-stone-100 text-stone-400 border-stone-200 cursor-not-allowed"
-              : "bg-white text-[#2E211E] hover:bg-[#FCE9E5] hover:text-[#913638] border-[#E7D1CC] active:bg-[#913638] active:text-white active:scale-[0.98] cursor-pointer"
-          }`}
+          className={`mt-3 sm:hidden w-full py-2 px-3 rounded-full border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-xs ${isOutOfStock
+            ? "bg-stone-100 text-stone-400 border-stone-200 cursor-not-allowed"
+            : "bg-white text-[#2E211E] hover:bg-[#FCE9E5] hover:text-[#913638] border-[#E7D1CC] active:bg-[#913638] active:text-white active:scale-[0.98] cursor-pointer"
+            }`}
         >
           <ShoppingBag className={`w-3.5 h-3.5 ${isOutOfStock ? "text-stone-400" : "text-[#913638]"}`} />
           <span>{isOutOfStock ? "Sold Out" : "Add to Cart"}</span>

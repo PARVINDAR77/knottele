@@ -23,7 +23,7 @@ export function normalizeInternalLink(url?: string | null): string {
       const parsed = new URL(clean);
       clean = parsed.pathname + parsed.search + parsed.hash;
     }
-  } catch {}
+  } catch { }
 
   let path = clean.startsWith("/") ? clean : `/${clean}`;
   // Strip /knottele prefix so Next.js <Link> doesn't duplicate the basePath
@@ -513,7 +513,7 @@ export function normalizeImageUrl(url?: string | null, fallback = "/images/produ
         return cleanUrl;
       }
     }
-  } catch {}
+  } catch { }
 
   // If it's another external HTTP/HTTPS URL (CDN, Unsplash, Cloudinary, etc.)
   if (cleanUrl.startsWith("http://") || cleanUrl.startsWith("https://") || cleanUrl.startsWith("data:")) {
@@ -602,12 +602,12 @@ export function transformApiProductToProduct(apiProduct: ApiProduct): Product {
   const sizes =
     apiProduct.variants && apiProduct.variants.length > 0
       ? Array.from(
-          new Set(
-            apiProduct.variants
-              .map((v) => v.size || (v.price ? `Size (₹${v.price})` : "Standard"))
-              .filter(Boolean)
-          )
+        new Set(
+          apiProduct.variants
+            .map((v) => v.size || (v.price ? `Size (₹${v.price})` : "Standard"))
+            .filter(Boolean)
         )
+      )
       : ["Standard Size"];
 
   return {
@@ -635,7 +635,7 @@ export function transformApiProductToProduct(apiProduct: ApiProduct): Product {
       { name: "Dusty Terracotta", hex: "#E8B4B8" },
     ],
     sizes: sizes.length > 0 ? sizes : ["Standard Size"],
-    isCustomizable: true,
+    isCustomizable: false,
     isFeatured: Boolean(apiProduct.is_featured),
     isBestSeller: Boolean(apiProduct.is_bestseller),
     isNew: Boolean(apiProduct.is_new),
@@ -653,24 +653,24 @@ export function transformApiProductToProduct(apiProduct: ApiProduct): Product {
     reviews:
       apiProduct.reviews_data && apiProduct.reviews_data.length > 0
         ? apiProduct.reviews_data.map((r) => ({
-            id: String(r.id),
-            userName: r.user_name || "Boutique Customer",
-            rating: Number(r.rating || 5),
-            date: r.created_at || "Recently",
-            comment: r.review || "Exquisite craftsmanship, wonderful quality!",
-            verified: true,
-          }))
+          id: String(r.id),
+          userName: r.user_name || "Boutique Customer",
+          rating: Number(r.rating || 5),
+          date: r.created_at || "Recently",
+          comment: r.review || "Exquisite craftsmanship, wonderful quality!",
+          verified: true,
+        }))
         : [
-            {
-              id: "rev-default",
-              userName: "Verified Patron",
-              rating: 5,
-              date: "Recent",
-              comment:
-                "Exquisite craftsmanship, the stitches are neat and the yarn is delightfully soft!",
-              verified: true,
-            },
-          ],
+          {
+            id: "rev-default",
+            userName: "Verified Patron",
+            rating: 5,
+            date: "Recent",
+            comment:
+              "Exquisite craftsmanship, the stitches are neat and the yarn is delightfully soft!",
+            verified: true,
+          },
+        ],
   };
 }
 
@@ -889,7 +889,7 @@ export async function fetchCustomerOrders(email?: string): Promise<any[]> {
         try {
           const parsed = JSON.parse(storedUser);
           if (parsed.email) emailToUse = parsed.email;
-        } catch {}
+        } catch { }
       }
       if (!emailToUse) {
         emailToUse = localStorage.getItem("knotelle_guest_email") || undefined;
@@ -932,7 +932,7 @@ export async function fetchOrderById(id: string, email?: string): Promise<any | 
         try {
           const parsed = JSON.parse(storedUser);
           if (parsed.email) emailToUse = parsed.email;
-        } catch {}
+        } catch { }
       }
       if (!emailToUse) {
         emailToUse = localStorage.getItem("knotelle_guest_email") || undefined;
@@ -1012,7 +1012,7 @@ export async function fetchCustomerCustomOrders(email?: string): Promise<any[]> 
         try {
           const parsed = JSON.parse(storedUser);
           if (parsed.email) emailToUse = parsed.email;
-        } catch {}
+        } catch { }
       }
       if (!emailToUse) {
         emailToUse = localStorage.getItem("knotelle_guest_email") || undefined;

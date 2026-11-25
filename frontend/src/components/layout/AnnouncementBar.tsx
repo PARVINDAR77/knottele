@@ -17,15 +17,7 @@ export function AnnouncementBar() {
             <span>Handmade with Love</span>
           </span>
           <span className="text-[#E7D1CC]">|</span>
-          <Link
-            href="/custom-order"
-            prefetch={true}
-            className="hover:text-[#913638] transition-colors font-medium"
-          >
-            Custom Orders Available
-          </Link>
-          <span className="text-[#E7D1CC] hidden md:inline">|</span>
-          <span className="hidden md:inline font-medium">Pan India Shipping</span>
+          <span className="font-medium text-[#786864]">Pan India Express Shipping</span>
         </div>
 
         {/* Right Contact Quick Links */}

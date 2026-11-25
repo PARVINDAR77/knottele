@@ -56,13 +56,13 @@ const DEFAULT_STORY: AboutStoryData = {
     is_active: true,
   },
   cta: {
-    text: "Request a Custom Creation",
-    url: "/custom-order",
-    link: "/custom-order",
+    text: "Explore Our Creations",
+    url: "/shop",
+    link: "/shop",
     is_active: true,
   },
-  cta_text: "Request a Custom Creation",
-  cta_link: "/custom-order",
+  cta_text: "Explore Our Creations",
+  cta_link: "/shop",
   is_active: true,
 };
 
@@ -230,8 +230,8 @@ export function AboutPageView({ initialData }: { initialData?: AboutPageData | n
   const showFloatingBadge = floatingBadge.is_active !== false;
 
   const ctaButton = {
-    text: story.cta?.text || story.cta_text || "Request a Custom Creation",
-    link: story.cta?.link || story.cta?.url || story.cta_link || "/custom-order",
+    text: (story.cta?.text && !story.cta.text.toLowerCase().includes("custom")) ? story.cta.text : (story.cta_text && !story.cta_text.toLowerCase().includes("custom") ? story.cta_text : "Explore Our Creations"),
+    link: (story.cta?.link && !story.cta.link.includes("custom-order")) ? story.cta.link : "/shop",
     is_active: story.cta?.is_active !== false,
   };
 
@@ -345,15 +345,14 @@ export function AboutPageView({ initialData }: { initialData?: AboutPageData | n
 
             {/* Dynamic Grid: 1 col on mobile, 2 cols on tablet, 3-4 cols on desktop */}
             <div
-              className={`grid grid-cols-1 ${
-                activePillars.length === 2
+              className={`grid grid-cols-1 ${activePillars.length === 2
                   ? "sm:grid-cols-2 max-w-3xl mx-auto"
                   : activePillars.length === 4
-                  ? "sm:grid-cols-2 lg:grid-cols-4"
-                  : activePillars.length > 4
-                  ? "sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-                  : "md:grid-cols-3"
-              } gap-6`}
+                    ? "sm:grid-cols-2 lg:grid-cols-4"
+                    : activePillars.length > 4
+                      ? "sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                      : "md:grid-cols-3"
+                } gap-6`}
             >
               {activePillars.map((pillar, idx) => (
                 <div

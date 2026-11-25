@@ -27,7 +27,6 @@ export function Navbar() {
   const defaultNavLinks = [
     { name: "Home", href: "/", is_highlighted: false, is_active: true },
     { name: "Shop", href: "/shop/", is_highlighted: false, is_active: true },
-    { name: "Custom Order", href: "/custom-order/", is_highlighted: true, is_active: true },
     { name: "About", href: "/about/", is_highlighted: false, is_active: true },
     { name: "Contact", href: "/contact/", is_highlighted: false, is_active: true },
   ];
@@ -36,7 +35,9 @@ export function Navbar() {
     ? navbar.nav_links
     : defaultNavLinks;
 
-  const navLinks = rawNavLinks.filter((link) => link.is_active !== false);
+  const navLinks = rawNavLinks
+    .filter((link) => link.is_active !== false)
+    .filter((link) => !link.href.includes("custom-order") && !link.name.toLowerCase().includes("custom order"));
 
   const showSearch = actions?.show_search !== false;
   const showWishlist = actions?.show_wishlist !== false;

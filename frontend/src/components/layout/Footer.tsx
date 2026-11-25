@@ -40,15 +40,27 @@ export function Footer() {
 
   // Columns & Links
   const col1Title = f?.column_1?.title || "Quick Links";
-  const col1Links = (f?.column_1?.links && f.column_1.links.length > 0)
-    ? f.column_1.links.filter((l) => l.is_active !== false)
-    : [
-        { label: "Home", url: "/" },
-        { label: "Shop", url: "/shop" },
-        { label: "Custom Order", url: "/custom-order" },
-        { label: "About", url: "/about" },
-        { label: "Contact", url: "/contact" },
-      ];
+  interface QuickLinkItem {
+    label: string;
+    url: string;
+  }
+  const defaultCol1Links: QuickLinkItem[] = [
+    { label: "Home", url: "/" },
+    { label: "Shop", url: "/shop" },
+    { label: "About", url: "/about" },
+    { label: "Contact", url: "/contact" },
+  ];
+  const rawCol1Links: QuickLinkItem[] = (f?.column_1?.links && f.column_1.links.length > 0)
+    ? f.column_1.links
+        .filter((l: any) => l.is_active !== false)
+        .map((l: any) => ({
+          label: String(l.label || l.name || "Link"),
+          url: String(l.url || l.href || "/"),
+        }))
+    : defaultCol1Links;
+  const col1Links = rawCol1Links.filter(
+    (l) => !l.url.includes("custom-order") && !l.label.toLowerCase().includes("custom order")
+  );
 
   const col2Title = f?.column_2?.title || "Help";
   const policyRoutesMap: Record<string, string> = {
@@ -246,8 +258,8 @@ export function Footer() {
               </h4>
               <ul className="space-y-2 text-xs sm:text-sm text-[#5C4D49] font-medium pt-1">
                 {col1Links.map((link, idx) => {
-                  const href = normalizeInternalLink(link.url || link.href || "/");
-                  const label = link.label || link.name || "Link";
+                  const href = normalizeInternalLink(link.url);
+                  const label = link.label;
                   return (
                     <li key={idx}>
                       <Link href={href} prefetch={true} className="hover:text-[#913638] transition-colors">

@@ -167,20 +167,13 @@ export default function CategoryPageView({ slug: propSlug }: CategoryPageViewPro
               </h1>
 
               <p className="text-sm sm:text-base text-[#786864] max-w-xl leading-relaxed">
-                {currentCat.description} Each piece is hand-stitched with 100% pure cotton yarn and available for bespoke customizations.
+                {currentCat.description} Each piece is hand-stitched with 100% pure cotton yarn.
               </p>
 
               <div className="pt-2 flex flex-wrap gap-2 justify-center md:justify-start">
                 <span className="text-xs text-[#786864] bg-white px-3 py-1 rounded-full border border-[#E7D1CC]">
                   {categoryProducts.length} unique handcrafted items
                 </span>
-                <Link
-                  href="/custom-order"
-                  className="text-xs font-semibold text-[#913638] hover:underline flex items-center gap-1 bg-white px-3 py-1 rounded-full border border-[#E7D1CC]"
-                >
-                  <span>Need a custom colorway?</span>
-                  <ArrowRight className="w-3 h-3" />
-                </Link>
               </div>
             </div>
 
@@ -242,13 +235,13 @@ export default function CategoryPageView({ slug: propSlug }: CategoryPageViewPro
               New Designs In Crafting!
             </h3>
             <p className="text-xs sm:text-sm text-[#786864] max-w-sm mx-auto mb-6">
-              Our artisans are currently handcrafting more {currentCat.name} designs. Request a bespoke piece now!
+              Our artisans are currently handcrafting more {currentCat.name} designs. Explore our full catalog!
             </p>
             <Link
-              href="/custom-order"
+              href="/shop"
               className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#913638] text-white text-xs font-semibold hover:bg-[#74292B] active:scale-[0.98] transition-all"
             >
-              <span>Request Custom {currentCat.name}</span>
+              <span>Explore Boutique Shop</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>

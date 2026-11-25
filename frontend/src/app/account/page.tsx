@@ -78,8 +78,8 @@ export default function AccountDashboardPage() {
         </div>
       </div>
 
-      {/* 5 Stat Metric Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+      {/* 4 Stat Metric Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {/* Total Orders */}
         <Link
           href="/account/orders"
@@ -95,23 +95,6 @@ export default function AccountDashboardPage() {
             {orders.length}
           </p>
           <p className="text-xs text-[#786864] mt-0.5 font-medium">Total Orders</p>
-        </Link>
-
-        {/* Custom Orders */}
-        <Link
-          href="/account/custom-orders"
-          className="p-5 rounded-2xl bg-white border border-[#E7D1CC] hover:border-[#EFB8B0] shadow-xs hover:shadow-boutique transition-all group"
-        >
-          <div className="flex items-center justify-between mb-3">
-            <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center group-hover:scale-105 transition-transform">
-              <Sparkles className="w-5 h-5" />
-            </div>
-            <ChevronRight className="w-4 h-4 text-[#786864]/40 group-hover:text-[#913638] group-hover:translate-x-0.5 transition-all" />
-          </div>
-          <p className="text-2xl font-bold font-serif-luxury text-[#2E211E]">
-            {customOrdersCount}
-          </p>
-          <p className="text-xs text-[#786864] mt-0.5 font-medium">Custom Orders</p>
         </Link>
 
         {/* Active In-Progress Orders */}
@@ -273,28 +256,23 @@ export default function AccountDashboardPage() {
 
       {/* Quick Action Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* Custom Order Box */}
+        {/* Explore Boutique Creations Box */}
         <div className="p-5 rounded-3xl bg-gradient-to-br from-[#FFF9F6] to-[#FCE9E5]/60 border border-[#E7D1CC] flex items-start gap-4">
           <div className="w-10 h-10 rounded-2xl bg-[#913638] text-white flex items-center justify-center shrink-0 shadow-xs">
-            <Sparkles className="w-5 h-5" />
+            <ShoppingBag className="w-5 h-5" />
           </div>
           <div className="space-y-1">
             <h3 className="font-serif-luxury text-sm font-bold text-[#2E211E]">
-              Custom Made Just for You
+              Explore Handmade Collections
             </h3>
             <p className="text-xs text-[#786864] leading-relaxed">
-              Have a bespoke design in mind? Share your inspiration and our artisans will knit your vision into reality.
+              Discover unique artisan crochet flowers, plushies, bookmarks, and accessories crafted with love.
             </p>
             <Link
-              href="/custom-order"
-              onClick={(e) => {
-                if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
-                e.preventDefault();
-                window.location.href = "/custom-order";
-              }}
+              href="/shop"
               className="inline-block text-xs font-semibold text-[#913638] hover:underline pt-1 cursor-pointer"
             >
-              Request Custom Piece →
+              Browse Boutique Shop →
             </Link>
           </div>
         </div>

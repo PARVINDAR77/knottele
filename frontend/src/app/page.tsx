@@ -1,10 +1,8 @@
 import { Hero } from "@/components/home/Hero";
 import { FeatureBar } from "@/components/home/FeatureBar";
 import { CategoryGrid } from "@/components/home/CategoryGrid";
-import { CustomBanner } from "@/components/home/CustomBanner";
 import { BestSellers } from "@/components/home/BestSellers";
 import { BrandStory } from "@/components/home/BrandStory";
-import { CustomOrderCTA } from "@/components/home/CustomOrderCTA";
 import { Testimonials } from "@/components/home/Testimonials";
 import { BlogReels } from "@/components/home/BlogReels";
 import { Newsletter } from "@/components/home/Newsletter";
@@ -24,22 +22,16 @@ export default function HomePage() {
       {/* SECTION 4 — BEST SELLERS */}
       <BestSellers />
 
-      {/* SECTION 5 — CUSTOM CROCHET BANNER */}
-      <CustomBanner />
-
-      {/* SECTION 6 — BRAND STORY */}
+      {/* SECTION 5 — BRAND STORY */}
       <BrandStory />
 
-      {/* SECTION 7 — CUSTOM ORDER CTA */}
-      <CustomOrderCTA />
-
-      {/* SECTION 8 — TESTIMONIALS */}
+      {/* SECTION 6 — TESTIMONIALS */}
       <Testimonials />
 
-      {/* SECTION 9 — BLOG & REELS */}
+      {/* SECTION 7 — BLOG & REELS */}
       <BlogReels />
 
-      {/* SECTION 10 — NEWSLETTER */}
+      {/* SECTION 8 — NEWSLETTER */}
       <Newsletter />
     </div>
   );

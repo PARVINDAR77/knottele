@@ -126,7 +126,6 @@ export default function AccountLayout({
   const navItems = [
     { name: "Overview", href: "/account", icon: LayoutDashboard },
     { name: "My Orders", href: "/account/orders", icon: Package },
-    { name: "Custom Orders", href: "/account/custom-orders", icon: Sparkles },
     { name: "Wishlist", href: "/account/wishlist", icon: Heart, badge: wishlistCount },
     { name: "My Addresses", href: "/account/addresses", icon: MapPin },
   ];
@@ -235,27 +234,7 @@ export default function AccountLayout({
               </button>
             </nav>
 
-            {/* Custom Order Box */}
-            <div className="p-4 rounded-2xl bg-gradient-to-br from-[#FCE9E5] to-[#FFF9F6] border border-[#E7D1CC] space-y-2">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-[#913638]">
-                <Sparkles className="w-3.5 h-3.5 text-[#C69A5A]" />
-                <span>Need a Custom Creation?</span>
-              </div>
-              <p className="text-[11px] text-[#786864] leading-relaxed">
-                Have a unique design in mind? Work directly with our master artisans.
-              </p>
-              <Link
-                href="/custom-order"
-                onClick={(e) => {
-                  if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
-                  e.preventDefault();
-                  window.location.href = "/custom-order";
-                }}
-                className="inline-block text-xs font-semibold text-[#913638] hover:underline pt-1 cursor-pointer"
-              >
-                Request Custom Order →
-              </Link>
-            </div>
+
           </aside>
 
           {/* Right Main Content (Spans 8 cols on lg) */}

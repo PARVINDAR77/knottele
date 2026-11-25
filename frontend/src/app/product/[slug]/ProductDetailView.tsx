@@ -313,12 +313,6 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
               <div className="absolute top-4 left-4 flex flex-col gap-1.5">
                 {product.isBestSeller && <Badge variant="rose">Best Seller</Badge>}
                 {product.isNew && <Badge variant="pink">New In</Badge>}
-                {product.isCustomizable && (
-                  <Badge variant="gold" className="flex items-center gap-1">
-                    <Sparkles className="w-2.5 h-2.5" />
-                    Customizable
-                  </Badge>
-                )}
               </div>
             </div>
 
@@ -421,12 +415,6 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
                       Yarn Color:{" "}
                       <strong className="text-[#913638]">{selectedColor.name}</strong>
                     </span>
-                    <Link
-                      href="/custom-order"
-                      className="text-[11px] text-[#913638] hover:underline"
-                    >
-                      Want custom colors? →
-                    </Link>
                   </div>
                   <div className="flex flex-wrap gap-2.5">
                     {product.colors.map((color) => (
@@ -477,28 +465,7 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
                 </div>
               )}
 
-              {/* Custom Personalization Input (Optional) */}
-              {product.isCustomizable && (
-                <div className="p-4 rounded-2xl bg-[#FFF9F6] border border-[#E7D1CC] space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-semibold text-[#2E211E] flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-[#C69A5A]" />
-                      <span>Add Name / Initials / Gift Tag Note (Free):</span>
-                    </label>
-                  </div>
-                  <input
-                    type="text"
-                    maxLength={50}
-                    value={customText}
-                    onChange={(e) => setCustomText(e.target.value)}
-                    placeholder="e.g. 'For Rhea 🌸' or 'Initials: A.S.'"
-                    className="w-full px-3.5 py-2 rounded-xl bg-white border border-[#E7D1CC] text-xs text-[#2E211E] placeholder-[#786864]/60 focus:outline-none focus:border-[#913638]"
-                  />
-                  <p className="text-[10px] text-[#786864]">
-                    Our artisan will stitch or write your customized message on the boutique tag.
-                  </p>
-                </div>
-              )}
+
 
               {/* Quantity Selector & Action Buttons */}
               <div className="space-y-3 pt-2">
@@ -741,24 +708,7 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
           )}
         </div>
 
-        {/* Custom Order Request Promotional Banner */}
-        <div className="rounded-3xl bg-gradient-to-r from-[#FCE9E5] via-[#FFF9F6] to-[#FCE9E5] border border-[#E7D1CC] p-8 sm:p-10 mb-16 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-boutique">
-          <div className="space-y-1 text-center sm:text-left">
-            <h3 className="font-serif-luxury text-xl sm:text-2xl font-bold text-[#2E211E]">
-              Want a different color, size, or custom design?
-            </h3>
-            <p className="text-xs sm:text-sm text-[#786864]">
-              We craft bespoke pieces from your reference images and ideas.
-            </p>
-          </div>
-          <Link
-            href="/custom-order"
-            className="px-7 py-3 rounded-full bg-[#913638] text-white text-xs font-semibold hover:bg-[#74292B] active:scale-[0.98] shadow-xs hover:shadow-md transition-all flex items-center gap-2 shrink-0 cursor-pointer"
-          >
-            <span>Request Custom Order</span>
-            <Sparkles className="w-3.5 h-3.5" />
-          </Link>
-        </div>
+
 
         {/* Related Products */}
         {relatedProducts.length > 0 && (

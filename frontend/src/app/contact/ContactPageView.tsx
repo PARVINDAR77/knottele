@@ -429,28 +429,6 @@ export function ContactPageView({ initialData }: { initialData?: ContactPageData
                   <p className="text-xs text-[#786864]">Contact details will appear here.</p>
                 )}
               </div>
-
-              {/* Custom Order Helper Box */}
-              {customOrderBox.is_active !== false && (
-                <div className="p-4 rounded-2xl bg-gradient-to-br from-[#FFF9F6] to-[#FCE9E5]/60 border border-[#E7D1CC] text-xs text-[#2E211E] space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Gift className="w-4 h-4 text-[#913638]" />
-                    <p className="font-bold text-[#913638]">
-                      {customOrderBox.title || "Looking for Custom Orders?"}
-                    </p>
-                  </div>
-                  <p className="text-[#786864] leading-relaxed text-[11px] sm:text-xs">
-                    {customOrderBox.text}
-                  </p>
-                  <Link
-                    href={customOrderBox.link || "/custom-order"}
-                    className="inline-flex items-center gap-1.5 text-xs font-bold text-[#913638] hover:text-[#74292B] transition-colors pt-1"
-                  >
-                    <span>Request Custom Piece</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
-              )}
             </div>
           )}
 
