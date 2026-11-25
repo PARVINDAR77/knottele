@@ -138,7 +138,7 @@ export function Hero() {
                 alt={item.titleHighlight}
                 fill
                 priority={index === 0}
-                quality={100}
+                quality={80}
                 sizes="100vw"
                 className="object-cover object-right sm:object-center lg:object-right transform scale-100 transition-transform duration-3000"
               />

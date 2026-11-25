@@ -119,7 +119,7 @@ export function BestSellers() {
         {/* 6 by 6 Two Lines Product Grid (Up to 12 items: 6 per row on desktop) */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
           {visibleProducts.map((product, idx) => (
-            <ProductCard key={`${product.id}-${idx}`} product={product} priority={idx < 6} />
+            <ProductCard key={`${product.id}-${idx}`} product={product} priority={false} />
           ))}
         </div>
 
