@@ -645,12 +645,25 @@ Route::match(['GET', 'HEAD'], '/{any}', function ($any = '') {
     if (str_starts_with($path, 'product/')) {
         if (request()->has('_rsc') || str_contains($path, '__next.') || str_ends_with($path, '.txt')) {
             $txtFile = str_ends_with($path, '.txt') ? basename($path) : 'index.txt';
+            if (file_exists(public_path('product/rose-keychain/' . $txtFile))) {
+                return response()->file(public_path('product/rose-keychain/' . $txtFile), [
+                    'Content-Type' => 'text/plain; charset=utf-8',
+                ]);
+            }
             $fallbackTxt = glob(public_path('product/*/' . $txtFile));
             if (!empty($fallbackTxt)) {
                 return response()->file($fallbackTxt[0], [
                     'Content-Type' => 'text/plain; charset=utf-8',
                 ]);
             }
+        }
+
+        // Prefer real active products as the fallback template (rose-keychain or cute-bunny-keychain)
+        if (file_exists(public_path('product/rose-keychain/index.html'))) {
+            return response()->file(public_path('product/rose-keychain/index.html'));
+        }
+        if (file_exists(public_path('product/cute-bunny-keychain/index.html'))) {
+            return response()->file(public_path('product/cute-bunny-keychain/index.html'));
         }
         $productIndex = glob(public_path('product/*/index.html'));
         if (!empty($productIndex)) {

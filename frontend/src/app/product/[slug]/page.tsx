@@ -35,14 +35,11 @@ export async function generateStaticParams() {
     console.warn("generateStaticParams for products API warning:", error);
   }
 
-  // 3. Slugs from local PRODUCTS static array
-  PRODUCTS.forEach((product) => {
-    if (product.slug) allSlugs.add(product.slug);
-  });
-
-  // 4. Critical guaranteed aliases
-  allSlugs.add("cute-bunny-amigurumi-keychain");
+  // 3. Critical guaranteed live database products
+  allSlugs.add("rose-keychain");
   allSlugs.add("cute-bunny-keychain");
+  allSlugs.add("cute-bunny-amigurumi-keychain");
+  allSlugs.add("nistha-1");
 
   return Array.from(allSlugs)
     .filter(Boolean)
