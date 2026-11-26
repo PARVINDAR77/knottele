@@ -9,6 +9,7 @@ import { AnnouncementBar } from "@/components/layout/AnnouncementBar";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { CartDrawer } from "@/components/layout/CartDrawer";
+import { PanelConflictGuard } from "@/components/layout/PanelConflictGuard";
 
 const serifFont = { variable: "font-serif-luxury" };
 const sansFont = { variable: "font-sans" };
@@ -57,6 +58,7 @@ export default async function RootLayout({
         <link rel="apple-touch-icon" href="/images/logo/Logo_1.png?v=2" />
       </head>
       <body suppressHydrationWarning className="min-h-full flex flex-col bg-[#FFF8F5] text-[#2C201D] font-sans">
+        <PanelConflictGuard />
         <MediaProvider initialMedia={initialMedia}>
           <ToastProvider>
             <AuthProvider>

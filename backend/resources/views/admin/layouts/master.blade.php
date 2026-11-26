@@ -270,6 +270,7 @@
     @endif
 
     @stack('scripts')
+    @include('admin.partials.browser_lock')
 </body>
 
 </html>

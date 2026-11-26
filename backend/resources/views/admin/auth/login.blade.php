@@ -435,6 +435,8 @@
             });
         </script>
     @endif
+
+    @include('admin.partials.browser_lock')
 </body>
 
 </html>
