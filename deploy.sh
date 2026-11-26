@@ -30,16 +30,58 @@ run_composer() {
 cd "$(dirname "$0")"
 PROJECT_ROOT="$(pwd)"
 
-# 1b. Sanitize all .env files to fix any malformed lines (e.g. bare emails without KEY=)
-for env_file in "$PROJECT_ROOT/backend/.env" "$PROJECT_ROOT/.env"; do
-    if [ -f "$env_file" ]; then
-        if command -v node >/dev/null 2>&1; then
-            node -e "const fs = require('fs'); const p = '$env_file'; const lines = fs.readFileSync(p, 'utf8').split('\n').map(l => { const t = l.trim(); return (!t || t.startsWith('#') || t.includes('=')) ? l : '# INVALID_DOTENV_LINE: ' + l; }).join('\n'); fs.writeFileSync(p, lines);" 2>/dev/null || true
-        else
-            sed -i '/^[[:space:]]*[^#[:space:]]/ { /=/! s/^/# INVALID_DOTENV_LINE: / }' "$env_file" 2>/dev/null || true
-        fi
+# 1b. Helper: Strictly sanitize .env files to fix any malformed lines (e.g. stray emails without KEY=, Windows line-endings)
+sanitize_env_file() {
+    local target="$1"
+    [ -f "$target" ] || return 0
+    echo "Sanitizing $target..."
+
+    # Strip Windows carriage returns (\r)
+    if command -v tr >/dev/null 2>&1; then
+        tr -d '\r' < "$target" > "${target}.tmp" 2>/dev/null && mv "${target}.tmp" "$target" 2>/dev/null || true
     fi
-done
+
+    # Delete any known broken lines mentioning icondental
+    sed -i '/icondental/d' "$target" 2>/dev/null || true
+    sed -i '/admin@icondentalwembley/d' "$target" 2>/dev/null || true
+
+    # Strictly fix unkeyed lines
+    if command -v php >/dev/null 2>&1; then
+        php -r "
+            \$f = '$target';
+            if (!file_exists(\$f)) exit(0);
+            \$content = file_get_contents(\$f);
+            \$lines = explode(\"\n\", str_replace(\"\r\", '', \$content));
+            \$cleaned = [];
+            foreach (\$lines as \$line) {
+                \$trimmed = trim(\$line);
+                if (\$trimmed === '' || str_starts_with(\$trimmed, '#')) {
+                    \$cleaned[] = \$line;
+                } elseif (str_contains(\$line, 'icondental')) {
+                    continue;
+                } elseif (!str_contains(\$line, '=')) {
+                    \$cleaned[] = '# INVALID_DOTENV_LINE: ' . \$line;
+                } else {
+                    \$cleaned[] = \$line;
+                }
+            }
+            file_put_contents(\$f, implode(\"\n\", \$cleaned) . \"\n\");
+        " 2>/dev/null || true
+    else
+        sed -i -E 's|^[[:space:]]*([^#[:space:]][^=]*)$|# INVALID_DOTENV_LINE: \1|' "$target" 2>/dev/null || true
+    fi
+}
+
+sanitize_all_env() {
+    for candidate in "$PROJECT_ROOT/backend/.env" "$PROJECT_ROOT/.env" "$PROJECT_ROOT/backend/.env.production" "$PROJECT_ROOT/backend/.env.local"; do
+        sanitize_env_file "$candidate"
+    done
+    for candidate in $(find /home/ubuntu /var/www "$PROJECT_ROOT" -maxdepth 3 -name ".env*" -type f 2>/dev/null || true); do
+        sanitize_env_file "$candidate"
+    done
+}
+
+sanitize_all_env
 
 # Ensure backend is brought out of maintenance mode even if an unexpected error occurs
 trap 'if [ -d "$PROJECT_ROOT/backend" ]; then cd "$PROJECT_ROOT/backend" && run_artisan up 2>/dev/null || true; fi' EXIT
@@ -54,7 +96,8 @@ fi
 echo "📥 Pulling latest code..."
 git fetch origin main
 git reset --hard origin/main
-rm -rf "$PROJECT_ROOT/backend/public/admin" "$PROJECT_ROOT/backend/public/knottele/admin"
+rm -rf "$PROJECT_ROOT/backend/public/admin" "$PROJECT_ROOT/backend/public/knottele/admin" "$PROJECT_ROOT/backend/public/custom-order" "$PROJECT_ROOT/backend/public/account/custom-orders"
+sanitize_all_env
 
 # Only set fallback IP address if APP_URL is not configured with a custom domain (e.g. knotelleindia.com)
 if [ -f "$PROJECT_ROOT/backend/.env" ]; then
@@ -114,6 +157,8 @@ if [ -d "$PROJECT_ROOT/backend" ]; then
 
     # 7. Database Migrations
     echo "🗄️ Running Migrations..."
+    sanitize_all_env
+    run_artisan optimize:clear 2>/dev/null || true
     run_artisan migrate --force
 
     # 8. Storage Symlink

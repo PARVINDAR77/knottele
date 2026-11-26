@@ -726,19 +726,9 @@ Route::match(['GET', 'HEAD'], '/{any}', function ($any = '') {
         }
     }
 
-    // 3e. Resilient account/custom-orders route fallback
+    // 3e. Permanent redirect for removed custom-orders
     if (str_starts_with($path, 'account/custom-orders')) {
-        if (request()->has('_rsc') || request()->header('RSC') === '1' || str_contains($path, '__next.') || str_ends_with($path, '.txt')) {
-            if (file_exists(public_path('account/custom-orders/__next._full.txt'))) {
-                return response()->file(public_path('account/custom-orders/__next._full.txt'), ['Content-Type' => 'text/plain; charset=utf-8']);
-            }
-            if (file_exists(public_path('account/custom-orders/index.txt'))) {
-                return response()->file(public_path('account/custom-orders/index.txt'), ['Content-Type' => 'text/plain; charset=utf-8']);
-            }
-        }
-        if (file_exists(public_path('account/custom-orders/index.html'))) {
-            return response()->file(public_path('account/custom-orders/index.html'));
-        }
+        return redirect('/account', 301);
     }
 
     // 3e-1. Resilient account/wishlist route fallback
@@ -756,19 +746,9 @@ Route::match(['GET', 'HEAD'], '/{any}', function ($any = '') {
         }
     }
 
-    // 3e-2. Resilient custom-order route fallback (catches typos like /custom-orderrbtydsg)
+    // 3e-2. Permanent redirect for removed custom-order
     if (str_starts_with($path, 'custom-order')) {
-        if (request()->has('_rsc') || request()->header('RSC') === '1' || str_contains($path, '__next.') || str_ends_with($path, '.txt')) {
-            if (file_exists(public_path('custom-order/__next._full.txt'))) {
-                return response()->file(public_path('custom-order/__next._full.txt'), ['Content-Type' => 'text/plain; charset=utf-8']);
-            }
-            if (file_exists(public_path('custom-order/index.txt'))) {
-                return response()->file(public_path('custom-order/index.txt'), ['Content-Type' => 'text/plain; charset=utf-8']);
-            }
-        }
-        if (file_exists(public_path('custom-order/index.html'))) {
-            return response()->file(public_path('custom-order/index.html'));
-        }
+        return redirect('/shop', 301);
     }
 
     // 3e-3. Resilient order-confirmation route fallback

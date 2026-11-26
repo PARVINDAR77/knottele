@@ -17,20 +17,11 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useWishlist } from "@/context/WishlistContext";
-import { fetchCustomerCustomOrders, getFullPath } from "@/lib/api";
+import { getFullPath } from "@/lib/api";
 
 export default function AccountDashboardPage() {
   const { user, orders } = useAuth();
   const { wishlistCount } = useWishlist();
-  const [customOrdersCount, setCustomOrdersCount] = React.useState(0);
-
-  React.useEffect(() => {
-    fetchCustomerCustomOrders()
-      .then((res) => {
-        if (Array.isArray(res)) setCustomOrdersCount(res.length);
-      })
-      .catch(() => {});
-  }, [user]);
 
   const getStatusBadgeStyle = (status: string) => {
     const s = (status || "").toLowerCase();
