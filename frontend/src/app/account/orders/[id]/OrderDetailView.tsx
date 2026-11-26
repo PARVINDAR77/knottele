@@ -22,7 +22,6 @@ interface OrderDetailViewProps {
 export default function OrderDetailView({ id: propId }: OrderDetailViewProps) {
   const { orders } = useAuth();
   const [apiOrder, setApiOrder] = useState<Order | null>(null);
-  const [loading, setLoading] = useState(false);
 
   const params = useParams();
   const rawParamId = typeof params?.id === "string" ? params.id : Array.isArray(params?.id) ? params.id[0] : "";
@@ -49,20 +48,29 @@ export default function OrderDetailView({ id: propId }: OrderDetailViewProps) {
       (o.orderNumber && o.orderNumber.toLowerCase() === cleanId.toLowerCase())
   );
 
+  const [loading, setLoading] = useState<boolean>(!contextOrder && Boolean(cleanId && cleanId !== "placeholder"));
   const order = contextOrder || apiOrder;
 
   useEffect(() => {
-    if (!contextOrder && cleanId && cleanId !== "placeholder") {
+    let isMounted = true;
+    if (cleanId && cleanId !== "placeholder") {
       setLoading(true);
       fetchOrderById(cleanId)
         .then((fetched) => {
-          if (fetched) {
+          if (isMounted && fetched) {
             setApiOrder(fetched);
           }
         })
-        .finally(() => setLoading(false));
+        .finally(() => {
+          if (isMounted) setLoading(false);
+        });
+    } else {
+      setLoading(false);
     }
-  }, [cleanId, contextOrder]);
+    return () => {
+      isMounted = false;
+    };
+  }, [cleanId]);
 
   if (loading && !order) {
     return (

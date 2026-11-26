@@ -231,13 +231,13 @@ export default function AccountDashboardPage() {
                     <Download className="w-3 h-3 group-hover:translate-y-0.5 transition-transform" />
                     <span className="hidden sm:inline">Invoice</span>
                   </a>
-                  <Link
-                    href={`/account/orders/${order.id}`}
+                  <a
+                    href={getFullPath(`/account/orders/${order.id}/`)}
                     className="px-3.5 py-1.5 rounded-full bg-white text-[#2E211E] border border-[#E7D1CC] hover:border-[#913638] text-xs font-semibold hover:bg-[#FCE9E5] hover:text-[#913638] transition-all inline-flex items-center gap-1 shadow-2xs"
                   >
                     <span>View</span>
                     <ArrowRight className="w-3 h-3" />
-                  </Link>
+                  </a>
                 </div>
               </div>
             ))}

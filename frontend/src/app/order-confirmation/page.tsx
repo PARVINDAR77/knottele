@@ -109,13 +109,13 @@ function ConfirmationContent() {
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-          <Link
-            href={`/account/orders/${targetOrderId}/`}
+          <a
+            href={getFullPath(`/account/orders/${targetOrderId}/`)}
             className="w-full sm:w-auto px-6 py-3 rounded-full bg-[#913638] text-white text-xs sm:text-sm font-semibold hover:bg-[#74292B] active:scale-[0.98] shadow-sm hover:shadow-boutique-hover transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
             <Package className="w-4 h-4" />
             <span>Track Order Timeline</span>
-          </Link>
+          </a>
           <a
             href={invoiceUrl}
             target="_blank"
@@ -125,13 +125,13 @@ function ConfirmationContent() {
             <Download className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
             <span>Download Invoice</span>
           </a>
-          <Link
-            href="/shop/"
+          <a
+            href={getFullPath("/shop/")}
             className="w-full sm:w-auto px-6 py-3 rounded-full bg-white text-[#2E211E] border border-[#E7D1CC] hover:border-[#EFB8B0] text-xs sm:text-sm font-semibold hover:bg-[#FCE9E5] hover:text-[#913638] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs"
           >
             <span>Continue Shopping</span>
             <ArrowRight className="w-4 h-4" />
-          </Link>
+          </a>
         </div>
 
         <div className="flex items-center justify-center gap-1 text-[11px] text-[#786864] mt-8">

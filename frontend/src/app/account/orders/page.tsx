@@ -534,13 +534,13 @@ function OrderCard({ order }: { order: Order }) {
             <span>Invoice</span>
           </a>
 
-          <Link
-            href={`/account/orders/${order.id}`}
+          <a
+            href={getFullPath(`/account/orders/${order.id}/`)}
             className="px-4 py-1.5 rounded-full bg-[#FFF9F6] text-[#2E211E] border border-[#E7D1CC] hover:border-[#EFB8B0] hover:bg-[#913638] hover:text-white text-xs font-semibold active:scale-[0.98] transition-all inline-flex items-center gap-1 shadow-2xs"
           >
             <span>View Details</span>
             <ArrowRight className="w-3 h-3" />
-          </Link>
+          </a>
         </div>
       </div>
 
