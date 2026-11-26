@@ -403,18 +403,50 @@ class ProductController extends Controller
 public function show($slug): JsonResponse
 {
     try {
+        $rawSlug = (string) $slug;
+        $cleanSlug = trim(urldecode($rawSlug));
+        $hyphenatedSlug = strtolower(str_replace([' ', '_', '+'], '-', $cleanSlug));
+        $spacedSlug = strtolower(str_replace(['-', '_'], ' ', $cleanSlug));
+
         $product = Product::with([
             'brand:id,name',
             'mainCategory:id,name,slug',
             'taxClass.rates',
             'approvedReviews',
             'variants.images',
-        ])->where('slug', $slug)
-          ->where('status', 'active')
-          ->firstOrFail();
+        ])->where(function ($q) use ($rawSlug, $cleanSlug, $hyphenatedSlug, $spacedSlug) {
+            $q->where('slug', $rawSlug)
+              ->orWhere('slug', $cleanSlug)
+              ->orWhere('slug', $hyphenatedSlug)
+              ->orWhere('slug', $spacedSlug)
+              ->orWhere('slug', 'LIKE', '%' . $hyphenatedSlug . '%')
+              ->orWhere('name', 'LIKE', '%' . $cleanSlug . '%')
+              ->orWhere('name', 'LIKE', '%' . $spacedSlug . '%');
+        })->where(function ($q) {
+            $q->whereIn('status', ['active', '1', 1, 'published', 'publish'])
+              ->orWhereNull('status');
+        })->first();
 
-        // Get default variant for pricing
-        $defaultVariant = $product->variants->where('is_default', true)->first();
+        // Fallback for gift box alias
+        if (!$product && (str_contains($hyphenatedSlug, 'gift-box') || str_contains($spacedSlug, 'gift box'))) {
+            $product = Product::with([
+                'brand:id,name',
+                'mainCategory:id,name,slug',
+                'taxClass.rates',
+                'approvedReviews',
+                'variants.images',
+            ])->where(function ($q) {
+                $q->where('slug', 'LIKE', '%gift-box%')
+                  ->orWhere('name', 'LIKE', '%Gift Box%');
+            })->first();
+        }
+
+        if (!$product) {
+            return $this->apiResponse(false, null, 'Product not found', 404);
+        }
+
+        // Get default variant for pricing (fallback to first variant if none marked default)
+        $defaultVariant = $product->variants->where('is_default', true)->first() ?: $product->variants->first();
 
         // Get all images from all variants
         $allImages = collect();

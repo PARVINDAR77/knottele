@@ -411,4 +411,24 @@ class RazorpayService
         return $this->razorpay->order->fetch($razorpayOrderId);
     }
 
+    /**
+     * Fetch recent payments from Razorpay to auto-reconcile pending orders
+     */
+    public function fetchRecentPayments(int $count = 25): array
+    {
+        try {
+            $payments = $this->razorpay->payment->all(['count' => $count]);
+            if (is_object($payments) && isset($payments->items)) {
+                return $payments->items;
+            }
+            if (is_array($payments)) {
+                return $payments['items'] ?? $payments;
+            }
+            return [];
+        } catch (\Throwable $e) {
+            Log::info('Razorpay fetchRecentPayments notice: ' . $e->getMessage());
+            return [];
+        }
+    }
+
 }

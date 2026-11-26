@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { notFound, useRouter, useParams, usePathname } from "next/navigation";
+import { useRouter, useParams, usePathname } from "next/navigation";
 import {
   Heart,
   ShoppingBag,
@@ -74,16 +74,30 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
   const rawParamSlug = typeof params?.slug === "string" ? params.slug : Array.isArray(params?.slug) ? params.slug[0] : "";
   const decodedPathSlug = clientPathnameSlug ? decodeURIComponent(clientPathnameSlug) : "";
 
-  // 2. Authoritative slug: On client, pathname represents the actual product the user clicked.
-  // In Next.js SSG fallback template serving, propSlug was baked into the static HTML template (e.g. "botanical-sprout-bookmark").
-  // So if decodedPathSlug exists, it overrides propSlug whenever they differ.
-  const slug = (decodedPathSlug && decodedPathSlug !== "index")
+  // 2. Authoritative raw slug
+  const rawSlug = (decodedPathSlug && decodedPathSlug !== "index")
     ? decodedPathSlug
     : (rawParamSlug || propSlug);
 
+  // Normalize slug: lowercase, replace spaces/underscores with hyphens, remove special characters
+  const slug = (rawSlug || "")
+    .toLowerCase()
+    .trim()
+    .replace(/[\s_]+/g, "-")
+    .replace(/[^\w-]/g, "");
+
+  // Seamlessly clean up the browser URL if it had raw spaces (e.g. "/product/crochet gift-box" -> "/product/crochet-gift-box")
+  useEffect(() => {
+    if (typeof window !== "undefined" && slug && (window.location.pathname.includes(" ") || window.location.pathname.includes("%20"))) {
+      try {
+        window.history.replaceState(null, "", `/product/${slug}`);
+      } catch {}
+    }
+  }, [slug]);
+
   // Detect if this page was loaded as a fallback HTML template for a different dynamic database product
   const isFallbackTemplateMismatch = Boolean(
-    decodedPathSlug && propSlug && decodedPathSlug !== propSlug
+    decodedPathSlug && propSlug && decodedPathSlug.toLowerCase().replace(/[\s_]+/g, "-") !== propSlug.toLowerCase().replace(/[\s_]+/g, "-")
   );
 
   const fallbackProduct = isFallbackTemplateMismatch
@@ -91,8 +105,11 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
     : PRODUCTS.find(
         (p) =>
           p.slug === slug ||
+          p.slug === rawSlug ||
           (slug === "cute-bunny-amigurumi-keychain" && p.slug === "cute-bunny-keychain") ||
-          (slug === "cute-bunny-keychain" && p.slug === "cute-bunny-amigurumi-keychain")
+          (slug === "cute-bunny-keychain" && p.slug === "cute-bunny-amigurumi-keychain") ||
+          (slug === "crochet-gift-box" && p.slug === "red-love-crochet-gift-box") ||
+          (slug === "red-love-crochet-gift-box" && p.slug === "crochet-gift-box")
       );
   const [liveProduct, setLiveProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(!fallbackProduct);
@@ -123,7 +140,18 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
       setFetchAttempted(false);
     }
     fetchProductBySlug(slug)
-      .then((apiProd) => {
+      .then(async (apiProd) => {
+        // Fallback: If not found under normalized slug, check common alias
+        if (!apiProd && slug === "crochet-gift-box") {
+          try {
+            apiProd = await fetchProductBySlug("red-love-crochet-gift-box");
+          } catch {}
+        } else if (!apiProd && slug === "red-love-crochet-gift-box") {
+          try {
+            apiProd = await fetchProductBySlug("crochet-gift-box");
+          } catch {}
+        }
+
         if (isMounted) {
           if (apiProd) {
             setLiveProduct(apiProd);
@@ -188,7 +216,43 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
   }
 
   if (!product && fetchAttempted) {
-    notFound();
+    return (
+      <div className="min-h-[70vh] bg-[#FFF8F5] flex items-center justify-center px-4 py-16">
+        <div className="max-w-md w-full bg-white rounded-3xl border border-[#E7D1CC] p-8 sm:p-12 text-center shadow-boutique space-y-6">
+          <div className="w-20 h-20 mx-auto rounded-full bg-[#FCE9E5] border border-[#E7D1CC] flex items-center justify-center text-[#913638]">
+            <FlowerIcon className="w-10 h-10 text-[#913638]" />
+          </div>
+          <div className="space-y-2">
+            <span className="font-serif-luxury text-xs font-bold uppercase tracking-wider text-[#913638] block">
+              Boutique Notice
+            </span>
+            <h1 className="font-serif-luxury text-2xl sm:text-3xl font-bold text-[#2E211E]">
+              Artisan Creation
+            </h1>
+            <p className="text-xs sm:text-sm text-[#786864] leading-relaxed">
+              This handcrafted item is currently being prepared in our workshop. Explore our full collection of bespoke crochet pieces.
+            </p>
+          </div>
+          <div className="flex justify-center">
+            <BotanicalFlourish className="w-20 h-4 text-[#EFB8B0]" />
+          </div>
+          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link
+              href="/shop"
+              className="w-full sm:w-auto px-7 py-3 rounded-full bg-[#913638] text-white text-xs font-semibold hover:bg-[#74292B] shadow-sm transition-all text-center"
+            >
+              Explore Collection
+            </Link>
+            <Link
+              href="/"
+              className="w-full sm:w-auto px-6 py-3 rounded-full bg-white text-[#2E211E] border border-[#E7D1CC] hover:bg-[#FCE9E5] text-xs font-semibold shadow-xs transition-all text-center"
+            >
+              Return Home
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (!product) {

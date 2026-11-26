@@ -516,6 +516,7 @@ export default function CheckoutPage() {
               },
               payment_method: "razorpay",
               payment_id: response.razorpay_payment_id,
+              razorpay_payment_id: response.razorpay_payment_id,
               razorpay_order_id: response.razorpay_order_id,
               razorpay_signature: response.razorpay_signature,
               offer_code: promoCode || undefined,

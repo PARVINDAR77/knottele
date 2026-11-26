@@ -643,8 +643,27 @@ Route::match(['GET', 'HEAD'], '/{any}', function ($any = '') {
 
     // 3b. Resilient product route fallback: serve product template and RSC tree so client-side React never redirects to home
     if (str_starts_with($path, 'product/')) {
+        $rawProductSlug = basename($path);
+        // Normalize any encoded spaces or spaces: "crochet gift-box" or "crochet%20gift-box" -> "crochet-gift-box"
+        $normalizedSlug = strtolower(str_replace([' ', '%20', '+', '_'], '-', urldecode($rawProductSlug)));
+
+        // If the URL had raw spaces or unencoded characters, redirect cleanly with 301
+        if ($normalizedSlug !== $rawProductSlug && !request()->has('_rsc') && !str_contains($path, '.')) {
+            return redirect('/product/' . $normalizedSlug, 301);
+        }
+
+        // Direct static index.html match for normalized slug
+        if (file_exists(public_path('product/' . $normalizedSlug . '/index.html'))) {
+            return response()->file(public_path('product/' . $normalizedSlug . '/index.html'));
+        }
+
         if (request()->has('_rsc') || str_contains($path, '__next.') || str_ends_with($path, '.txt')) {
             $txtFile = str_ends_with($path, '.txt') ? basename($path) : 'index.txt';
+            if (file_exists(public_path('product/' . $normalizedSlug . '/' . $txtFile))) {
+                return response()->file(public_path('product/' . $normalizedSlug . '/' . $txtFile), [
+                    'Content-Type' => 'text/plain; charset=utf-8',
+                ]);
+            }
             if (file_exists(public_path('product/rose-keychain/' . $txtFile))) {
                 return response()->file(public_path('product/rose-keychain/' . $txtFile), [
                     'Content-Type' => 'text/plain; charset=utf-8',
@@ -658,7 +677,10 @@ Route::match(['GET', 'HEAD'], '/{any}', function ($any = '') {
             }
         }
 
-        // Prefer real active products as the fallback template (rose-keychain or cute-bunny-keychain)
+        // Prefer real active products as the fallback template (crochet-gift-box, rose-keychain or cute-bunny-keychain)
+        if (file_exists(public_path('product/crochet-gift-box/index.html'))) {
+            return response()->file(public_path('product/crochet-gift-box/index.html'));
+        }
         if (file_exists(public_path('product/rose-keychain/index.html'))) {
             return response()->file(public_path('product/rose-keychain/index.html'));
         }
