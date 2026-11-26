@@ -108,6 +108,9 @@ if [ -d "$PROJECT_ROOT/backend" ]; then
     echo "🔗 Linking Storage..."
     run_artisan storage:link 2>/dev/null || true
 
+    # 8b. Enforce free delivery and zero out shipping charges in DB
+    run_artisan tinker --execute="\App\Models\Setting::whereIn('key', ['default_shipping_rate', 'free_shipping_min', 'tax_rate'])->update(['value' => '0']); \App\Models\Setting::where('key', 'cod_enabled')->update(['value' => '0']); \App\Helpers\SettingsHelper::clearCache();" 2>/dev/null || true
+
     # 9. Clear and rebuild Laravel caches
     echo "⚡ Optimizing Laravel Caches..."
     run_artisan optimize:clear

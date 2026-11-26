@@ -17,7 +17,7 @@ export function AnnouncementBar() {
             <span>Handmade with Love</span>
           </span>
           <span className="text-[#E7D1CC]">|</span>
-          <span className="font-medium text-[#786864]">Pan India Express Shipping</span>
+          <span className="font-medium text-[#786864]">Free Pan-India Express Shipping</span>
         </div>
 
         {/* Right Contact Quick Links */}

@@ -94,19 +94,12 @@ export function CartDrawer() {
             <div className="flex items-center justify-between text-xs font-medium text-[#2E211E] mb-1.5">
               <span className="flex items-center gap-1 text-[#913638]">
                 <Truck className="w-3.5 h-3.5" />
-                {amountToFreeShipping > 0 ? (
-                  <span>
-                    Add <strong className="font-bold">₹{amountToFreeShipping}</strong> more for{" "}
-                    <strong>FREE Delivery</strong>
-                  </span>
-                ) : (
-                  <span className="font-semibold text-emerald-800">
-                    🎉 You&apos;ve unlocked FREE Pan-India Shipping!
-                  </span>
-                )}
+                <span className="font-semibold text-emerald-800">
+                  🎉 FREE Pan-India Shipping on All Orders!
+                </span>
               </span>
-              <span className="text-[11px] text-[#786864]">
-                {freeShippingProgress}%
+              <span className="text-[11px] text-emerald-800 font-bold">
+                100%
               </span>
             </div>
             <div className="w-full h-1.5 bg-[#E7D1CC] rounded-full overflow-hidden">
@@ -269,11 +262,7 @@ export function CartDrawer() {
                 <div className="flex justify-between">
                   <span>Shipping</span>
                   <span>
-                    {amountToFreeShipping === 0 ? (
-                      <span className="text-emerald-800 font-semibold">FREE</span>
-                    ) : (
-                      "Calculated at next step"
-                    )}
+                    <span className="text-emerald-800 font-semibold">FREE</span>
                   </span>
                 </div>
                 <div className="flex justify-between text-sm font-bold text-[#2E211E] pt-1.5 border-t border-[#E7D1CC]">

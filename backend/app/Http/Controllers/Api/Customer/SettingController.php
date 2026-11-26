@@ -42,8 +42,10 @@ class SettingController extends Controller
                     $grouped[$setting->group][$setting->key] = $val;
                 }
 
-                // Explicitly disable Cash on Delivery across storefront
+                // Explicitly disable Cash on Delivery and ensure free shipping across storefront
                 $publicSettings['cod_enabled'] = false;
+                $publicSettings['default_shipping_rate'] = 0.0;
+                $publicSettings['free_shipping_min'] = 0.0;
 
                 return [
                     'publicSettings' => $publicSettings,

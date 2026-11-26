@@ -198,10 +198,10 @@ class SettingsHelper
     public static function shippingSettings(): array
     {
         return [
-            'default_shipping_rate' => self::get('default_shipping_rate', 99.00),
-            'tax_rate' => self::get('tax_rate', 3.0),
-            'free_shipping_min' => self::get('free_shipping_min', 999.00),
-            'cod_min_order_value' => self::get('cod_min_order_value', 0.00)
+            'default_shipping_rate' => 0.00,
+            'tax_rate' => 0.0,
+            'free_shipping_min' => 0.00,
+            'cod_min_order_value' => 0.00
         ];
     }
 }

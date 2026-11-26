@@ -131,19 +131,11 @@ export default function CartPage() {
               {/* Free Shipping Progress Ribbon */}
               <div className="p-4 rounded-2xl bg-white border border-[#E7D1CC] shadow-xs">
                 <div className="flex items-center justify-between text-xs font-medium text-[#2E211E] mb-2">
-                  <span className="flex items-center gap-1.5 text-[#913638]">
-                    <Truck className="w-4 h-4" />
-                    {amountToFreeShipping > 0 ? (
-                      <span>
-                        Add <strong>₹{amountToFreeShipping}</strong> more for <strong>FREE Pan-India Delivery</strong>
-                      </span>
-                    ) : (
-                      <span className="text-emerald-800 font-semibold">
-                        🎉 Congratulations! You have unlocked FREE Pan-India Shipping!
-                      </span>
-                    )}
+                  <span className="flex items-center gap-1.5 text-emerald-800 font-semibold">
+                    <Truck className="w-4 h-4 text-[#913638]" />
+                    <span>🎉 FREE Pan-India Shipping on All Orders!</span>
                   </span>
-                  <span className="text-xs text-[#786864]">{freeShippingProgress}%</span>
+                  <span className="text-xs text-emerald-800 font-bold">100%</span>
                 </div>
                 <div className="w-full h-2 bg-[#FCE9E5] rounded-full overflow-hidden">
                   <div
@@ -386,11 +378,7 @@ export default function CartPage() {
                   <div className="flex justify-between">
                     <span>Shipping</span>
                     <span>
-                      {shipping === 0 ? (
-                        <strong className="text-emerald-700 font-bold">FREE</strong>
-                      ) : (
-                        `₹${shipping}`
-                      )}
+                      <strong className="text-emerald-700 font-bold">FREE</strong>
                     </span>
                   </div>
 

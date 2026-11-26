@@ -500,13 +500,10 @@ class OrderController extends Controller
                 }
             }
 
-            // Shipping rule: Free (0rs) for subtotal >= 999rs or 0rs; otherwise 99rs
+            // Shipping rule: 100% Free Pan-India Delivery on all orders (₹0 extra charge)
+            $shippingTotal = 0;
             if ($request->has('shipping_total') || $request->has('shipping')) {
                 $shippingTotal = (float) ($request->shipping_total ?? $request->shipping ?? 0);
-            } elseif ($subtotal == 0 || $subtotal >= 999) {
-                $shippingTotal = 0;
-            } else {
-                $shippingTotal = 99;
             }
 
             $grandTotal = max(0, round($subtotal - $discountTotal + $shippingTotal, 2));

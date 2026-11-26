@@ -371,8 +371,8 @@ class MediaController extends Controller
 
         $navbarMeta = $navbarMedia && $navbarMedia->metadata ? $navbarMedia->metadata : [];
 
-        $freeMinThreshold = !empty($storeSettings['free_shipping_min']) ? (float)$storeSettings['free_shipping_min'] : 999;
-        $defaultAnnouncement = '✨ Free Pan-India Delivery on all Orders above ₹' . number_format($freeMinThreshold);
+        $freeMinThreshold = 0;
+        $defaultAnnouncement = '✨ Free Pan-India Delivery on all Orders';
 
         $rawNavLinks = $navbarMeta['nav_links'] ?? [
             ['name' => 'Home', 'href' => '/', 'is_highlighted' => false, 'is_active' => true],
@@ -691,8 +691,8 @@ class MediaController extends Controller
                 'store_address' => $storeSettings['store_address'] ?? 'India',
                 'currency' => $storeSettings['currency'] ?? 'INR',
                 'theme_color' => $storeSettings['theme_color'] ?? '#913638',
-                'default_shipping_rate' => (float)($storeSettings['default_shipping_rate'] ?? 99),
-                'free_shipping_min' => (float)($storeSettings['free_shipping_min'] ?? 999),
+                'default_shipping_rate' => 0.0,
+                'free_shipping_min' => 0.0,
                 'tax_rate' => (float)($storeSettings['tax_rate'] ?? 0),
                 'cod_enabled' => false,
                 'razorpay_enabled' => filter_var($storeSettings['razorpay_enabled'] ?? true, FILTER_VALIDATE_BOOLEAN),
