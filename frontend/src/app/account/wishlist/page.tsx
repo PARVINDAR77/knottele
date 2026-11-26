@@ -66,7 +66,7 @@ export default function WishlistPage() {
               >
                 {/* Image */}
                 <div className="relative aspect-[4/4] w-full bg-[#FFF9F6] overflow-hidden">
-                  <Link href={`/product/${product.slug}`} className="block w-full h-full relative">
+                  <Link href={`/product/${(product.slug || "").trim().toLowerCase().replace(/[\s_]+/g, "-")}`} className="block w-full h-full relative">
                     <Image
                       src={imgSrc}
                       alt={product.name}
@@ -106,7 +106,7 @@ export default function WishlistPage() {
                   </span>
 
                   <Link
-                    href={`/product/${product.slug}`}
+                    href={`/product/${(product.slug || "").trim().toLowerCase().replace(/[\s_]+/g, "-")}`}
                     className="font-serif-luxury text-base font-bold text-[#2E211E] hover:text-[#913638] transition-colors line-clamp-1 mb-2"
                   >
                     {product.name}

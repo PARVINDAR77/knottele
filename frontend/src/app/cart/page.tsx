@@ -153,7 +153,7 @@ export default function CartPage() {
                     {/* Item Image + Details */}
                     <div className="flex items-start gap-4 flex-1 min-w-0">
                       <Link
-                        href={`/product/${item.product.slug}`}
+                        href={`/product/${(item.product.slug || "").trim().toLowerCase().replace(/[\s_]+/g, "-")}`}
                         className="relative w-20 h-20 sm:w-28 sm:h-28 rounded-2xl overflow-hidden bg-[#FFF9F6] shrink-0 border border-[#E7D1CC]"
                       >
                         <Image
@@ -170,7 +170,7 @@ export default function CartPage() {
                           {item.product.category}
                         </span>
                         <Link
-                          href={`/product/${item.product.slug}`}
+                          href={`/product/${(item.product.slug || "").trim().toLowerCase().replace(/[\s_]+/g, "-")}`}
                           className="font-serif-luxury text-base sm:text-lg font-bold text-[#2E211E] hover:text-[#913638] transition-colors line-clamp-1 block"
                         >
                           {item.product.name}

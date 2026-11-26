@@ -138,7 +138,7 @@ export function CartDrawer() {
                 >
                   {/* Image */}
                   <Link
-                    href={`/product/${item.product.slug}`}
+                    href={`/product/${(item.product.slug || "").trim().toLowerCase().replace(/[\s_]+/g, "-")}`}
                     onClick={() => setIsCartOpen(false)}
                     className="relative w-20 h-20 rounded-xl overflow-hidden bg-white shrink-0 border border-[#E7D1CC]"
                   >
@@ -156,7 +156,7 @@ export function CartDrawer() {
                     <div>
                       <div className="flex items-start justify-between gap-2">
                         <Link
-                          href={`/product/${item.product.slug}`}
+                          href={`/product/${(item.product.slug || "").trim().toLowerCase().replace(/[\s_]+/g, "-")}`}
                           onClick={() => setIsCartOpen(false)}
                           className="font-serif-luxury text-sm font-semibold text-[#2E211E] hover:text-[#913638] transition-colors line-clamp-1"
                         >

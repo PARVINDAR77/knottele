@@ -146,7 +146,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                     {filteredProducts.map((product) => (
                       <Link
                         key={product.id}
-                        href={`/product/${product.slug}`}
+                        href={`/product/${(product.slug || "").trim().toLowerCase().replace(/[\s_]+/g, "-")}`}
                         onClick={onClose}
                         className="flex items-center gap-4 py-3 group hover:bg-[#FFF8F5] -mx-3 px-3 rounded-2xl transition-colors"
                       >

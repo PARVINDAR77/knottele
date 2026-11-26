@@ -57,6 +57,8 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
     toggleWishlist(product);
   };
 
+  const safeProductSlug = (product.slug || "").trim().toLowerCase().replace(/[\s_]+/g, "-");
+
   return (
     <div
       className="group relative flex flex-col bg-white rounded-3xl border border-[#E7D1CC]/90 overflow-hidden shadow-boutique hover:shadow-boutique-hover transition-all duration-300 transform hover:-translate-y-1"
@@ -65,7 +67,7 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
     >
       {/* Image Container with Link */}
       <div className="relative aspect-[4/4.8] w-full bg-[#FFF9F6] overflow-hidden">
-        <Link href={`/product/${product.slug}`} className="block w-full h-full relative">
+        <Link href={`/product/${safeProductSlug}`} className="block w-full h-full relative">
           <Image
             src={imgSrc}
             alt={product.name}
@@ -132,7 +134,7 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
             <span>{isOutOfStock ? "Sold Out" : "Quick Add"}</span>
           </button>
           <Link
-            href={`/product/${product.slug}`}
+            href={`/product/${safeProductSlug}`}
             className="w-8 h-8 rounded-full bg-white text-[#2E211E] hover:text-[#913638] hover:bg-[#FCE9E5] border border-[#E7D1CC] flex items-center justify-center shadow-xs transition-colors shrink-0 active:scale-[0.98]"
             aria-label={`View ${product.name}`}
           >
@@ -145,7 +147,7 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
       <div className="p-3.5 sm:p-4 flex flex-col flex-1 bg-white">
         {/* Product Title */}
         <Link
-          href={`/product/${product.slug}`}
+          href={`/product/${safeProductSlug}`}
           className="font-serif-luxury text-sm sm:text-base font-bold text-[#2E211E] group-hover:text-[#913638] transition-colors line-clamp-1 mb-1"
         >
           {product.name}
