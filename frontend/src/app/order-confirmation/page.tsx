@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Suspense } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { CheckCircle2, Heart, Sparkles, ArrowRight, Package, Printer, Download, Clock } from "lucide-react";
@@ -8,6 +8,11 @@ import { BotanicalFlourish, FlowerIcon } from "@/components/ui/BotanicalDecorati
 import { getFullPath } from "@/lib/api";
 
 function ConfirmationContent() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const searchParams = useSearchParams();
   const orderNumber = searchParams.get("orderNumber") || "KN-ORDER";
   const orderId = searchParams.get("orderId") || "";
@@ -20,6 +25,14 @@ function ConfirmationContent() {
   const invoiceUrl = getFullPath(
     `/orders/${orderNumber || orderId}/invoice?download=1${email ? `&email=${encodeURIComponent(email)}` : ""}`
   );
+
+  if (!mounted) {
+    return (
+      <div className="bg-[#FFF9F6] min-h-screen py-10 lg:py-16 flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#913638] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="bg-[#FFF9F6] min-h-screen py-10 lg:py-16">
@@ -57,7 +70,7 @@ function ConfirmationContent() {
               <p className="text-[10px] uppercase font-bold text-[#786864] tracking-wider">
                 Order Reference
               </p>
-              <p className="font-mono text-sm sm:text-base font-bold text-[#913638]">
+              <p className="font-mono text-sm sm:text-base font-bold text-[#913638]" suppressHydrationWarning>
                 {orderNumber}
               </p>
             </div>
@@ -76,13 +89,13 @@ function ConfirmationContent() {
           <div className="grid grid-cols-2 gap-4 text-xs text-[#786864]">
             <div>
               <p className="text-[10px] uppercase font-semibold text-[#786864]/80">Order Date</p>
-              <p className="font-medium text-[#2E211E] mt-0.5">
+              <p className="font-medium text-[#2E211E] mt-0.5" suppressHydrationWarning>
                 {new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
               </p>
             </div>
             <div>
               <p className="text-[10px] uppercase font-semibold text-[#786864]/80">Estimated Delivery</p>
-              <p className="font-medium text-[#2E211E] mt-0.5">
+              <p className="font-medium text-[#2E211E] mt-0.5" suppressHydrationWarning>
                 {new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
               </p>
             </div>
@@ -151,8 +164,8 @@ export default function OrderConfirmationPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[#FFF8F5] flex items-center justify-center">
-          <div className="w-8 h-8 border-2 border-[#8F3032] border-t-transparent rounded-full animate-spin" />
+        <div className="bg-[#FFF9F6] min-h-screen py-10 lg:py-16 flex items-center justify-center">
+          <div className="w-8 h-8 border-2 border-[#913638] border-t-transparent rounded-full animate-spin" />
         </div>
       }
     >

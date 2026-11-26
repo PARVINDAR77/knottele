@@ -110,9 +110,10 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
     decodedPathSlug && propSlug && decodedPathSlug.toLowerCase().replace(/[\s_]+/g, "-") !== propSlug.toLowerCase().replace(/[\s_]+/g, "-")
   );
 
-  // 1. Check cached products first (from shop / best sellers cache) which already contain real database image URLs
-  const cachedProduct = typeof window !== "undefined"
-    ? getLocalCache<Product[]>("knotelle_cache_products", []).find(
+  // Deterministic fallback matching SSR static build to ensure zero hydration mismatch (#418)
+  const fallbackProduct = isFallbackTemplateMismatch
+    ? PRODUCTS.find((p) => p.slug === slug)
+    : PRODUCTS.find(
         (p) =>
           p.slug === slug ||
           p.slug === rawSlug ||
@@ -120,22 +121,8 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
           (slug === "cute-bunny-keychain" && p.slug === "cute-bunny-amigurumi-keychain") ||
           (slug === "crochet-gift-box" && p.slug === "red-love-crochet-gift-box") ||
           (slug === "red-love-crochet-gift-box" && p.slug === "crochet-gift-box")
-      )
-    : undefined;
+      );
 
-  const fallbackProduct = cachedProduct || (
-    isFallbackTemplateMismatch
-      ? PRODUCTS.find((p) => p.slug === slug)
-      : PRODUCTS.find(
-          (p) =>
-            p.slug === slug ||
-            p.slug === rawSlug ||
-            (slug === "cute-bunny-amigurumi-keychain" && p.slug === "cute-bunny-keychain") ||
-            (slug === "cute-bunny-keychain" && p.slug === "cute-bunny-amigurumi-keychain") ||
-            (slug === "crochet-gift-box" && p.slug === "red-love-crochet-gift-box") ||
-            (slug === "red-love-crochet-gift-box" && p.slug === "crochet-gift-box")
-        )
-  );
   const [liveProduct, setLiveProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(!fallbackProduct);
   const [fetchAttempted, setFetchAttempted] = useState<boolean>(false);
@@ -159,6 +146,26 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
 
   useEffect(() => {
     let isMounted = true;
+
+    // Check client local cache immediately on mount (runs strictly after initial hydration, eliminating #418)
+    if (typeof window !== "undefined") {
+      try {
+        const cached = getLocalCache<Product[]>("knotelle_cache_products", []).find(
+          (p) =>
+            p.slug === slug ||
+            p.slug === rawSlug ||
+            (slug === "cute-bunny-amigurumi-keychain" && p.slug === "cute-bunny-keychain") ||
+            (slug === "cute-bunny-keychain" && p.slug === "cute-bunny-amigurumi-keychain") ||
+            (slug === "crochet-gift-box" && p.slug === "red-love-crochet-gift-box") ||
+            (slug === "red-love-crochet-gift-box" && p.slug === "crochet-gift-box")
+        );
+        if (cached && isMounted) {
+          setLiveProduct(cached);
+          setIsLoading(false);
+        }
+      } catch {}
+    }
+
     if (!fallbackProduct || isFallbackTemplateMismatch) {
       setLiveProduct(null);
       setIsLoading(true);

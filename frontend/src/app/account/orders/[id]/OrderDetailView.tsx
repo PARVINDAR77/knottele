@@ -20,6 +20,11 @@ interface OrderDetailViewProps {
 }
 
 export default function OrderDetailView({ id: propId }: OrderDetailViewProps) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const { orders } = useAuth();
   const [apiOrder, setApiOrder] = useState<Order | null>(null);
 
@@ -81,7 +86,7 @@ export default function OrderDetailView({ id: propId }: OrderDetailViewProps) {
     };
   }, [lookupTarget, queryEmail]);
 
-  if (loading && !order) {
+  if ((!mounted || loading) && !order) {
     return (
       <div className="bg-white rounded-3xl border border-[#E7D1CC] p-12 text-center space-y-4">
         <Loader2 className="w-8 h-8 text-[#913638] animate-spin mx-auto" />
