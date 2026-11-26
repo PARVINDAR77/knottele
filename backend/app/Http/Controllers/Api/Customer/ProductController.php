@@ -408,6 +408,7 @@ public function show($slug): JsonResponse
         $hyphenatedSlug = strtolower(str_replace([' ', '_', '+'], '-', $cleanSlug));
         $spacedSlug = strtolower(str_replace(['-', '_'], ' ', $cleanSlug));
 
+        // 1. Prioritize EXACT slug match first so exact matches never get hijacked by partial LIKE matches
         $product = Product::with([
             'brand:id,name',
             'mainCategory:id,name,slug',
@@ -418,14 +419,29 @@ public function show($slug): JsonResponse
             $q->where('slug', $rawSlug)
               ->orWhere('slug', $cleanSlug)
               ->orWhere('slug', $hyphenatedSlug)
-              ->orWhere('slug', $spacedSlug)
-              ->orWhere('slug', 'LIKE', '%' . $hyphenatedSlug . '%')
-              ->orWhere('name', 'LIKE', '%' . $cleanSlug . '%')
-              ->orWhere('name', 'LIKE', '%' . $spacedSlug . '%');
+              ->orWhere('slug', $spacedSlug);
         })->where(function ($q) {
             $q->whereIn('status', ['active', '1', 1, 'published', 'publish'])
               ->orWhereNull('status');
         })->first();
+
+        // 2. If no exact match, fallback to fuzzy search by slug or name
+        if (!$product) {
+            $product = Product::with([
+                'brand:id,name',
+                'mainCategory:id,name,slug',
+                'taxClass.rates',
+                'approvedReviews',
+                'variants.images',
+            ])->where(function ($q) use ($cleanSlug, $hyphenatedSlug, $spacedSlug) {
+                $q->where('slug', 'LIKE', '%' . $hyphenatedSlug . '%')
+                  ->orWhere('name', 'LIKE', '%' . $cleanSlug . '%')
+                  ->orWhere('name', 'LIKE', '%' . $spacedSlug . '%');
+            })->where(function ($q) {
+                $q->whereIn('status', ['active', '1', 1, 'published', 'publish'])
+                  ->orWhereNull('status');
+            })->first();
+        }
 
         // Fallback for gift box alias
         if (!$product && (str_contains($hyphenatedSlug, 'gift-box') || str_contains($spacedSlug, 'gift box'))) {

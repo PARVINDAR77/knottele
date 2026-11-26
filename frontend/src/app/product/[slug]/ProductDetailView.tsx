@@ -347,8 +347,8 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
         <Breadcrumbs
           items={[
             { label: "Shop", href: "/shop" },
-            { label: product.category, href: `/category/${product.categorySlug}` },
-            { label: product.name },
+            { label: product.category || "Handmade", href: `/category/${product.categorySlug || "all"}` },
+            { label: product.name || "Product" },
           ]}
           className="mb-8"
         />
@@ -361,8 +361,8 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
             {/* Main Stage Image with Zoom feel */}
             <div className="relative aspect-[4/4.5] w-full rounded-2xl overflow-hidden bg-[#FFF9F6] border border-[#E7D1CC]">
               <Image
-                src={product.images[selectedImageIndex] || product.images[0]}
-                alt={product.name}
+                src={product.images?.[selectedImageIndex] || product.images?.[0] || product.main_image || "/images/products/bunny-keychain.jpg"}
+                alt={product.name || "Handmade Product"}
                 fill
                 priority
                 sizes="(max-width: 1024px) 100vw, 50vw"
@@ -390,7 +390,7 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
             </div>
 
             {/* Thumbnails */}
-            {product.images.length > 1 && (
+            {product.images && product.images.length > 1 && (
               <div className="flex items-center gap-3 overflow-x-auto pb-2">
                 {product.images.map((img, idx) => (
                   <button
@@ -403,7 +403,7 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
                     }`}
                   >
                     <Image
-                      src={img}
+                      src={img || "/images/products/bunny-keychain.jpg"}
                       alt={`${product.name} preview ${idx + 1}`}
                       fill
                       sizes="80px"
@@ -422,10 +422,10 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
               {/* Category & Rating */}
               <div className="flex items-center justify-between gap-4">
                 <Link
-                  href={`/category/${product.categorySlug}`}
+                  href={`/category/${product.categorySlug || "all"}`}
                   className="text-xs uppercase tracking-widest text-[#913638] font-semibold hover:underline"
                 >
-                  {product.category}
+                  {product.category || "Handmade"}
                 </Link>
                 <button
                   onClick={handleShare}
@@ -443,7 +443,7 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
 
               {/* Star Rating & Review count */}
               <div className="flex items-center gap-3">
-                <StarRating rating={product.rating} size="md" showNumber reviewCount={product.reviewCount} />
+                <StarRating rating={Number(product.rating) || 5} size="md" showNumber reviewCount={product.reviewCount || 0} />
                 {isOutOfStock ? (
                   <span className="text-xs text-rose-700 bg-rose-50 px-2.5 py-0.5 rounded-full font-medium border border-rose-200">
                     Out of Stock
@@ -462,11 +462,11 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
               {/* Price */}
               <div className="flex items-baseline gap-3 pt-1">
                 <span className="text-2xl sm:text-3xl font-bold text-[#913638]">
-                  ₹{product.price.toLocaleString("en-IN")}
+                  ₹{Number(product.price || 0).toLocaleString("en-IN")}
                 </span>
                 {product.comparePrice && (
                   <span className="text-base text-[#786864] line-through">
-                    ₹{product.comparePrice.toLocaleString("en-IN")}
+                    ₹{Number(product.comparePrice).toLocaleString("en-IN")}
                   </span>
                 )}
                 <span className="text-xs text-[#786864]">
@@ -486,7 +486,7 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-semibold text-[#2E211E]">
                       Yarn Color:{" "}
-                      <strong className="text-[#913638]">{selectedColor.name}</strong>
+                      <strong className="text-[#913638]">{selectedColor?.name || "Default"}</strong>
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-2.5">
@@ -495,7 +495,7 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
                         key={color.name}
                         onClick={() => setSelectedColor(color)}
                         className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-medium transition-all active:scale-[0.98] cursor-pointer ${
-                          selectedColor.name === color.name
+                          selectedColor?.name === color.name
                             ? "border-[#913638] bg-[#FCE9E5] text-[#913638] ring-1 ring-[#913638]"
                             : "border-[#E7D1CC] bg-white hover:bg-[#FFF9F6] text-[#2E211E]"
                         }`}
@@ -505,7 +505,7 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
                           style={{ backgroundColor: color.hex }}
                         />
                         <span>{color.name}</span>
-                        {selectedColor.name === color.name && (
+                        {selectedColor?.name === color.name && (
                           <Check className="w-3 h-3 text-[#913638]" />
                         )}
                       </button>
@@ -740,14 +740,14 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
               <div className="flex items-center gap-4 p-4 rounded-2xl bg-[#FFF9F6] border border-[#E7D1CC]">
                 <div className="text-center pr-4 border-r border-[#E7D1CC]">
                   <span className="font-serif-luxury text-3xl font-bold text-[#913638]">
-                    {product.rating.toFixed(1)}
+                    {(Number(product.rating) || 5).toFixed(1)}
                   </span>
                   <p className="text-[10px] text-[#786864]">out of 5.0</p>
                 </div>
                 <div>
-                  <StarRating rating={product.rating} size="md" />
+                  <StarRating rating={Number(product.rating) || 5} size="md" />
                   <p className="text-xs text-[#786864] mt-1">
-                    Based on {product.reviewCount} verified purchases
+                    Based on {product.reviewCount || 0} verified purchases
                   </p>
                 </div>
               </div>

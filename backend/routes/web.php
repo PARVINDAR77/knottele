@@ -647,9 +647,9 @@ Route::match(['GET', 'HEAD'], '/{any}', function ($any = '') {
         // Normalize any encoded spaces or spaces: "crochet gift-box" or "crochet%20gift-box" -> "crochet-gift-box"
         $normalizedSlug = strtolower(str_replace([' ', '%20', '+', '_'], '-', urldecode($rawProductSlug)));
 
-        // If the URL had raw spaces or unencoded characters, redirect cleanly with 301
+        // If the URL had raw spaces or unencoded characters, redirect cleanly with 301 (with trailing slash)
         if ($normalizedSlug !== $rawProductSlug && !request()->has('_rsc') && !str_contains($path, '.')) {
-            return redirect('/product/' . $normalizedSlug, 301);
+            return redirect('/product/' . $normalizedSlug . '/', 301);
         }
 
         // Direct static index.html match for normalized slug
