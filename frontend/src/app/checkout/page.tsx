@@ -371,7 +371,7 @@ export default function CheckoutPage() {
       clearCart();
       setIsUpiModalOpen(false);
 
-      window.location.href = getFullPath(`/order-confirmation?orderNumber=${encodeURIComponent(realOrderNumber)}&orderId=${encodeURIComponent(realOrderId)}&method=upi_qr`);
+      window.location.href = getFullPath(`/order-confirmation?orderNumber=${encodeURIComponent(realOrderNumber)}&orderId=${encodeURIComponent(realOrderId)}&method=upi_qr&email=${encodeURIComponent(cleanEmail)}`);
     } catch (err: any) {
       console.error("UPI order submission error:", err);
       showToast("Order Submission Error", err?.message || "Failed to submit order.", "error");
@@ -586,7 +586,7 @@ export default function CheckoutPage() {
             clearCart();
             setIsSubmitting(false);
 
-            window.location.href = getFullPath(`/order-confirmation?orderNumber=${encodeURIComponent(realOrderNumber)}&orderId=${encodeURIComponent(realOrderId)}&method=razorpay`);
+            window.location.href = getFullPath(`/order-confirmation?orderNumber=${encodeURIComponent(realOrderNumber)}&orderId=${encodeURIComponent(realOrderId)}&method=razorpay&email=${encodeURIComponent(cleanEmail)}`);
           } catch (verErr: any) {
             console.error("Verification error:", verErr);
             showToast("Payment Error", "An error occurred verifying your payment. Please try again.", "error");

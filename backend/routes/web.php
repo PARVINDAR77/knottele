@@ -725,26 +725,31 @@ Route::match(['GET', 'HEAD'], '/{any}', function ($any = '') {
 
     // 3d. Resilient account/orders route fallback: serve order template and RSC tree so any order ID loads smoothly
     if (str_starts_with($path, 'account/orders/')) {
+        $orderParam = basename(rtrim($path, '/'));
+        if (file_exists(public_path('account/orders/' . $orderParam . '/index.html'))) {
+            return response()->file(public_path('account/orders/' . $orderParam . '/index.html'));
+        }
+
         if (request()->has('_rsc') || str_contains($path, '__next.') || str_ends_with($path, '.txt')) {
             $txtFile = str_ends_with($path, '.txt') ? basename($path) : 'index.txt';
+            if (file_exists(public_path('account/orders/placeholder/' . $txtFile))) {
+                return response()->file(public_path('account/orders/placeholder/' . $txtFile), [
+                    'Content-Type' => 'text/plain; charset=utf-8',
+                ]);
+            }
             $fallbackTxt = glob(public_path('account/orders/*/' . $txtFile));
             if (!empty($fallbackTxt)) {
                 return response()->file($fallbackTxt[0], [
                     'Content-Type' => 'text/plain; charset=utf-8',
                 ]);
             }
-            if (file_exists(public_path('account/orders/placeholder/' . $txtFile))) {
-                return response()->file(public_path('account/orders/placeholder/' . $txtFile), [
-                    'Content-Type' => 'text/plain; charset=utf-8',
-                ]);
-            }
+        }
+        if (file_exists(public_path('account/orders/placeholder/index.html'))) {
+            return response()->file(public_path('account/orders/placeholder/index.html'));
         }
         $orderIndex = glob(public_path('account/orders/*/index.html'));
         if (!empty($orderIndex)) {
             return response()->file($orderIndex[0]);
-        }
-        if (file_exists(public_path('account/orders/placeholder/index.html'))) {
-            return response()->file(public_path('account/orders/placeholder/index.html'));
         }
     }
 

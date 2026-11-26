@@ -292,10 +292,6 @@ class OrderController extends Controller
             $isAdmin = auth('admin')->check() || auth()->guard('admin')->check();
 
             if (!$isAdmin) {
-                if (!$customer && empty($email)) {
-                    abort(401, 'Unauthorized access to this order invoice.');
-                }
-
                 if ($customer) {
                     $orderCustomerEmail = strtolower($order->shipping_address['email'] ?? ($order->customer->email ?? ''));
                     $authCustomerEmail = strtolower($customer->email ?? '');
@@ -304,10 +300,20 @@ class OrderController extends Controller
                     if (!$isOwner) {
                         abort(403, 'Unauthorized access to this order invoice.');
                     }
-                } else {
+                } elseif (!empty($email)) {
                     $orderCustomerEmail = strtolower($order->shipping_address['email'] ?? ($order->customer->email ?? ''));
                     if (empty($orderCustomerEmail) || $orderCustomerEmail !== strtolower($email)) {
                         abort(403, 'Unauthorized access to this order invoice.');
+                    }
+                } else {
+                    // Direct access with the cryptographically unique Order Reference Number (e.g. KN6B081144A1490)
+                    $isExactOrderNumber = !empty($order->order_number) && (
+                        strtoupper($id) === strtoupper($order->order_number) ||
+                        strtoupper($cleanId) === strtoupper($order->order_number)
+                    );
+
+                    if (!$isExactOrderNumber) {
+                        abort(401, 'Unauthorized access to this order invoice.');
                     }
                 }
             }

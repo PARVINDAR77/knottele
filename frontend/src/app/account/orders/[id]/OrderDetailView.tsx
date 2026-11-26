@@ -30,11 +30,14 @@ export default function OrderDetailView({ id: propId }: OrderDetailViewProps) {
     ? window.location.pathname.replace(/^.*\/account\/orders\//, "").replace(/\/.*$/, "")
     : "";
 
-  const effectiveId = (propId && propId !== "placeholder")
-    ? propId
-    : (rawParamId && rawParamId !== "placeholder")
+  // Priority 1: Browser URL pathname (e.g. /account/orders/10 -> "10" or /account/orders/KN6B... -> "KN6B...")
+  // Priority 2: useParams() from Next.js router
+  // Priority 3: propId from static HTML template
+  const effectiveId = (pathnameId && pathnameId !== "placeholder" && pathnameId !== "[id]")
+    ? pathnameId
+    : (rawParamId && rawParamId !== "placeholder" && rawParamId !== "[id]")
       ? rawParamId
-      : (pathnameId && pathnameId !== "placeholder" ? pathnameId : "");
+      : (propId && propId !== "placeholder" && propId !== "[id]" ? propId : "");
 
   const cleanId = decodeURIComponent(effectiveId || "");
   const contextOrder = orders.find(
@@ -114,7 +117,7 @@ export default function OrderDetailView({ id: propId }: OrderDetailViewProps) {
           <div className="flex flex-col sm:items-end gap-2">
             <div className="flex items-center gap-2 flex-wrap">
               <a
-                href={getFullPath(`/orders/${order.orderNumber || order.id}/invoice?download=1`)}
+                href={getFullPath(`/orders/${order.orderNumber || order.id}/invoice?download=1${order.shippingAddress?.email ? `&email=${encodeURIComponent(order.shippingAddress.email)}` : ""}`)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-[#913638] text-white hover:bg-[#74292B] active:scale-[0.98] transition-all shadow-xs group cursor-pointer"
@@ -304,7 +307,7 @@ export default function OrderDetailView({ id: propId }: OrderDetailViewProps) {
 
             <div className="pt-3 border-t border-[#E7D1CC]">
               <a
-                href={getFullPath(`/orders/${order.orderNumber || order.id}/invoice?download=1`)}
+                href={getFullPath(`/orders/${order.orderNumber || order.id}/invoice?download=1${order.shippingAddress?.email ? `&email=${encodeURIComponent(order.shippingAddress.email)}` : ""}`)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full py-2 px-3 rounded-full bg-[#FFF9F6] text-[#913638] border border-[#EFB8B0] hover:bg-[#913638] hover:text-white text-xs font-semibold active:scale-[0.98] transition-all inline-flex items-center justify-center gap-1.5 shadow-2xs group cursor-pointer"
