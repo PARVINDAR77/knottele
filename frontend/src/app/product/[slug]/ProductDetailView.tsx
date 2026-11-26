@@ -29,6 +29,7 @@ import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { ProductCard } from "@/components/ui/ProductCard";
 import { BotanicalFlourish, FlowerIcon } from "@/components/ui/BotanicalDecorations";
 import { fetchProductBySlug, fetchRelatedProducts } from "@/lib/api";
+import { getLocalCache } from "@/lib/cache";
 import { Product } from "@/types/product";
 
 interface ProductDetailViewProps {
@@ -109,9 +110,9 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
     decodedPathSlug && propSlug && decodedPathSlug.toLowerCase().replace(/[\s_]+/g, "-") !== propSlug.toLowerCase().replace(/[\s_]+/g, "-")
   );
 
-  const fallbackProduct = isFallbackTemplateMismatch
-    ? PRODUCTS.find((p) => p.slug === slug)
-    : PRODUCTS.find(
+  // 1. Check cached products first (from shop / best sellers cache) which already contain real database image URLs
+  const cachedProduct = typeof window !== "undefined"
+    ? getLocalCache<Product[]>("knotelle_cache_products", []).find(
         (p) =>
           p.slug === slug ||
           p.slug === rawSlug ||
@@ -119,7 +120,22 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
           (slug === "cute-bunny-keychain" && p.slug === "cute-bunny-amigurumi-keychain") ||
           (slug === "crochet-gift-box" && p.slug === "red-love-crochet-gift-box") ||
           (slug === "red-love-crochet-gift-box" && p.slug === "crochet-gift-box")
-      );
+      )
+    : undefined;
+
+  const fallbackProduct = cachedProduct || (
+    isFallbackTemplateMismatch
+      ? PRODUCTS.find((p) => p.slug === slug)
+      : PRODUCTS.find(
+          (p) =>
+            p.slug === slug ||
+            p.slug === rawSlug ||
+            (slug === "cute-bunny-amigurumi-keychain" && p.slug === "cute-bunny-keychain") ||
+            (slug === "cute-bunny-keychain" && p.slug === "cute-bunny-amigurumi-keychain") ||
+            (slug === "crochet-gift-box" && p.slug === "red-love-crochet-gift-box") ||
+            (slug === "red-love-crochet-gift-box" && p.slug === "crochet-gift-box")
+        )
+  );
   const [liveProduct, setLiveProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(!fallbackProduct);
   const [fetchAttempted, setFetchAttempted] = useState<boolean>(false);
@@ -361,14 +377,30 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
           <div className="lg:col-span-6 space-y-4">
             {/* Main Stage Image with Zoom feel */}
             <div className="relative aspect-[4/4.5] w-full rounded-2xl overflow-hidden bg-[#FFF9F6] border border-[#E7D1CC]">
-              <Image
-                src={product.images?.[selectedImageIndex] || product.images?.[0] || product.main_image || "/images/products/bunny-keychain.jpg"}
-                alt={product.name || "Handmade Product"}
-                fill
-                priority
-                sizes="(max-width: 1024px) 100vw, 50vw"
-                className="object-cover object-center"
-              />
+              {(() => {
+                const currentImg = product.images?.[selectedImageIndex] || product.images?.[0] || product.main_image || "";
+                const isLogo = !currentImg || currentImg.includes("logo") || currentImg.includes("Logo_1.png");
+                const safeImg = isLogo ? "/images/products/bunny-keychain.jpg" : currentImg;
+
+                if (isLoading && isLogo) {
+                  return (
+                    <div className="w-full h-full bg-[#FCE9E5]/50 animate-pulse flex items-center justify-center">
+                      <div className="w-8 h-8 border-2 border-[#913638] border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  );
+                }
+
+                return (
+                  <Image
+                    src={safeImg}
+                    alt={product.name || "Handmade Product"}
+                    fill
+                    priority
+                    sizes="(max-width: 1024px) 100vw, 50vw"
+                    className="object-cover object-center"
+                  />
+                );
+              })()}
 
               {/* Wishlist Button */}
               <button
@@ -391,29 +423,36 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
             </div>
 
             {/* Thumbnails */}
-            {product.images && product.images.length > 1 && (
-              <div className="flex items-center gap-3 overflow-x-auto pb-2">
-                {product.images.map((img, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setSelectedImageIndex(idx)}
-                    className={`relative w-20 h-20 rounded-xl overflow-hidden bg-[#FFF9F6] shrink-0 border-2 transition-all cursor-pointer ${
-                      selectedImageIndex === idx
-                        ? "border-[#913638] ring-2 ring-[#913638]/20"
-                        : "border-[#E7D1CC] opacity-70 hover:opacity-100"
-                    }`}
-                  >
-                    <Image
-                      src={img || "/images/products/bunny-keychain.jpg"}
-                      alt={`${product.name} preview ${idx + 1}`}
-                      fill
-                      sizes="80px"
-                      className="object-cover"
-                    />
-                  </button>
-                ))}
-              </div>
-            )}
+            {(() => {
+              const validThumbnails = (product.images || []).filter(
+                (img) => img && !img.includes("logo") && !img.includes("Logo_1.png")
+              );
+              if (validThumbnails.length <= 1) return null;
+
+              return (
+                <div className="flex items-center gap-3 overflow-x-auto pb-2">
+                  {validThumbnails.map((img, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setSelectedImageIndex(idx)}
+                      className={`relative w-20 h-20 rounded-xl overflow-hidden bg-[#FFF9F6] shrink-0 border-2 transition-all cursor-pointer ${
+                        selectedImageIndex === idx
+                          ? "border-[#913638] ring-2 ring-[#913638]/20"
+                          : "border-[#E7D1CC] opacity-70 hover:opacity-100"
+                      }`}
+                    >
+                      <Image
+                        src={img || "/images/products/bunny-keychain.jpg"}
+                        alt={`${product.name} preview ${idx + 1}`}
+                        fill
+                        sizes="80px"
+                        className="object-cover"
+                      />
+                    </button>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
 
           {/* Right Product Info (Spans 6 cols on lg) */}

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { notFound, useParams } from "next/navigation";
+import { notFound, useParams, useSearchParams } from "next/navigation";
 import {
   Clock,
   ArrowLeft,
@@ -24,38 +24,47 @@ export default function OrderDetailView({ id: propId }: OrderDetailViewProps) {
   const [apiOrder, setApiOrder] = useState<Order | null>(null);
 
   const params = useParams();
+  const searchParams = useSearchParams();
+
   const rawParamId = typeof params?.id === "string" ? params.id : Array.isArray(params?.id) ? params.id[0] : "";
   const pathnameId = typeof window !== "undefined"
-    ? window.location.pathname.replace(/^.*\/account\/orders\//, "").replace(/\/.*$/, "")
+    ? window.location.pathname.replace(/^.*\/account\/orders\//, "").replace(/\/.*$/, "").trim()
     : "";
+  const queryOrderNumber = searchParams?.get("orderNumber") || "";
+  const queryOrderId = searchParams?.get("orderId") || searchParams?.get("id") || "";
+  const queryEmail = searchParams?.get("email") || (typeof window !== "undefined" ? localStorage.getItem("knotelle_guest_email") || "" : "");
 
   // Priority 1: Browser URL pathname (e.g. /account/orders/10 -> "10" or /account/orders/KN6B... -> "KN6B...")
-  // Priority 2: useParams() from Next.js router
-  // Priority 3: propId from static HTML template
+  // Priority 2: Query params (?orderId=10 or ?orderNumber=KN6B...)
+  // Priority 3: useParams() from Next.js router
+  // Priority 4: propId from static HTML template
   const effectiveId = (pathnameId && pathnameId !== "placeholder" && pathnameId !== "[id]")
     ? pathnameId
-    : (rawParamId && rawParamId !== "placeholder" && rawParamId !== "[id]")
-      ? rawParamId
-      : (propId && propId !== "placeholder" && propId !== "[id]" ? propId : "");
+    : (queryOrderId && queryOrderId !== "placeholder")
+      ? queryOrderId
+      : (queryOrderNumber && queryOrderNumber !== "placeholder")
+        ? queryOrderNumber
+        : (rawParamId && rawParamId !== "placeholder" && rawParamId !== "[id]")
+          ? rawParamId
+          : (propId && propId !== "placeholder" && propId !== "[id]" ? propId : "");
 
   const cleanId = decodeURIComponent(effectiveId || "");
   const contextOrder = orders.find(
     (o) =>
-      o.id === cleanId ||
-      o.orderNumber === cleanId ||
-      o.id === `ord-${cleanId}` ||
-      o.id === cleanId.replace("ord-", "") ||
-      (o.orderNumber && o.orderNumber.toLowerCase() === cleanId.toLowerCase())
+      (cleanId && (o.id === cleanId || o.orderNumber === cleanId || o.id === `ord-${cleanId}` || o.id === cleanId.replace("ord-", "") || (o.orderNumber && o.orderNumber.toLowerCase() === cleanId.toLowerCase()))) ||
+      (queryOrderNumber && o.orderNumber && o.orderNumber.toLowerCase() === queryOrderNumber.toLowerCase()) ||
+      (queryOrderId && (o.id === queryOrderId || o.id === `ord-${queryOrderId}`))
   );
 
-  const [loading, setLoading] = useState<boolean>(!contextOrder && Boolean(cleanId && cleanId !== "placeholder"));
+  const lookupTarget = (cleanId && cleanId !== "placeholder") ? cleanId : (queryOrderNumber || queryOrderId);
+  const [loading, setLoading] = useState<boolean>(!contextOrder && Boolean(lookupTarget));
   const order = contextOrder || apiOrder;
 
   useEffect(() => {
     let isMounted = true;
-    if (cleanId && cleanId !== "placeholder") {
+    if (lookupTarget) {
       setLoading(true);
-      fetchOrderById(cleanId)
+      fetchOrderById(lookupTarget, queryEmail)
         .then((fetched) => {
           if (isMounted && fetched) {
             setApiOrder(fetched);
@@ -70,7 +79,7 @@ export default function OrderDetailView({ id: propId }: OrderDetailViewProps) {
     return () => {
       isMounted = false;
     };
-  }, [cleanId]);
+  }, [lookupTarget, queryEmail]);
 
   if (loading && !order) {
     return (

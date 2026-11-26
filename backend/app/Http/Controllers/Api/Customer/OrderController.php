@@ -203,13 +203,6 @@ class OrderController extends Controller
             $customer = auth('customer_api')->user();
             $email = trim($request->query('email') ?? '');
 
-            if (!$customer && empty($email)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized. Please sign in or provide verification credentials.'
-                ], 401);
-            }
-
             $order = Order::with(['items.variant.product', 'items.variant.images'])
                 ->where(function ($q) use ($id) {
                     $q->where('id', $id)->orWhere('order_number', $id);
@@ -235,7 +228,7 @@ class OrderController extends Controller
                         'message' => 'Forbidden. You cannot view orders belonging to another account.'
                     ], 403);
                 }
-            } else {
+            } elseif (!empty($email)) {
                 // Guest verification: Email must match shipping address on the order
                 $orderCustomerEmail = strtolower($order->shipping_address['email'] ?? ($order->customer->email ?? ''));
                 if (empty($orderCustomerEmail) || $orderCustomerEmail !== strtolower($email)) {
@@ -243,6 +236,15 @@ class OrderController extends Controller
                         'success' => false,
                         'message' => 'Forbidden. Email does not match order record.'
                     ], 403);
+                }
+            } else {
+                // Unauthenticated guest without email: Allow access if querying by the cryptographically unique 15-character order number
+                $isExactOrderNumber = !empty($order->order_number) && strtoupper($id) === strtoupper($order->order_number);
+                if (!$isExactOrderNumber) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Unauthorized. Please sign in or provide verification credentials.'
+                    ], 401);
                 }
             }
 
@@ -306,13 +308,16 @@ class OrderController extends Controller
                         abort(403, 'Unauthorized access to this order invoice.');
                     }
                 } else {
-                    // Direct access with the cryptographically unique Order Reference Number (e.g. KN6B081144A1490)
-                    $isExactOrderNumber = !empty($order->order_number) && (
+                    // Direct access with the cryptographically unique Order Reference Number (e.g. KN6B081144A1490) or numeric ID
+                    $isExactOrder = (!empty($order->order_number) && (
                         strtoupper($id) === strtoupper($order->order_number) ||
                         strtoupper($cleanId) === strtoupper($order->order_number)
+                    )) || (
+                        (string)$order->id === (string)$id ||
+                        (string)$order->id === (string)$cleanId
                     );
 
-                    if (!$isExactOrderNumber) {
+                    if (!$isExactOrder) {
                         abort(401, 'Unauthorized access to this order invoice.');
                     }
                 }

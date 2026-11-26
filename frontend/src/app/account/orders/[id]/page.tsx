@@ -1,6 +1,7 @@
-import React from "react";
+import React, { Suspense } from "react";
 import { INITIAL_ORDERS } from "@/data/orders";
 import OrderDetailView from "./OrderDetailView";
+import { Loader2 } from "lucide-react";
 
 interface OrderDetailPageProps {
   params: Promise<{
@@ -24,5 +25,16 @@ export function generateStaticParams() {
 
 export default async function OrderDetailPage({ params }: OrderDetailPageProps) {
   const { id } = await params;
-  return <OrderDetailView id={id} />;
+  return (
+    <Suspense
+      fallback={
+        <div className="bg-white rounded-3xl border border-[#E7D1CC] p-12 text-center space-y-4">
+          <Loader2 className="w-8 h-8 text-[#913638] animate-spin mx-auto" />
+          <p className="text-xs text-[#786864]">Fetching tracking & order details...</p>
+        </div>
+      }
+    >
+      <OrderDetailView id={id} />
+    </Suspense>
+  );
 }

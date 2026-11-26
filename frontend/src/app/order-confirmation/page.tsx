@@ -14,6 +14,9 @@ function ConfirmationContent() {
   const method = searchParams.get("method") || "";
   const email = searchParams.get("email") || (typeof window !== "undefined" ? localStorage.getItem("knotelle_guest_email") || "" : "");
   const targetOrderId = orderId || orderNumber;
+  const trackingUrl = getFullPath(
+    `/account/orders/${encodeURIComponent(targetOrderId)}/?orderNumber=${encodeURIComponent(orderNumber)}&orderId=${encodeURIComponent(orderId)}${email ? `&email=${encodeURIComponent(email)}` : ""}`
+  );
   const invoiceUrl = getFullPath(
     `/orders/${orderNumber || orderId}/invoice?download=1${email ? `&email=${encodeURIComponent(email)}` : ""}`
   );
@@ -110,7 +113,7 @@ function ConfirmationContent() {
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
           <a
-            href={getFullPath(`/account/orders/${targetOrderId}/`)}
+            href={trackingUrl}
             className="w-full sm:w-auto px-6 py-3 rounded-full bg-[#913638] text-white text-xs sm:text-sm font-semibold hover:bg-[#74292B] active:scale-[0.98] shadow-sm hover:shadow-boutique-hover transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
             <Package className="w-4 h-4" />
