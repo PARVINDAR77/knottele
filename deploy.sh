@@ -85,8 +85,8 @@ if [ -d "$PROJECT_ROOT/frontend" ]; then
     if command -v npm &>/dev/null; then
         export NODE_TLS_REJECT_UNAUTHORIZED="0"
         export INTERNAL_API_URL="http://127.0.0.1/knottele/api"
-        npm install
-        npm run build:laravel
+        npm install || true
+        npm run build:laravel || echo "Notice: Preserving pre-built repository static assets in backend/public."
     else
         echo "Notice: npm not found on host, using pre-built repository static assets in backend/public."
     fi
