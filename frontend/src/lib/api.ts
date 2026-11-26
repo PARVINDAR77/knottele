@@ -1180,6 +1180,66 @@ export async function submitOrder(
   }
 }
 
+export interface CartValidationResult {
+  success: boolean;
+  has_stock_errors: boolean;
+  stock_errors: string[];
+  data?: Array<{
+    product_id?: string | number;
+    slug?: string;
+    variant_id?: number;
+    name?: string;
+    quantity: number;
+    stock?: number;
+    stock_quantity?: number;
+    is_in_stock?: boolean;
+    price?: number;
+  }>;
+  message?: string;
+}
+
+export async function validateCartApi(
+  items: Array<{
+    product_id?: string | number;
+    slug?: string;
+    variant_id?: number;
+    name?: string;
+    quantity: number;
+    unit_price?: number;
+  }>
+): Promise<CartValidationResult> {
+  try {
+    const token = typeof window !== "undefined" ? localStorage.getItem("knotelle_customer_token") : null;
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    };
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+    const response = await fetch(`${getApiBaseUrl()}/customer/cart/validate`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ items }),
+    });
+    const result = await response.json();
+    return {
+      success: Boolean(result.success),
+      has_stock_errors: Boolean(result.has_stock_errors),
+      stock_errors: Array.isArray(result.stock_errors) ? result.stock_errors : [],
+      data: result.data || [],
+      message: result.message,
+    };
+  } catch (error) {
+    console.warn("Cart validation network error:", error);
+    return {
+      success: true,
+      has_stock_errors: false,
+      stock_errors: [],
+    };
+  }
+}
+
 /**
  * Register Customer to Laravel Backend API
  */

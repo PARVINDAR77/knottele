@@ -7946,10 +7946,9 @@
             if (col1Container) {
                 col1Container.innerHTML = '';
                 footerCol1LinkIndex = 0;
-                const col1Links = Array.isArray(f.col1_links) && f.col1_links.length > 0 ? f.col1_links : [
+                const col1Links = Array.isArray(f.col1_links) && f.col1_links.length > 0 ? f.col1_links.filter(l => !l.url?.includes('custom') && !l.label?.toLowerCase()?.includes('custom')) : [
                     { label: 'Home', url: '/', is_active: true },
                     { label: 'Shop', url: '/shop', is_active: true },
-                    { label: 'Custom Order', url: '/custom-order', is_active: true },
                     { label: 'About', url: '/about', is_active: true },
                     { label: 'Contact', url: '/contact', is_active: true },
                 ];
@@ -8197,10 +8196,9 @@
             if (container) {
                 container.innerHTML = '';
                 navbarLinkIndex = 0;
-                const links = Array.isArray(n.nav_links) && n.nav_links.length > 0 ? n.nav_links : [
+                const links = Array.isArray(n.nav_links) && n.nav_links.length > 0 ? n.nav_links.filter(l => !l.href?.includes('custom') && !l.name?.toLowerCase()?.includes('custom')) : [
                     { name: 'Home', href: '/', is_highlighted: false, is_active: true },
                     { name: 'Shop', href: '/shop', is_highlighted: false, is_active: true },
-                    { name: 'Custom Order', href: '/custom-order', is_highlighted: true, is_active: true },
                     { name: 'About', href: '/about', is_highlighted: false, is_active: true },
                     { name: 'Contact', href: '/contact', is_highlighted: false, is_active: true },
                 ];

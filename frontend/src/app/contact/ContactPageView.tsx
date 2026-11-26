@@ -46,12 +46,7 @@ const defaultContactData: ContactPageData = {
     badge: "Atelier Studio",
     title: "KNOTELLE Studio",
     subtitle: "Handmade with love in Bengaluru, India",
-    custom_order_box: {
-      title: "Explore Boutique Collection",
-      text: "Browse our charming collection of handmade crochet flowers, plushies, bookmarks, and accessories.",
-      link: "/shop",
-      is_active: false,
-    },
+
     items: [
       {
         id: 1,
@@ -265,12 +260,7 @@ export function ContactPageView({ initialData }: { initialData?: ContactPageData
   const subjectField = fields.find((f: any) => f.key === "subject") || { label: "Subject", placeholder: "What is this regarding?", required: false };
   const messageField = fields.find((f: any) => f.key === "message") || { label: "How can we help you?", placeholder: "Tell us about your questions...", required: true };
 
-  const customOrderBox = info?.custom_order_box || {
-    title: (info as any)?.custom_order_box_title || "Looking for Custom Orders?",
-    text: (info as any)?.custom_order_box_text || "Have a specific design, color palette, or bouquet arrangement in mind? Request a bespoke piece directly.",
-    link: (info as any)?.custom_order_box_link || "/custom-order",
-    is_active: (info as any)?.custom_order_box_active !== false,
-  };
+
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));

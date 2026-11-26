@@ -621,7 +621,7 @@ class ProductService
         // 1. Handle Simple Product
         if ($product->product_type === 'simple') {
             Log::info('Updating simple product variant', ['product_id' => $product->id]);
-            $variant = $product->defaultVariant;
+            $variant = $product->defaultVariant ?: $product->variants()->first();
             
             if (!$variant) {
                 Log::warning('No default variant found for simple product, creating one', ['product_id' => $product->id]);
@@ -629,12 +629,18 @@ class ProductService
                 return;
             }
 
+            $stockQty = isset($data['stock_quantity']) && is_numeric($data['stock_quantity'])
+                ? (int) $data['stock_quantity']
+                : (int) ($variant->stock_quantity ?? 0);
+            $stockStatus = ($stockQty > 0) ? 'in_stock' : 'out_of_stock';
+
             $variant->update([
                 'sku' => $data['sku'] ?? $variant->sku,
-                'price' => $data['price'] ?? $variant->price,
+                'price' => isset($data['price']) && is_numeric($data['price']) ? $data['price'] : $variant->price,
                 'compare_price' => $data['compare_price'] ?? $variant->compare_price,
-                'stock_quantity' => $data['stock_quantity'] ?? $variant->stock_quantity,
-                'stock_status' => (isset($data['stock_quantity']) && $data['stock_quantity'] > 0) ? 'in_stock' : 'out_of_stock',
+                'stock_quantity' => $stockQty,
+                'stock_status' => $stockStatus,
+                'is_default' => 1,
                 'status' => 1,
                 'weight' => $data['weight'] ?? $product->weight,
                 'length' => $data['length'] ?? $product->length,
@@ -644,7 +650,15 @@ class ProductService
 
             // Sync images for simple product using top level images
             $this->syncVariantImages($variant, $data, $topLevelImageIds);
-            Log::info('Simple product variant updated successfully', ['variant_id' => $variant->id]);
+
+            // Clean up any extraneous duplicate variants for simple products so total inventory stays synchronized
+            $product->variants()->where('id', '!=', $variant->id)->update([
+                'stock_quantity' => 0,
+                'stock_status' => 'out_of_stock',
+                'is_default' => 0,
+            ]);
+
+            Log::info('Simple product variant updated successfully', ['variant_id' => $variant->id, 'stock_quantity' => $stockQty]);
             return;
         }
 

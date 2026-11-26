@@ -95,7 +95,7 @@ export function MobileDrawer({
 
   const rawItems = navLinks && navLinks.length > 0 ? navLinks : defaultItems;
   const items = rawItems.filter(
-    (link) => !link.href.includes("custom-order") && !link.name.toLowerCase().includes("custom order")
+    (link) => !link.href.toLowerCase().includes("custom") && !link.name.toLowerCase().includes("custom")
   );
 
   const handleDrawerNavClick = (targetHref: string) => (e: React.MouseEvent<HTMLAnchorElement>) => {

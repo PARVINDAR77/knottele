@@ -122,10 +122,12 @@ class ProductController extends Controller
             'main_category_id' => 'required|exists:categories,id',
             'product_type' => 'required|in:simple,configurable',
             'price' => 'required_if:product_type,simple|nullable|numeric|min:0',
+            'stock_quantity' => 'required_if:product_type,simple|nullable|integer|min:0',
             'product_code' => 'nullable|string|max:255|unique:products,product_code',
             'slug' => 'required|string|max:255|unique:products,slug',
             'sku' => 'required_if:product_type,simple|nullable|string|max:255|unique:product_variants,sku',
             'variants.*.sku' => 'required_if:product_type,configurable|string|max:255',
+            'variants.*.stock_quantity' => 'required_if:product_type,configurable|nullable|integer|min:0',
         ]);
 
         if ($request->input('product_type') === 'configurable' && empty($request->input('variants'))) {
@@ -188,8 +190,11 @@ class ProductController extends Controller
             'name' => 'required|string|max:255',
             'product_code' => 'nullable|string|max:255|unique:products,product_code,' . $id,
             'slug' => 'required|string|max:255|unique:products,slug,' . $id,
+            'price' => 'required_if:product_type,simple|nullable|numeric|min:0',
+            'stock_quantity' => 'required_if:product_type,simple|nullable|integer|min:0',
             'sku' => 'required_if:product_type,simple|nullable|string|max:255',
             'variants.*.sku' => 'required_if:product_type,configurable|string|max:255',
+            'variants.*.stock_quantity' => 'required_if:product_type,configurable|nullable|integer|min:0',
         ]);
         
         $data = array_merge($request->all(), $request->allFiles());

@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { CartItem, CartItemCustomization } from "@/types/cart";
 import { Product } from "@/types/product";
 import { useToast } from "./ToastContext";
-import { validateOfferCode } from "@/lib/api";
+import { validateOfferCode, validateCartApi } from "@/lib/api";
 import { useWebsiteMedia } from "./MediaContext";
 
 interface CartContextType {
@@ -63,6 +63,69 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       setIsInitialized(true);
     }
   }, []);
+
+  // Synchronize live inventory stock levels with backend database
+  useEffect(() => {
+    if (!isInitialized || items.length === 0) return;
+    validateCartApi(
+      items.map((i) => ({
+        product_id: i.productId,
+        slug: i.product?.slug,
+        name: i.product?.name,
+        quantity: i.quantity,
+        variant_id: (i.product as any)?.variant_id,
+        unit_price: i.price,
+      }))
+    )
+      .then((res) => {
+        if (res && res.data && res.data.length > 0) {
+          let adjusted = false;
+          setItems((prev) =>
+            prev.map((item) => {
+              const matched = res.data?.find(
+                (v) =>
+                  (v.slug && item.product?.slug && v.slug === item.product.slug) ||
+                  (v.product_id && String(v.product_id) === String(item.productId)) ||
+                  (v.name && item.product?.name && v.name.toLowerCase() === item.product.name.toLowerCase())
+              );
+              if (matched && typeof matched.stock === "number") {
+                const liveStock = matched.stock;
+                const inStock = Boolean(matched.is_in_stock) && liveStock > 0;
+                let newQty = item.quantity;
+                if (!inStock || liveStock <= 0) {
+                  newQty = 0;
+                  adjusted = true;
+                } else if (item.quantity > liveStock) {
+                  newQty = liveStock;
+                  adjusted = true;
+                }
+                const updatedProduct: Product = {
+                  ...item.product,
+                  stock: liveStock,
+                  inStock,
+                };
+                return {
+                  ...item,
+                  quantity: newQty > 0 ? newQty : item.quantity,
+                  product: updatedProduct,
+                };
+              }
+              return item;
+            })
+          );
+          if (adjusted) {
+            showToast(
+              "Cart Inventory Synced 📦",
+              "Item quantities have been adjusted to match live available stock.",
+              "info"
+            );
+          }
+        }
+      })
+      .catch((err) => {
+        console.warn("Background cart stock validation error:", err);
+      });
+  }, [isInitialized]);
 
   // Save to localStorage when items change
   useEffect(() => {

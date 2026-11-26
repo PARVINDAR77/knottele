@@ -14,6 +14,70 @@ use Illuminate\Support\Facades\Log;
 class OrderController extends Controller
 {
     /**
+     * Resolve product variant from cart item data with strict priority and alias resolution
+     */
+    protected function resolveVariantForItem(array $item): ?ProductVariant
+    {
+        $slug = $item['slug'] ?? null;
+        $productId = $item['product_id'] ?? null;
+        $itemName = trim($item['name'] ?? '');
+        $variantId = (!empty($item['variant_id']) && is_numeric($item['variant_id'])) ? (int)$item['variant_id'] : null;
+
+        $slugMap = [
+            'cute-bunny-amigurumi-keychain' => 'cute-bunny-keychain',
+            'cute-bunny-keychain' => 'cute-bunny-amigurumi-keychain',
+        ];
+
+        $prod = null;
+
+        // 1. Try finding by product slug first (with known slug aliases)
+        if ($slug) {
+            $prod = \App\Models\Product::with(['taxClass', 'defaultVariant', 'variants'])->where('slug', $slug)->first();
+            if (!$prod && isset($slugMap[$slug])) {
+                $prod = \App\Models\Product::with(['taxClass', 'defaultVariant', 'variants'])->where('slug', $slugMap[$slug])->first();
+            }
+        }
+
+        // 2. Try finding by product ID or product code
+        if (!$prod && $productId) {
+            $prod = \App\Models\Product::with(['taxClass', 'defaultVariant', 'variants'])
+                ->where('id', $productId)
+                ->orWhere('slug', $productId)
+                ->orWhere('product_code', $productId)
+                ->first();
+        }
+
+        // 3. Try finding by product name
+        if (!$prod && !empty($itemName)) {
+            $prod = \App\Models\Product::with(['taxClass', 'defaultVariant', 'variants'])
+                ->where('name', $itemName)
+                ->orWhere('name', 'LIKE', '%' . $itemName . '%')
+                ->first();
+        }
+
+        // If product found, resolve its matching variant
+        if ($prod) {
+            if ($variantId) {
+                $matchedVariant = $prod->variants->where('id', $variantId)->first();
+                if ($matchedVariant) {
+                    return $matchedVariant;
+                }
+            }
+            return $prod->defaultVariant ?? $prod->variants->first();
+        }
+
+        // 4. If product not found by slug/id/name, only use variant_id if it exists and belongs to a valid product
+        if ($variantId) {
+            $foundVariant = ProductVariant::with('product.taxClass')->find($variantId);
+            if ($foundVariant && $foundVariant->product) {
+                return $foundVariant;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Validate cart items and return fresh prices, stock levels, and tax rates
      */
     public function validateCart(Request $request)
@@ -25,64 +89,35 @@ class OrderController extends Controller
             $stockErrors = [];
             
             foreach ($items as $item) {
-                $variant = null;
+                $variant = $this->resolveVariantForItem($item);
                 $itemName = trim($item['name'] ?? '');
-                $productId = $item['product_id'] ?? null;
-                $slug = $item['slug'] ?? null;
+                $reqQty = max(1, (int) ($item['quantity'] ?? 1));
 
-                if (!empty($item['variant_id']) && is_numeric($item['variant_id'])) {
-                    $variant = ProductVariant::with('product.taxClass')->find($item['variant_id']);
+                if (!$variant || !$variant->product) {
+                    $hasStockErrors = true;
+                    $stockErrors[] = "Item '" . ($itemName ?: 'Product') . "' could not be located in our inventory.";
+                    continue;
                 }
 
-                if (!$variant && $slug) {
-                    $prod = \App\Models\Product::with(['taxClass', 'defaultVariant', 'variants'])->where('slug', $slug)->first();
-                    if ($prod) {
-                        $variant = $prod->defaultVariant ?? $prod->variants->first();
-                    }
+                $stock = (int) ($variant->stock_quantity ?? 0);
+                $name = $variant->product->name ?? ($itemName ?: 'Product');
+
+                $item['variant_id'] = $variant->id;
+                $item['stock'] = $stock;
+                $item['stock_quantity'] = $stock;
+                $item['is_in_stock'] = $stock > 0;
+                $item['price'] = (float) $variant->price;
+                $item['tax_rate'] = $variant->product->taxClass ? (float) $variant->product->taxClass->total_rate : 0;
+
+                if ($stock <= 0) {
+                    $hasStockErrors = true;
+                    $stockErrors[] = "Sorry, '{$name}' is currently out of stock.";
+                } elseif ($reqQty > $stock) {
+                    $hasStockErrors = true;
+                    $stockErrors[] = "Only {$stock} units of '{$name}' available in stock (you requested {$reqQty}).";
                 }
 
-                if (!$variant && $productId) {
-                    $prod = \App\Models\Product::with(['taxClass', 'defaultVariant', 'variants'])
-                        ->where('id', $productId)
-                        ->orWhere('slug', $productId)
-                        ->orWhere('product_code', $productId)
-                        ->first();
-                    if ($prod) {
-                        $variant = $prod->defaultVariant ?? $prod->variants->first();
-                    }
-                }
-
-                if (!$variant && !empty($itemName)) {
-                    $prod = \App\Models\Product::with(['taxClass', 'defaultVariant', 'variants'])
-                        ->where('name', $itemName)
-                        ->first();
-                    if ($prod) {
-                        $variant = $prod->defaultVariant ?? $prod->variants->first();
-                    }
-                }
-
-                if ($variant && $variant->product) {
-                    $stock = (int) ($variant->stock_quantity ?? 0);
-                    $reqQty = max(1, (int) ($item['quantity'] ?? 1));
-                    $name = $variant->product->name ?? ($itemName ?: 'Product');
-
-                    $item['variant_id'] = $variant->id;
-                    $item['stock'] = $stock;
-                    $item['stock_quantity'] = $stock;
-                    $item['is_in_stock'] = $stock > 0;
-                    $item['price'] = (float) $variant->price;
-                    $item['tax_rate'] = $variant->product->taxClass ? (float) $variant->product->taxClass->total_rate : 0;
-
-                    if ($stock <= 0) {
-                        $hasStockErrors = true;
-                        $stockErrors[] = "Sorry, '{$name}' is currently out of stock.";
-                    } elseif ($reqQty > $stock) {
-                        $hasStockErrors = true;
-                        $stockErrors[] = "Only {$stock} units of '{$name}' available in stock (you requested {$reqQty}).";
-                    }
-
-                    $validatedItems[] = $item;
-                }
+                $validatedItems[] = $item;
             }
             
             return response()->json([
@@ -344,79 +379,9 @@ class OrderController extends Controller
             $orderItemsData = [];
 
             foreach ($request->items as $item) {
-                $variant = null;
                 $itemName = trim($item['name'] ?? '');
-                $productId = $item['product_id'] ?? null;
-                $slug = $item['slug'] ?? null;
+                $quantity = (int) ($item['quantity'] ?? 1);
 
-                // 1. Try finding by product slug first
-                if ($slug) {
-                    $prod = \App\Models\Product::with(['taxClass', 'defaultVariant', 'variants'])->where('slug', $slug)->first();
-                    if ($prod) {
-                        $variant = $prod->defaultVariant ?? $prod->variants->first();
-                    }
-                }
-
-                // 2. Try finding by product ID or product code
-                if (!$variant && $productId) {
-                    $prod = \App\Models\Product::with(['taxClass', 'defaultVariant', 'variants'])
-                        ->where('id', $productId)
-                        ->orWhere('slug', $productId)
-                        ->orWhere('product_code', $productId)
-                        ->first();
-                    if ($prod) {
-                        $variant = $prod->defaultVariant ?? $prod->variants->first();
-                    }
-                }
-
-                // 3. Try finding by product name
-                if (!$variant && !empty($itemName)) {
-                    $prod = \App\Models\Product::with(['taxClass', 'defaultVariant', 'variants'])
-                        ->where('name', $itemName)
-                        ->orWhere('name', 'LIKE', '%' . $itemName . '%')
-                        ->first();
-                    if ($prod) {
-                        $variant = $prod->defaultVariant ?? $prod->variants->first();
-                    }
-                }
-
-                // 4. Try finding by variant_id
-                if (!$variant && !empty($item['variant_id']) && is_numeric($item['variant_id'])) {
-                    $foundVariant = ProductVariant::with('product.taxClass')->find($item['variant_id']);
-                    if ($foundVariant) {
-                        $variant = $foundVariant;
-                    }
-                }
-
-                if (!$variant) {
-                    $variant = ProductVariant::with('product.taxClass')->first();
-                }
-
-                if (!$variant) {
-                    // Fail-safe: ensure a valid fallback product and variant exists to satisfy foreign key constraints
-                    $defaultProduct = \App\Models\Product::firstOrCreate(
-                        ['slug' => 'handmade-boutique-creation'],
-                        [
-                            'name' => !empty($itemName) ? $itemName : 'Handmade Boutique Item',
-                            'product_code' => 'KNT-GEN-01',
-                            'status' => 'published',
-                            'description' => 'Bespoke handmade crochet item.',
-                        ]
-                    );
-
-                    $variant = ProductVariant::firstOrCreate(
-                        ['product_id' => $defaultProduct->id],
-                        [
-                            'sku' => 'KNT-DEFAULT',
-                            'price' => isset($item['unit_price']) ? (float) $item['unit_price'] : 100,
-                            'stock_quantity' => 999,
-                            'is_default' => 1,
-                            'status' => 1,
-                        ]
-                    );
-                }
-
-                $quantity = (int) $item['quantity'];
                 if ($quantity <= 0) {
                     DB::rollBack();
                     return response()->json([
@@ -425,25 +390,33 @@ class OrderController extends Controller
                     ], 422);
                 }
 
-                $productName = !empty($itemName) ? $itemName : ($variant->product->name ?? 'Handmade Product');
+                $variant = $this->resolveVariantForItem($item);
 
-                // Enforce Strict Stock Check against database inventory
-                if ($variant) {
-                    $availableStock = (int) ($variant->stock_quantity ?? 0);
-                    if ($availableStock <= 0) {
-                        DB::rollBack();
-                        return response()->json([
-                            'success' => false,
-                            'message' => "Sorry, '{$productName}' is currently out of stock.",
-                        ], 422);
-                    }
-                    if ($quantity > $availableStock) {
-                        DB::rollBack();
-                        return response()->json([
-                            'success' => false,
-                            'message' => "Cannot order {$quantity} units of '{$productName}'. Only {$availableStock} left in stock.",
-                        ], 422);
-                    }
+                if (!$variant || !$variant->product) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Sorry, item '" . ($itemName ?: 'Product') . "' could not be located in boutique inventory.",
+                    ], 422);
+                }
+
+                $productName = $variant->product->name ?? (!empty($itemName) ? $itemName : 'Handmade Product');
+                $availableStock = (int) ($variant->stock_quantity ?? 0);
+
+                if ($availableStock <= 0) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Sorry, '{$productName}' is currently out of stock.",
+                    ], 422);
+                }
+
+                if ($quantity > $availableStock) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Cannot order {$quantity} units of '{$productName}'. Only {$availableStock} left in stock.",
+                    ], 422);
                 }
 
                 // Enforce canonical variant price from database; do not allow client price tampering

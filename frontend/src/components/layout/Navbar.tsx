@@ -37,7 +37,7 @@ export function Navbar() {
 
   const navLinks = rawNavLinks
     .filter((link) => link.is_active !== false)
-    .filter((link) => !link.href.includes("custom-order") && !link.name.toLowerCase().includes("custom order"));
+    .filter((link) => !link.href.toLowerCase().includes("custom") && !link.name.toLowerCase().includes("custom"));
 
   const showSearch = actions?.show_search !== false;
   const showWishlist = actions?.show_wishlist !== false;

@@ -34,6 +34,7 @@ import {
   fetchActiveOffers,
   fetchStoreSettings,
   getFullPath,
+  validateCartApi,
 } from "@/lib/api";
 import {
   createRazorpayOrder,
@@ -254,30 +255,27 @@ export default function CheckoutPage() {
     const cleanCity = city.trim();
     const cleanPin = pincode.trim();
 
-    // Pre-flight Inventory Stock Verification
-    for (const item of items) {
-      const availableStock = typeof item.product?.stock === "number" ? item.product.stock : 99;
-      if (availableStock <= 0 || item.product?.inStock === false) {
-        showToast("Out of Stock Item", `"${item.product?.name || "Item"}" is out of stock. Please remove it from your cart before checkout.`, "error");
-        return;
-      }
-      if (item.quantity > availableStock) {
-        showToast("Stock Quantity Exceeded", `Only ${availableStock} units of "${item.product?.name || "Item"}" available. Please reduce the quantity in your cart.`, "error");
-        return;
-      }
+    // Live Backend Inventory Stock Validation
+    const stockCheck = await validateCartApi(
+      items.map((i) => ({
+        product_id: i.productId,
+        slug: i.product?.slug,
+        name: i.product?.name,
+        quantity: i.quantity,
+        unit_price: i.price,
+        variant_id: (i.product as any)?.variant_id,
+      }))
+    );
+
+    if (stockCheck.has_stock_errors) {
+      showToast("Stock Limit Exceeded", stockCheck.stock_errors?.[0] || "One or more items in your cart exceed available stock. Please reduce your quantity.", "error");
+      return;
     }
 
     const orderItemsPayload = items.map((item) => {
-      let variantId = 1;
-      const numMatch = String(item.product?.id || "").match(/\d+/);
-      if (numMatch) {
-        const parsed = parseInt(numMatch[0], 10);
-        if (parsed >= 1 && parsed <= 500) {
-          variantId = parsed;
-        }
-      }
+      const dbVariantId = (item.product as any)?.variant_id || (item.product as any)?.variants?.[0]?.id;
       return {
-        variant_id: variantId,
+        variant_id: dbVariantId ? Number(dbVariantId) : undefined,
         product_id: item.product?.id || item.productId,
         slug: item.product?.slug,
         product_code: item.product?.id || item.productId,
@@ -416,32 +414,30 @@ export default function CheckoutPage() {
       return;
     }
 
-    // Pre-flight Inventory Stock Verification
-    for (const item of items) {
-      const availableStock = typeof item.product?.stock === "number" ? item.product.stock : 99;
-      if (availableStock <= 0 || item.product?.inStock === false) {
-        showToast("Out of Stock Item", `"${item.product?.name || "Item"}" is out of stock. Please remove it from your cart before checkout.`, "error");
-        return;
-      }
-      if (item.quantity > availableStock) {
-        showToast("Stock Quantity Exceeded", `Only ${availableStock} units of "${item.product?.name || "Item"}" available. Please reduce the quantity in your cart.`, "error");
-        return;
-      }
-    }
-
     setIsSubmitting(true);
 
+    // Live Backend Inventory Stock Validation
+    const stockCheck = await validateCartApi(
+      items.map((i) => ({
+        product_id: i.productId,
+        slug: i.product?.slug,
+        name: i.product?.name,
+        quantity: i.quantity,
+        unit_price: i.price,
+        variant_id: (i.product as any)?.variant_id,
+      }))
+    );
+
+    if (stockCheck.has_stock_errors) {
+      setIsSubmitting(false);
+      showToast("Stock Limit Exceeded", stockCheck.stock_errors?.[0] || "One or more items in your cart exceed available stock. Please reduce your quantity.", "error");
+      return;
+    }
+
     const orderItemsPayload = items.map((item) => {
-      let variantId = 1;
-      const numMatch = String(item.product?.id || "").match(/\d+/);
-      if (numMatch) {
-        const parsed = parseInt(numMatch[0], 10);
-        if (parsed >= 1 && parsed <= 500) {
-          variantId = parsed;
-        }
-      }
+      const dbVariantId = (item.product as any)?.variant_id || (item.product as any)?.variants?.[0]?.id;
       return {
-        variant_id: variantId,
+        variant_id: dbVariantId ? Number(dbVariantId) : undefined,
         product_id: item.product?.id || item.productId,
         slug: item.product?.slug,
         product_code: item.product?.id || item.productId,
@@ -453,7 +449,6 @@ export default function CheckoutPage() {
 
     // RAZORPAY STANDARD ONLINE PAYMENT FLOW
     try {
-      setIsSubmitting(true);
       const isLoaded = await loadRazorpayScript();
       if (!isLoaded) {
         showToast("Payment Error", "Failed to load Razorpay payment gateway. Please check your internet connection.", "error");

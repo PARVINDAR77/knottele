@@ -134,9 +134,9 @@ class MediaController extends Controller
             'cta_text' => $customCrochetMedia && $customCrochetMedia->cta_text ? $customCrochetMedia->cta_text : 'Request Your Custom Order',
             'cta_link' => $customCrochetMedia && $customCrochetMedia->cta_link ? $customCrochetMedia->cta_link : '/custom-order',
             'tag_text' => $customCrochetMedia && $customCrochetMedia->tag_text ? $customCrochetMedia->tag_text : 'Turn Your Ideas Into Handmade Reality',
-            'tag_active' => isset($ccMeta['tag_active']) ? (bool)$ccMeta['tag_active'] : true,
+            'tag_active' => false,
             'alt_text' => $customCrochetMedia && $customCrochetMedia->alt_text ? $customCrochetMedia->alt_text : 'Custom Crochet Banner',
-            'is_active' => $customCrochetMedia ? (bool)$customCrochetMedia->is_active : true,
+            'is_active' => false,
         ];
 
         // 3. Brand Story
@@ -195,9 +195,9 @@ class MediaController extends Controller
             'title_line1' => $customOrderMedia && $customOrderMedia->title ? $customOrderMedia->title : 'Your Idea.',
             'title_line2' => $customOrderMedia && $customOrderMedia->subtitle ? $customOrderMedia->subtitle : 'Our Yarn.',
             'description' => $customDesc,
-            'cta_text' => $customOrderMedia && $customOrderMedia->cta_text ? $customOrderMedia->cta_text : 'Start a Custom Order',
-            'cta_link' => $rawCtaLink,
-            'is_active' => $customOrderMedia ? (bool)$customOrderMedia->is_active : true,
+            'cta_text' => 'Shop Collections',
+            'cta_link' => '/shop',
+            'is_active' => false,
         ];
 
         $customOrderItems = Media::where('page', 'custom_order')
@@ -291,9 +291,9 @@ class MediaController extends Controller
             ['label' => 'Contact', 'url' => '/contact', 'is_active' => true],
         ];
         $footerCol1Filtered = array_values(array_filter($footerCol1Raw, function ($link) {
-            $url = $link['url'] ?? $link['href'] ?? '';
-            $label = $link['label'] ?? $link['name'] ?? '';
-            return !str_contains($url, 'custom-order') && !str_contains(strtolower($label), 'custom order');
+            $url = strtolower($link['url'] ?? $link['href'] ?? '');
+            $label = strtolower($link['label'] ?? $link['name'] ?? '');
+            return !str_contains($url, 'custom') && !str_contains($label, 'custom');
         }));
 
         $footer = [
@@ -382,15 +382,20 @@ class MediaController extends Controller
         ];
 
         $filteredNavLinks = array_values(array_filter($rawNavLinks, function ($link) {
-            $href = $link['href'] ?? $link['url'] ?? '';
-            $name = $link['name'] ?? $link['label'] ?? '';
-            return !str_contains($href, 'custom-order') && !str_contains(strtolower($name), 'custom order');
+            $href = strtolower($link['href'] ?? $link['url'] ?? '');
+            $name = strtolower($link['name'] ?? $link['label'] ?? '');
+            return !str_contains($href, 'custom') && !str_contains($name, 'custom');
         }));
+
+        $announcementText = $navbarMeta['announcement_text'] ?? $defaultAnnouncement;
+        if (str_contains(strtolower($announcementText), 'custom')) {
+            $announcementText = $defaultAnnouncement;
+        }
 
         $navbar = [
             'logo' => $mainLogo,
             'announcement' => [
-                'text' => $navbarMeta['announcement_text'] ?? $defaultAnnouncement,
+                'text' => $announcementText,
                 'link' => $navbarMeta['announcement_link'] ?? '/shop',
                 'is_active' => isset($navbarMeta['announcement_active']) ? (bool)$navbarMeta['announcement_active'] : false,
             ],
@@ -505,14 +510,14 @@ class MediaController extends Controller
                 'is_active' => isset($storyMeta['floating_badge_active']) ? (bool)$storyMeta['floating_badge_active'] : true,
             ],
             'cta' => [
-                'text' => $aboutStoryMedia && $aboutStoryMedia->cta_text ? $aboutStoryMedia->cta_text : 'Request a Custom Creation',
-                'url' => $aboutStoryMedia && $aboutStoryMedia->cta_link ? $aboutStoryMedia->cta_link : '/custom-order',
-                'link' => $aboutStoryMedia && $aboutStoryMedia->cta_link ? $aboutStoryMedia->cta_link : '/custom-order',
-                'is_active' => isset($storyMeta['cta_visible']) ? (bool)$storyMeta['cta_visible'] : true,
+                'text' => 'Explore Our Boutique',
+                'url' => '/shop',
+                'link' => '/shop',
+                'is_active' => true,
             ],
-            'cta_text' => $aboutStoryMedia && $aboutStoryMedia->cta_text ? $aboutStoryMedia->cta_text : 'Request a Custom Creation',
-            'cta_link' => $aboutStoryMedia && $aboutStoryMedia->cta_link ? $aboutStoryMedia->cta_link : '/custom-order',
-            'is_active' => $aboutStoryMedia ? (bool)$aboutStoryMedia->is_active : true,
+            'cta_text' => 'Explore Our Boutique',
+            'cta_link' => '/shop',
+            'is_active' => true,
         ];
 
         // Craft Pillars
@@ -773,14 +778,14 @@ class MediaController extends Controller
                 'is_active' => isset($storyMeta['floating_badge_active']) ? (bool)$storyMeta['floating_badge_active'] : true,
             ],
             'cta' => [
-                'text' => $aboutStoryMedia && $aboutStoryMedia->cta_text ? $aboutStoryMedia->cta_text : 'Request a Custom Creation',
-                'url' => $aboutStoryMedia && $aboutStoryMedia->cta_link ? $aboutStoryMedia->cta_link : '/custom-order',
-                'link' => $aboutStoryMedia && $aboutStoryMedia->cta_link ? $aboutStoryMedia->cta_link : '/custom-order',
-                'is_active' => isset($storyMeta['cta_visible']) ? (bool)$storyMeta['cta_visible'] : true,
+                'text' => 'Explore Our Boutique',
+                'url' => '/shop',
+                'link' => '/shop',
+                'is_active' => true,
             ],
-            'cta_text' => $aboutStoryMedia && $aboutStoryMedia->cta_text ? $aboutStoryMedia->cta_text : 'Request a Custom Creation',
-            'cta_link' => $aboutStoryMedia && $aboutStoryMedia->cta_link ? $aboutStoryMedia->cta_link : '/custom-order',
-            'is_active' => $aboutStoryMedia ? (bool)$aboutStoryMedia->is_active : true,
+            'cta_text' => 'Explore Our Boutique',
+            'cta_link' => '/shop',
+            'is_active' => true,
         ];
 
         // Craft Pillars
@@ -1045,10 +1050,10 @@ class MediaController extends Controller
             'is_active' => $infoSettings ? (bool)$infoSettings->is_active : true,
             'items' => $infoItems,
             'custom_order_box' => [
-                'title' => $infoMeta['custom_order_box_title'] ?? 'Looking for Custom Orders?',
-                'text' => $infoMeta['custom_order_box_text'] ?? 'Have a specific design, color palette, or bouquet arrangement in mind? Request a bespoke piece directly.',
-                'link' => $infoMeta['custom_order_box_link'] ?? '/custom-order',
-                'is_active' => isset($infoMeta['custom_order_box_active']) ? (bool)$infoMeta['custom_order_box_active'] : true,
+                'title' => 'Explore Our Boutique',
+                'text' => 'Browse our handcrafted crochet flowers, soft toys, and boutique accessories.',
+                'link' => '/shop',
+                'is_active' => false,
             ],
         ];
 
@@ -1111,10 +1116,10 @@ class MediaController extends Controller
             $faqItems = [
                 [
                     'id' => 1,
-                    'question' => 'How long does a custom order take?',
-                    'title' => 'How long does a custom order take?',
-                    'answer' => 'Custom orders usually take 7–14 working days depending on complexity and yarn availability. Once dispatched, courier delivery takes 3–5 business days.',
-                    'description' => 'Custom orders usually take 7–14 working days depending on complexity and yarn availability. Once dispatched, courier delivery takes 3–5 business days.',
+                    'question' => 'How long does shipping and delivery take?',
+                    'title' => 'How long does shipping and delivery take?',
+                    'answer' => 'Orders are carefully handcrafted and dispatched within 2–4 business days. Once dispatched, courier delivery across India takes 3–5 business days.',
+                    'description' => 'Orders are carefully handcrafted and dispatched within 2–4 business days. Once dispatched, courier delivery across India takes 3–5 business days.',
                     'sort_order' => 1,
                     'is_active' => true,
                 ],
@@ -1122,8 +1127,8 @@ class MediaController extends Controller
                     'id' => 2,
                     'question' => 'Do you ship across India?',
                     'title' => 'Do you ship across India?',
-                    'answer' => 'Yes! We offer Pan-India shipping with trusted courier partners. Express delivery options and tracked shipping are provided for all orders.',
-                    'description' => 'Yes! We offer Pan-India shipping with trusted courier partners. Express delivery options and tracked shipping are provided for all orders.',
+                    'answer' => 'Yes! We offer 100% Free Pan-India shipping with trusted courier partners. Express delivery and tracked shipping are provided for all orders.',
+                    'description' => 'Yes! We offer 100% Free Pan-India shipping with trusted courier partners. Express delivery and tracked shipping are provided for all orders.',
                     'sort_order' => 2,
                     'is_active' => true,
                 ],
@@ -1138,10 +1143,10 @@ class MediaController extends Controller
                 ],
                 [
                     'id' => 4,
-                    'question' => 'Can I customize the colors of a flower bouquet?',
-                    'title' => 'Can I customize the colors of a flower bouquet?',
-                    'answer' => 'Absolutely! Every everlasting bouquet can be customized with your choice of flower types, stem count, color shades, and personalized gift wrapping notes.',
-                    'description' => 'Absolutely! Every everlasting bouquet can be customized with your choice of flower types, stem count, color shades, and personalized gift wrapping notes.',
+                    'question' => 'What materials are used for Knotelle products?',
+                    'title' => 'What materials are used for Knotelle products?',
+                    'answer' => 'Every item is meticulously hand-stitched using 100% premium milk cotton and combed cotton yarn, filled with anti-allergic virgin fiberfill.',
+                    'description' => 'Every item is meticulously hand-stitched using 100% premium milk cotton and combed cotton yarn, filled with anti-allergic virgin fiberfill.',
                     'sort_order' => 4,
                     'is_active' => true,
                 ],

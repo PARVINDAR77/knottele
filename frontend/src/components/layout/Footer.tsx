@@ -52,14 +52,14 @@ export function Footer() {
   ];
   const rawCol1Links: QuickLinkItem[] = (f?.column_1?.links && f.column_1.links.length > 0)
     ? f.column_1.links
-        .filter((l: any) => l.is_active !== false)
-        .map((l: any) => ({
-          label: String(l.label || l.name || "Link"),
-          url: String(l.url || l.href || "/"),
-        }))
+      .filter((l: any) => l.is_active !== false)
+      .map((l: any) => ({
+        label: String(l.label || l.name || "Link"),
+        url: String(l.url || l.href || "/"),
+      }))
     : defaultCol1Links;
   const col1Links = rawCol1Links.filter(
-    (l) => !l.url.includes("custom-order") && !l.label.toLowerCase().includes("custom order")
+    (l) => !l.url.toLowerCase().includes("custom") && !l.label.toLowerCase().includes("custom")
   );
 
   const col2Title = f?.column_2?.title || "Help";
@@ -135,7 +135,7 @@ export function Footer() {
 
   return (
     <footer className="relative w-full overflow-hidden bg-[#FFF9F6] border-t border-[#E7D1CC]/70 pt-12 sm:pt-16 pb-8 text-[#2E211E]">
-      
+
       {/* Full-Width Panoramic Footer Background Image */}
       <div className="absolute inset-0 z-0 w-full h-full">
         <Image
@@ -160,10 +160,10 @@ export function Footer() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 relative z-10">
-        
+
         {/* Main Columns Container */}
         <div className="flex flex-col lg:flex-row items-start justify-between gap-8 lg:gap-12 mb-12">
-          
+
           {/* Left Block: Brand Identity + Socials */}
           <div className="flex flex-col items-start space-y-4 lg:pr-10 lg:border-r lg:border-[#E7D1CC]/90 shrink-0 w-full lg:w-auto">
             <Link href={normalizeInternalLink("/")} className="inline-block group" aria-label="KNOTELLE Home">
@@ -248,7 +248,7 @@ export function Footer() {
           {/* Right Columns Grid: Quick Links, Help, Contact */}
           {/* Responsive mode: 2 columns for Quick Links & Help side-by-side, Contact below */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 sm:gap-x-10 gap-y-8 sm:gap-y-10 lg:gap-16 w-full flex-1">
-            
+
             {/* Column 1: Quick Links */}
             <div className="space-y-3.5">
               <h4 className="font-bold text-sm text-[#2E211E]">
