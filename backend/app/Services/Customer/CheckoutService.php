@@ -402,7 +402,7 @@ class CheckoutService
             ],
             'cod' => [
                 'name' => 'Cash on Delivery',
-                'available' => \App\Helpers\SettingsHelper::get('cod_enabled', true) && $this->isCODAvailable()
+                'available' => false
             ]
         ];
 

@@ -317,7 +317,7 @@ class OrderController extends Controller
             'shipping_address.city' => 'required|string',
             'shipping_address.pin_code' => 'required|string',
 
-            'payment_method' => 'required|string|in:razorpay,online,upi,card,netbanking,cod',
+            'payment_method' => 'required|string|in:razorpay,online,upi,card,netbanking',
             'offer_code' => 'nullable|string',
             'discount_total' => 'nullable|numeric',
             'discount_amount' => 'nullable|numeric',
@@ -327,6 +327,13 @@ class OrderController extends Controller
             'grand_total' => 'nullable|numeric',
             'total' => 'nullable|numeric',
         ]);
+
+        if ($request->payment_method === 'cod') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cash on Delivery is currently unavailable. Please choose an online payment method.',
+            ], 422);
+        }
 
         try {
             DB::beginTransaction();

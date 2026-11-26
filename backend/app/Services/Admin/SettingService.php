@@ -337,9 +337,9 @@ class SettingService
                 [
                     'key' => 'cod_enabled',
                     'label' => 'Enable Cash on Delivery',
-                    'value' => '1',
+                    'value' => '0',
                     'type' => 'checkbox',
-                    'default' => '1',
+                    'default' => '0',
                     'description' => 'Enable or disable Cash on Delivery payment method',
                     'is_encrypted' => false,
                     'is_public' => true,

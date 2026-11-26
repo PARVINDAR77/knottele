@@ -187,7 +187,7 @@ class SettingsHelper
             'razorpay_enabled' => self::get('razorpay_enabled', true),
             'razorpay_key_id' => self::get('razorpay_key_id', ''),
             'razorpay_key_secret' => self::get('razorpay_key_secret', ''),
-            'cod_enabled' => self::get('cod_enabled', true),
+            'cod_enabled' => false,
             'cod_min_order_value' => self::get('cod_min_order_value', 0.00)
         ];
     }

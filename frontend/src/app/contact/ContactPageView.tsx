@@ -1,4 +1,4 @@
-`"use client";
+"use client";
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
@@ -456,7 +456,7 @@ export function ContactPageView({ initialData }: { initialData?: ContactPageData
                     {formSettings.success_title || "Message Sent!"}
                   </h3>
                   <p className="text-xs sm:text-sm text-[#786864] max-w-md mx-auto leading-relaxed">
-                    {formSettings.success_message || `Thank you, ${formData.name}. We have received your message and will respond shortly.`}
+                    {formSettings.success_message || ("Thank you, " + formData.name + ". We have received your message and will respond shortly.")}
                   </p>
                   <button
                     type="button"
@@ -631,9 +631,7 @@ export function ContactPageView({ initialData }: { initialData?: ContactPageData
                         {faq.question || faq.title}
                       </span>
                       <ChevronDown
-                        className={`w-4 h-4 text-[#913638] shrink-0 transition-transform duration-200 ${
-                          isOpen ? "rotate-180" : ""
-                        }`}
+                        className={"w-4 h-4 text-[#913638] shrink-0 transition-transform duration-200 " + (isOpen ? "rotate-180" : "")}
                       />
                     </button>
                     {isOpen && (

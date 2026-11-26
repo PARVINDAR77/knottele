@@ -8,7 +8,6 @@ import {
   CheckCircle2,
   ShieldCheck,
   QrCode,
-  Truck,
   CreditCard,
   ArrowRight,
   ArrowLeft,
@@ -147,19 +146,16 @@ export default function CheckoutPage() {
   const [pincode, setPincode] = useState(defaultSavedAddr?.pincode || "");
 
   // Form State: 03 Payment
-  const [paymentMethod, setPaymentMethod] = useState<"Razorpay" | "Cash on Delivery">("Razorpay");
+  const [paymentMethod, setPaymentMethod] = useState<"Razorpay">("Razorpay");
   const [storeSettings, setStoreSettings] = useState<Record<string, any>>({});
   const [isUpiModalOpen, setIsUpiModalOpen] = useState(false);
   const [isSubmittingUpi, setIsSubmittingUpi] = useState(false);
 
-  // Fetch public store settings (UPI QR configs, COD status)
+  // Fetch public store settings (UPI QR configs)
   useEffect(() => {
     fetchStoreSettings().then((data) => {
       if (data) {
         setStoreSettings(data);
-        if (data.upi_qr_enabled === false && data.cod_enabled !== false) {
-          setPaymentMethod("Cash on Delivery");
-        }
       }
     });
   }, []);
@@ -456,7 +452,7 @@ export default function CheckoutPage() {
     });
 
     // RAZORPAY STANDARD ONLINE PAYMENT FLOW
-    if (paymentMethod === "Razorpay") {
+    try {
       setIsSubmitting(true);
       const isLoaded = await loadRazorpayScript();
       if (!isLoaded) {
@@ -610,127 +606,9 @@ export default function CheckoutPage() {
         setIsSubmitting(false);
       });
       rzpInstance.open();
-      return;
-    }
-
-    // CASH ON DELIVERY FLOW
-    try {
-      const res = await submitOrder({
-        items: orderItemsPayload.length > 0 ? orderItemsPayload : [{ variant_id: 1, quantity: 1, unit_price: subtotal }],
-        shipping_address: {
-          name: cleanName,
-          email: cleanEmail,
-          phone: cleanPhone,
-          address_line_1: `${cleanAddr1}${addressLine2 ? ', ' + addressLine2.trim() : ''}`,
-          city: cleanCity,
-          pin_code: cleanPin,
-        },
-        payment_method: "cod",
-        offer_code: promoCode || undefined,
-        discount_total: discount || 0,
-        shipping_total: shipping || 0,
-        grand_total: total,
-      });
-
-      if (!res || !res.success) {
-        showToast("Order Placement Failed", res?.message || "Failed to place order. Please try again.", "error");
-        setIsSubmitting(false);
-        return;
-      }
-
-      if (typeof window !== "undefined") {
-        localStorage.setItem("knotelle_guest_email", cleanEmail);
-      }
-
-      const realOrderId = String(res.orderId || `ord-${Date.now()}`);
-      const realOrderNumber = res.orderNumber || `KNT-${Math.floor(1000 + Math.random() * 9000)}-IN`;
-
-      const newOrder: Order = {
-        id: realOrderId,
-        orderNumber: realOrderNumber,
-        orderDate: new Date().toLocaleDateString("en-GB", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        }),
-        estimatedDelivery: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString(
-          "en-GB",
-          { day: "2-digit", month: "short", year: "numeric" }
-        ),
-        items: items.length > 0 ? [...items] : [],
-        shippingAddress: {
-          fullName: cleanName,
-          email: cleanEmail,
-          phone: cleanPhone,
-          addressLine1: cleanAddr1,
-          addressLine2: addressLine2 || "",
-          city: cleanCity,
-          state: state || "Gujarat",
-          pincode: cleanPin,
-          country: "India",
-        },
-        paymentMethod,
-        paymentStatus: "Pending",
-        subtotal,
-        shipping,
-        discount,
-        total,
-        status: "Order Placed",
-        timeline: [
-          {
-            status: "Order Placed",
-            date: "Just now",
-            description: "Order placed successfully. Assigned to artisan studio.",
-            completed: true,
-            current: true,
-          },
-          {
-            status: "Order Confirmed",
-            date: "Upcoming",
-            description: "Natural cotton yarns prepared for crafting.",
-            completed: false,
-          },
-          {
-            status: "Crafting Your Order",
-            date: "Upcoming",
-            description: "Handcrafting your bespoke crochet items.",
-            completed: false,
-          },
-          {
-            status: "Shipped",
-            date: "Upcoming",
-            description: "Handed to premium courier express.",
-            completed: false,
-          },
-          {
-            status: "Delivered",
-            date: "Upcoming",
-            description: "Handmade joy delivered with love.",
-            completed: false,
-          },
-        ],
-      };
-
-      try {
-        confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ["#8F3032", "#F4C7C1", "#C69A5A", "#FDE9E5"],
-        });
-      } catch (e) {}
-
-      addOrder(newOrder);
-      try {
-        await refetchOrders();
-      } catch {}
-      clearCart();
-
-      window.location.href = getFullPath(`/order-confirmation?orderNumber=${encodeURIComponent(realOrderNumber)}&orderId=${encodeURIComponent(realOrderId)}&method=cod`);
     } catch (err: any) {
-      console.error("Order submission exception:", err);
-      showToast("Order Submission Error", err?.message || "An unexpected error occurred.", "error");
-    } finally {
+      console.error("Razorpay checkout initialization error:", err);
+      showToast("Payment Initialization Error", err?.message || "An unexpected error occurred while launching Razorpay. Please try again.", "error");
       setIsSubmitting(false);
     }
   };
@@ -1282,26 +1160,6 @@ export default function CheckoutPage() {
                         </p>
                         <p className="text-[10px] text-[#786864] mt-0.5">
                           Powered by Razorpay Standard Checkout. Instant 100% verified confirmation.
-                        </p>
-                      </div>
-                    </label>
-
-                    {/* Cash on Delivery */}
-                    <label className={`flex items-start gap-3 p-4 rounded-2xl border cursor-pointer transition-all ${paymentMethod === "Cash on Delivery" ? "border-[#913638] bg-[#FCE9E5]/50 ring-1 ring-[#913638]" : "border-[#E7D1CC] hover:bg-[#FFF9F6]"}`}>
-                      <input
-                        type="radio"
-                        name="payment"
-                        checked={paymentMethod === "Cash on Delivery"}
-                        onChange={() => setPaymentMethod("Cash on Delivery")}
-                        className="mt-1 text-[#913638] focus:ring-[#913638]"
-                      />
-                      <div className="flex-1">
-                        <span className="text-xs font-bold text-[#2E211E] flex items-center gap-2">
-                          <Truck className="w-4 h-4 text-[#913638]" />
-                          <span>Cash on Delivery (COD)</span>
-                        </span>
-                        <p className="text-[11px] text-[#786864] mt-0.5">
-                          Pay cash upon delivery to the courier agent.
                         </p>
                       </div>
                     </label>

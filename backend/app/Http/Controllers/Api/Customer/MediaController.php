@@ -694,7 +694,7 @@ class MediaController extends Controller
                 'default_shipping_rate' => (float)($storeSettings['default_shipping_rate'] ?? 99),
                 'free_shipping_min' => (float)($storeSettings['free_shipping_min'] ?? 999),
                 'tax_rate' => (float)($storeSettings['tax_rate'] ?? 0),
-                'cod_enabled' => filter_var($storeSettings['cod_enabled'] ?? true, FILTER_VALIDATE_BOOLEAN),
+                'cod_enabled' => false,
                 'razorpay_enabled' => filter_var($storeSettings['razorpay_enabled'] ?? true, FILTER_VALIDATE_BOOLEAN),
                 'razorpay_key_id' => $storeSettings['razorpay_key_id'] ?? '',
             ],

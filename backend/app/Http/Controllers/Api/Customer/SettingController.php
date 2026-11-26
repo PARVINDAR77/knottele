@@ -42,6 +42,9 @@ class SettingController extends Controller
                     $grouped[$setting->group][$setting->key] = $val;
                 }
 
+                // Explicitly disable Cash on Delivery across storefront
+                $publicSettings['cod_enabled'] = false;
+
                 return [
                     'publicSettings' => $publicSettings,
                     'groups' => $grouped,
