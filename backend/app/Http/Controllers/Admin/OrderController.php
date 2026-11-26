@@ -34,6 +34,56 @@ class OrderController extends Controller
      */
     public function getOrders(Request $request)
     {
+        // Auto-sync pending online orders if payment is already captured
+        try {
+            $pendingOrders = Order::with('payments')
+                ->where('payment_status', 'pending')
+                ->where('payment_method', '!=', 'cod')
+                ->where('created_at', '>=', now()->subDays(7))
+                ->latest()
+                ->take(15)
+                ->get();
+
+            foreach ($pendingOrders as $pendingOrder) {
+                // If order has a completed payment record, update order
+                $completedPayment = $pendingOrder->payments->first(fn($p) => in_array($p->status, ['completed', 'captured', 'paid']));
+                if ($completedPayment) {
+                    $pendingOrder->payment_status = 'paid';
+                    if ($pendingOrder->status === 'pending') {
+                        $pendingOrder->status = 'confirmed';
+                        $pendingOrder->confirmed_at = now();
+                    }
+                    $pendingOrder->saveQuietly();
+                    continue;
+                }
+
+                // Check Razorpay directly for transaction ID if present
+                $paymentWithTxn = $pendingOrder->payments->first(fn($p) => !empty($p->transaction_id) && str_starts_with($p->transaction_id, 'pay_'));
+                if ($paymentWithTxn) {
+                    try {
+                        $rzp = new \App\Services\Customer\RazorpayService();
+                        $check = $rzp->checkPaymentStatus($paymentWithTxn->transaction_id);
+                        if (!empty($check['status']) && in_array($check['status'], ['captured', 'authorized', 'paid'])) {
+                            $pendingOrder->payment_status = 'paid';
+                            if ($pendingOrder->status === 'pending') {
+                                $pendingOrder->status = 'confirmed';
+                                $pendingOrder->confirmed_at = now();
+                            }
+                            $pendingOrder->saveQuietly();
+                            $paymentWithTxn->update([
+                                'status' => 'completed',
+                                'paid_at' => now(),
+                            ]);
+                        }
+                    } catch (\Throwable $rzpErr) {
+                        // Ignore transient check errors
+                    }
+                }
+            }
+        } catch (\Throwable $syncEx) {
+            Log::info('Pending order auto-sync notice: ' . $syncEx->getMessage());
+        }
+
         $query = Order::with(['customer', 'items', 'payments'])
             ->withCount(['items'])
             ->latest();
@@ -200,7 +250,11 @@ class OrderController extends Controller
             $newPaymentStatus = $validated['payment_status'];
             $order->payment_status = $newPaymentStatus;
 
-            // Sync order status when payment is set to refunded
+            // Sync order status when payment is set to paid or refunded
+            if ($newPaymentStatus === 'paid' && $order->status === 'pending') {
+                $order->status = 'confirmed';
+                $order->confirmed_at = now();
+            }
             if ($newPaymentStatus === 'refunded') {
                 $order->status = 'refunded';
             }

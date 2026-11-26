@@ -86,5 +86,7 @@ Route::prefix('customer')->group(function () {
 // Top-level Razorpay endpoints matching standard /api/create-order and /api/verify-payment
 Route::post('create-order', [\App\Http\Controllers\Api\Customer\RazorpayPaymentController::class, 'createOrder']);
 Route::post('verify-payment', [\App\Http\Controllers\Api\Customer\RazorpayPaymentController::class, 'verifyPayment']);
+Route::post('payment/razorpay/webhook', [\App\Http\Controllers\Api\Customer\RazorpayPaymentController::class, 'handleWebhook']);
+Route::post('razorpay/webhook', [\App\Http\Controllers\Api\Customer\RazorpayPaymentController::class, 'handleWebhook']);
 
 

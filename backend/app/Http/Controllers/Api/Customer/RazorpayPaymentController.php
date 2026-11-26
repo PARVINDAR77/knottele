@@ -4,6 +4,9 @@ namespace App\Http\Controllers\Api\Customer;
 
 use App\Http\Controllers\Controller;
 use App\Services\Customer\RazorpayService;
+use App\Models\Order;
+use App\Models\Payment;
+use App\Models\PaymentAttempt;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -143,6 +146,78 @@ class RazorpayPaymentController extends Controller
                 'message' => 'Payment signature verification failed: ' . $e->getMessage(),
                 'error' => $e->getMessage(),
             ], 400);
+        }
+    }
+
+    /**
+     * Razorpay Webhook Handler for automatic payment status update.
+     * POST /api/payment/razorpay/webhook
+     */
+    public function handleWebhook(Request $request)
+    {
+        try {
+            $payload = $request->getContent();
+            $data = json_decode($payload, true);
+
+            if (!$data || !isset($data['event'])) {
+                return response()->json(['status' => 'ignored'], 200);
+            }
+
+            Log::info('Razorpay webhook event received: ' . $data['event']);
+
+            if (in_array($data['event'], ['payment.captured', 'order.paid'])) {
+                $paymentEntity = $data['payload']['payment']['entity'] ?? null;
+                $orderEntity = $data['payload']['order']['entity'] ?? null;
+
+                $paymentId = $paymentEntity['id'] ?? null;
+                $rzpOrderId = $paymentEntity['order_id'] ?? ($orderEntity['id'] ?? null);
+                $receipt = $orderEntity['receipt'] ?? null;
+
+                $order = null;
+                if ($receipt) {
+                    $order = Order::where('order_number', $receipt)->first();
+                }
+                if (!$order && $rzpOrderId) {
+                    $attempt = PaymentAttempt::where('gateway_order_id', $rzpOrderId)->first();
+                    if ($attempt) {
+                        $order = Order::find($attempt->order_id);
+                    }
+                }
+                if (!$order && $paymentId) {
+                    $existingPayment = Payment::where('transaction_id', $paymentId)->first();
+                    if ($existingPayment) {
+                        $order = Order::find($existingPayment->order_id);
+                    }
+                }
+
+                if ($order) {
+                    $order->update([
+                        'payment_status' => 'paid',
+                        'status' => ($order->status === 'pending') ? 'confirmed' : $order->status,
+                        'confirmed_at' => $order->confirmed_at ?: now(),
+                    ]);
+
+                    if ($paymentId) {
+                        Payment::updateOrCreate(
+                            ['order_id' => $order->id, 'transaction_id' => $paymentId],
+                            [
+                                'amount' => $order->grand_total,
+                                'payment_gateway' => 'razorpay',
+                                'status' => 'completed',
+                                'paid_at' => now(),
+                                'response_data' => $paymentEntity,
+                            ]
+                        );
+                    }
+
+                    Log::info("Order #{$order->order_number} automatically confirmed via Razorpay webhook.");
+                }
+            }
+
+            return response()->json(['status' => 'success'], 200);
+        } catch (\Throwable $e) {
+            Log::error('Razorpay Webhook Error: ' . $e->getMessage());
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 200);
         }
     }
 }
