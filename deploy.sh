@@ -144,7 +144,6 @@ if [ -d "$PROJECT_ROOT/backend" ]; then
         docker compose up -d knotelle 2>/dev/null || docker restart knotelle-app 2>/dev/null || true
     fi
 fi
-fi
 
 # 13. Restart PM2 & Nginx & PHP-FPM
 if command -v pm2 >/dev/null 2>&1; then

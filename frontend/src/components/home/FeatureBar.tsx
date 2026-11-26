@@ -10,8 +10,8 @@ export function FeatureBar() {
     },
     {
       icon: Sparkles,
-      title: "Custom Orders",
-      description: "Made just for you",
+      title: "Artisan Crafted",
+      description: "Handmade with love",
     },
     {
       icon: Leaf,

@@ -36,8 +36,8 @@ const defaultContactData: ContactPageData = {
   intro: {
     badge: "Let's Connect",
     title: "Let's Connect",
-    subtitle: "Have a question about a product, custom order, or collaboration? We'd love to hear from you.",
-    description: "We're here to help bring your handcrafted crochet dreams to life. Reach out for custom bridal bouquets, personalised gifts, workshop bookings, or wholesale inquiries.",
+    subtitle: "Have a question about a product, order, or collaboration? We'd love to hear from you.",
+    description: "We're here to help bring your handcrafted crochet dreams to life. Reach out for order questions, personalised gifts, workshop bookings, or wholesale inquiries.",
     cta_text: "Send Us a Message",
     cta_link: "#contact-form",
     is_active: true,
@@ -47,10 +47,10 @@ const defaultContactData: ContactPageData = {
     title: "KNOTELLE Studio",
     subtitle: "Handmade with love in Bengaluru, India",
     custom_order_box: {
-      title: "Looking for Custom Orders?",
-      text: "Have a specific design, color palette, or bouquet arrangement in mind? Request a bespoke piece directly.",
-      link: "/custom-order",
-      is_active: true,
+      title: "Explore Boutique Collection",
+      text: "Browse our charming collection of handmade crochet flowers, plushies, bookmarks, and accessories.",
+      link: "/shop",
+      is_active: false,
     },
     items: [
       {
@@ -109,26 +109,26 @@ const defaultContactData: ContactPageData = {
       { key: "email", label: "Email Address", placeholder: "Enter your email address", required: true, is_active: true },
       { key: "phone", label: "Phone / WhatsApp", placeholder: "Enter your 10-digit phone number (optional)", required: false, is_active: true },
       { key: "subject", label: "Subject", placeholder: "What is this regarding?", required: false, is_active: true },
-      { key: "message", label: "How can we help you?", placeholder: "Tell us about your questions, custom ideas, wedding bulk inquiries...", required: true, is_active: true },
+      { key: "message", label: "How can we help you?", placeholder: "Tell us about your questions, orders, bulk inquiries...", required: true, is_active: true },
     ],
     is_active: true,
   },
   faqs: {
     badge: "Help & Support",
     title: "Frequently Asked Questions",
-    subtitle: "Quick answers about our handmade creations, custom orders, and delivery.",
+    subtitle: "Quick answers about our handmade creations, orders, and delivery.",
     items: [
       {
         id: 1,
-        question: "How long does a custom order take to craft?",
-        answer: "Standard custom orders take between 5 to 8 business days to handcraft with love, after which they are express dispatched across India.",
+        question: "How long does an order take to craft?",
+        answer: "Standard handmade orders take between 2 to 4 business days to craft with love, after which they are express dispatched across India.",
         sort_order: 1,
         is_active: true,
       },
       {
         id: 2,
         question: "Do you ship internationally?",
-        answer: "Currently we provide seamless Pan-India tracked delivery. For international custom orders, please get in touch with our studio team directly.",
+        answer: "Currently we provide seamless Pan-India tracked delivery. For international inquiries, please get in touch with our studio team directly.",
         sort_order: 2,
         is_active: true,
       },
@@ -142,7 +142,7 @@ const defaultContactData: ContactPageData = {
       {
         id: 4,
         question: "Can I choose my own flower bouquet combinations?",
-        answer: "Yes! Use our Custom Order page or WhatsApp us with your dream flower list, colors, and wrap preference.",
+        answer: "Yes! Explore our shop or contact us on WhatsApp with your dream flower list, colors, and wrap preference.",
         sort_order: 4,
         is_active: true,
       },
