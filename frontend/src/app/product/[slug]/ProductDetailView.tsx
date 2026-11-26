@@ -378,12 +378,15 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
         />
 
         {/* Product Showcase: Left Gallery, Right Details */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 bg-white rounded-3xl border border-[#E7D1CC] p-6 sm:p-10 shadow-boutique mb-16">
+        <div
+          className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start bg-white rounded-3xl border border-[#E7D1CC] p-6 sm:p-8 lg:p-10 shadow-boutique mb-16"
+          style={{ columnGap: "3rem", rowGap: "2rem" }}
+        >
           
-          {/* Left Gallery (Spans 6 cols on lg) */}
-          <div className="lg:col-span-6 space-y-4">
+          {/* Left Gallery (Spans 5 cols on lg for boutique elegance and zero overlap) */}
+          <div className="lg:col-span-5 w-full min-w-0 space-y-4">
             {/* Main Stage Image with Zoom feel */}
-            <div className="relative aspect-[4/4.5] w-full rounded-2xl overflow-hidden bg-[#FFF9F6] border border-[#E7D1CC]">
+            <div className="relative aspect-[4/4.5] w-full max-w-full rounded-2xl overflow-hidden bg-[#FFF9F6] border border-[#E7D1CC]">
               {(() => {
                 const currentImg = product.images?.[selectedImageIndex] || product.images?.[0] || product.main_image || "";
                 const isLogo = !currentImg || currentImg.includes("logo") || currentImg.includes("Logo_1.png");
@@ -403,7 +406,7 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
                     alt={product.name || "Handmade Product"}
                     fill
                     priority
-                    sizes="(max-width: 1024px) 100vw, 50vw"
+                    sizes="(max-width: 1024px) 100vw, 45vw"
                     className="object-cover object-center"
                   />
                 );
@@ -462,8 +465,8 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
             })()}
           </div>
 
-          {/* Right Product Info (Spans 6 cols on lg) */}
-          <div className="lg:col-span-6 flex flex-col justify-between space-y-6">
+          {/* Right Product Info (Spans 7 cols on lg for ample typography space) */}
+          <div className="lg:col-span-7 w-full min-w-0 flex flex-col justify-between space-y-6">
             <div className="space-y-4">
               
               {/* Category & Rating */}
