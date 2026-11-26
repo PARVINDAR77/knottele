@@ -4,13 +4,28 @@ set -e
 echo "🚀 Starting KNOTELLE Deployment..."
 
 # Helper functions for Docker vs Host commands
+ensure_docker_running() {
+    if command -v docker &>/dev/null; then
+        if ! docker ps -q --filter "name=knotelle-app" 2>/dev/null | grep -q .; then
+            echo "🐳 Starting Docker containers..."
+            docker compose up -d 2>/dev/null || docker start knotelle-app 2>/dev/null || true
+            sleep 2
+        fi
+    fi
+}
+
 run_artisan() {
     if command -v php &>/dev/null; then
         php artisan "$@"
-    elif command -v docker &>/dev/null && docker ps -q --filter "name=knotelle-app" 2>/dev/null | grep -q .; then
-        docker exec knotelle-app php artisan "$@"
-    elif command -v docker &>/dev/null && docker compose ps -q knotelle 2>/dev/null | grep -q .; then
-        docker compose exec -T knotelle php artisan "$@"
+    elif command -v docker &>/dev/null; then
+        ensure_docker_running
+        if docker ps -q --filter "name=knotelle-app" 2>/dev/null | grep -q .; then
+            docker exec knotelle-app php artisan "$@"
+        elif docker compose ps -q knotelle 2>/dev/null | grep -q .; then
+            docker compose exec -T knotelle php artisan "$@"
+        else
+            echo "Notice: knotelle-app container could not be reached."
+        fi
     else
         echo "Notice: php artisan could not be executed (neither host PHP nor knotelle-app container available)."
     fi
@@ -19,8 +34,11 @@ run_artisan() {
 run_composer() {
     if command -v composer &>/dev/null; then
         composer "$@"
-    elif command -v docker &>/dev/null && docker ps -q --filter "name=knotelle-app" 2>/dev/null | grep -q .; then
-        docker exec knotelle-app composer "$@" 2>/dev/null || true
+    elif command -v docker &>/dev/null; then
+        ensure_docker_running
+        if docker ps -q --filter "name=knotelle-app" 2>/dev/null | grep -q .; then
+            docker exec knotelle-app composer "$@" 2>/dev/null || true
+        fi
     else
         echo "Notice: composer not found on host or container, skipping."
     fi
