@@ -26,27 +26,25 @@ Route::prefix('customer')->group(function () {
     Route::post('create-order', [\App\Http\Controllers\Api\Customer\RazorpayPaymentController::class, 'createOrder']);
     Route::post('verify-payment', [\App\Http\Controllers\Api\Customer\RazorpayPaymentController::class, 'verifyPayment']);
 
-    // Public offers routes
-    Route::get('offers/active', [OfferController::class, 'getActiveOffers']);
-    Route::get('offers/start-banner', [OfferController::class, 'getStartBanner']);
-    Route::post('offers/validate', [OfferController::class, 'validateOffer']);
+    // Public product, category, and catalog routes with anti-scraping/DDoS throttle (60 req/min)
+    Route::middleware('throttle:catalog')->group(function () {
+        Route::get('categories', [\App\Http\Controllers\Api\Customer\CategoryController::class, 'index']);
+        Route::get('offers/active', [OfferController::class, 'getActiveOffers']);
+        Route::get('offers/start-banner', [OfferController::class, 'getStartBanner']);
+        Route::post('offers/validate', [OfferController::class, 'validateOffer']);
+        Route::get('settings', [\App\Http\Controllers\Api\Customer\SettingController::class, 'index']);
+        Route::get('contact/settings', [\App\Http\Controllers\Api\ContactController::class, 'settings']);
 
-    // Public product and category routes (no authentication required)
-    Route::get('categories', [\App\Http\Controllers\Api\Customer\CategoryController::class, 'index']);
-    
-    // Settings & Contact form routes
-    Route::get('settings', [\App\Http\Controllers\Api\Customer\SettingController::class, 'index']);
-    Route::get('contact/settings', [\App\Http\Controllers\Api\ContactController::class, 'settings']);
-    Route::post('contact', [\App\Http\Controllers\Api\ContactController::class, 'submit'])->middleware('throttle:contact');
-    
-    Route::prefix('products')->group(function () {
-        Route::get('/', [ProductController::class, 'index']);
-        Route::get('/featured-collections', [ProductController::class, 'featuredCollections']);
-
-        // IMPORTANT: Put slug route at the bottom to avoid conflicts
-        Route::get('/{productId}/related', [ProductController::class, 'relatedProducts']);
-        Route::get('/{slug}', [ProductController::class, 'show']); // Move to bottom
+        Route::prefix('products')->group(function () {
+            Route::get('/', [ProductController::class, 'index']);
+            Route::get('/featured-collections', [ProductController::class, 'featuredCollections']);
+            Route::get('/{productId}/related', [ProductController::class, 'relatedProducts']);
+            Route::get('/{slug}', [ProductController::class, 'show']);
+        });
     });
+
+    // Contact submission with strict throttle
+    Route::post('contact', [\App\Http\Controllers\Api\ContactController::class, 'submit'])->middleware('throttle:contact');
 
     // Order checkout and details (public for guests with email / authenticated customers)
     Route::post('orders', [\App\Http\Controllers\Api\Customer\OrderController::class, 'store'])->middleware('throttle:api-orders');
