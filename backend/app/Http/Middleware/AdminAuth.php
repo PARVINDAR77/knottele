@@ -12,33 +12,24 @@ class AdminAuth
     public function handle($request, Closure $next)
     {
         if (!Auth::guard('admin')->check()) {
+            // For AJAX / API requests only, allow authentication via Bearer or X-Admin-Token
             $tokenParam = $request->header('X-Admin-Token') ?: $request->bearerToken();
-            $queryToken = urldecode($request->query('auth_token', ''));
-            $tokenToTest = $tokenParam ?: $queryToken;
 
-            if ($tokenToTest) {
+            if ($tokenParam) {
                 try {
-                    $accessToken = Sanctum::$personalAccessTokenModel::findToken($tokenToTest);
+                    $accessToken = Sanctum::$personalAccessTokenModel::findToken($tokenParam);
                     if ($accessToken && $accessToken->tokenable instanceof Admin) {
-                        Auth::guard('admin')->login($accessToken->tokenable, true);
-                        $request->session()->put('admin_api_token', $tokenToTest);
-                        $request->session()->save();
-
-                        // SECURITY: If the token was passed via URL query string (?auth_token=...),
-                        // redirect immediately to the clean URL without the query string to purge
-                        // the sensitive token from browser address bar, logs, and Referer headers.
-                        if (!empty($queryToken) && $request->has('auth_token') && !$request->expectsJson() && !$request->ajax()) {
-                            $cleanUrl = $request->fullUrlWithQuery(['auth_token' => null]);
-                            return redirect($cleanUrl);
-                        }
-
+                        Auth::guard('admin')->login($accessToken->tokenable);
+                        $request->session()->put('admin_api_token', $tokenParam);
                         return $next($request);
                     }
                 } catch (\Throwable $e) {}
             }
+
             if ($request->expectsJson() || $request->ajax() || $request->is('*/data*')) {
                 return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
             }
+
             return redirect()->route('admin.signin');
         }
 

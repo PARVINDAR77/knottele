@@ -398,6 +398,12 @@
         const form = document.querySelector('form');
         const submitButton = form.querySelector('button[type="submit"]');
 
+        // Immediately purge any stale tokens from browser storage
+        try {
+            localStorage.removeItem('admin_auth_token');
+            sessionStorage.removeItem('admin_auth_token');
+        } catch(e) {}
+
         if (form) {
             form.action = window.location.origin + '/admin/signin';
         }

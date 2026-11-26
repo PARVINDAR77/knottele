@@ -41,7 +41,9 @@ class AuthController extends Controller
             }
         }
 
-        if (!Auth::guard('admin')->attempt($credentials, true)) {
+        $remember = $request->boolean('remember');
+
+        if (!Auth::guard('admin')->attempt($credentials, $remember)) {
             return back()->withErrors(['Invalid credentials']);
         }
 
@@ -71,24 +73,7 @@ class AuthController extends Controller
 
         session()->save();
 
-        $redirectUrl = route('admin.dashboard');
-
-        $response = redirect($redirectUrl);
-        $cookieName = config('session.cookie', 'knotelle-session');
-        $isSecure = app()->environment('production') || (bool) config('session.secure', false);
-        $response->withCookie(cookie(
-            $cookieName,
-            session()->getId(),
-            config('session.lifetime', 120),
-            '/',
-            config('session.domain'),
-            $isSecure,
-            true,
-            false,
-            'lax'
-        ));
-
-        return $response;
+        return redirect()->route('admin.dashboard');
     }
 
 
@@ -97,7 +82,9 @@ class AuthController extends Controller
     {
         if (Auth::guard('admin')->check()) {
             $admin = Auth::guard('admin')->user();
-            $admin->tokens()->where('name', 'admin_api')->delete();
+            try {
+                $admin->tokens()->where('name', 'admin_api')->delete();
+            } catch (\Throwable $e) {}
         }
 
         // Clear session
@@ -107,6 +94,8 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('admin.signin');
+        return redirect()->route('admin.signin')
+            ->withCookie(cookie()->forget('knotelle_admin_session'))
+            ->withCookie(cookie()->forget('remember_admin_' . sha1(Admin::class)));
     }
 }

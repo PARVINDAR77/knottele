@@ -58,9 +58,14 @@ return Application::configure(basePath: dirname(__DIR__))
             '*/admin/login/*',
         ]);
 
-        $middleware->web(append: [
-            \App\Http\Middleware\TrackVisitors::class,
-        ]);
+        $middleware->web(
+            prepend: [
+                \App\Http\Middleware\IsolateAdminSession::class,
+            ],
+            append: [
+                \App\Http\Middleware\TrackVisitors::class,
+            ]
+        );
 
         $middleware->redirectGuestsTo(function ($request) {
             if ($request->is('admin*') || $request->is('*/admin*')) {

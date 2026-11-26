@@ -56,7 +56,7 @@
                             <i class="fas fa-cog mr-2 text-red-500"></i> Settings
                         </a>
                         <div class="border-t border-red-100/50 my-2"></div>
-                        <form method="POST" action="{{ route('admin.logout') }}" id="logoutForm">
+                        <form method="POST" action="{{ route('admin.logout') }}" id="logoutForm" onsubmit="try{localStorage.removeItem('admin_auth_token');sessionStorage.removeItem('admin_auth_token');}catch(e){}">
                             @csrf
                             <button type="submit"
                                 class="block w-full text-left px-4 py-2.5 text-rose-600 hover:bg-gradient-to-r hover:from-rose-50 hover:to-red-50 
