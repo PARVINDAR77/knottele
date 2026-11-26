@@ -205,6 +205,24 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
     }
   }, [product?.name]);
 
+  // ALL HOOKS MUST RUN AT TOP LEVEL BEFORE ANY CONDITIONAL RETURNS (Fixes React Error #310)
+  const isWishlisted = isInWishlist(product?.id || "");
+  const maxStock = typeof product?.stock === "number" ? product.stock : 99;
+  const isOutOfStock = maxStock <= 0 || product?.inStock === false;
+
+  useEffect(() => {
+    if (product) {
+      const availStock = typeof product.stock === "number" ? product.stock : 99;
+      if (availStock <= 0 || product.inStock === false) {
+        setQuantity(0);
+      } else if (quantity > availStock) {
+        setQuantity(availStock);
+      } else if (quantity === 0) {
+        setQuantity(1);
+      }
+    }
+  }, [product?.id, product?.stock, product?.inStock]);
+
   if (isLoading && !product) {
     return (
       <div className="min-h-screen bg-warm-white py-12 px-4 sm:px-6 lg:px-8">
@@ -267,23 +285,6 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
   if (!product) {
     return null;
   }
-
-  const isWishlisted = isInWishlist(product.id);
-  const maxStock = typeof product.stock === "number" ? product.stock : 99;
-  const isOutOfStock = maxStock <= 0 || product.inStock === false;
-
-  useEffect(() => {
-    if (product) {
-      const availStock = typeof product.stock === "number" ? product.stock : 99;
-      if (availStock <= 0 || product.inStock === false) {
-        setQuantity(0);
-      } else if (quantity > availStock) {
-        setQuantity(availStock);
-      } else if (quantity === 0) {
-        setQuantity(1);
-      }
-    }
-  }, [product?.id, product?.stock, product?.inStock]);
 
   const relatedProducts =
     relatedProductsList.length > 0
