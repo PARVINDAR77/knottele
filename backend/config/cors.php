@@ -19,9 +19,17 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['*'],
+    'allowed_origins' => array_values(array_filter([
+        'https://knotelleindia.com',
+        'https://www.knotelleindia.com',
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        env('APP_URL') ? rtrim(env('APP_URL'), '/') : null,
+    ])),
 
-    'allowed_origins_patterns' => [],
+    'allowed_origins_patterns' => [
+        '#^https://.*\.knotelleindia\.com$#',
+    ],
 
     'allowed_headers' => ['*'],
 

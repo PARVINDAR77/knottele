@@ -38,21 +38,30 @@ interface ProductDetailViewProps {
 function FormattedHtmlText({ content, className = "" }: { content?: string; className?: string }) {
   if (!content) return null;
 
+  // Sanitize content to strip executable tags, inline event handlers, and javascript protocols
+  const sanitizedContent = content
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+    .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, "")
+    .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, "")
+    .replace(/<embed\b[^<]*(?:(?!<\/embed>)<[^<]*)*<\/embed>/gi, "")
+    .replace(/\bon\w+\s*=\s*(?:'[^']*'|"[^"]*"|[^\s>]+)/gi, "")
+    .replace(/javascript:/gi, "");
+
   // Check if content contains HTML tags (e.g. <p>, <br>, <strong>, etc.)
-  const hasHtml = /<[a-z][\s\S]*>/i.test(content);
+  const hasHtml = /<[a-z][\s\S]*>/i.test(sanitizedContent);
 
   if (hasHtml) {
     return (
       <div
         className={className}
-        dangerouslySetInnerHTML={{ __html: content }}
+        dangerouslySetInnerHTML={{ __html: sanitizedContent }}
       />
     );
   }
 
   return (
     <div className={className}>
-      {content.split("\n\n").map((para, i) => (
+      {sanitizedContent.split("\n\n").map((para, i) => (
         <p key={i} className="mb-2 last:mb-0">
           {para}
         </p>

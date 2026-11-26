@@ -219,7 +219,7 @@ class CustomerApiAuthController extends Controller
             ], 422);
         }
 
-        $isValidOtp = Hash::check($enteredOtp, $otpRecord->otp_hash) || (config('app.debug') && $enteredOtp === '123456');
+        $isValidOtp = Hash::check($enteredOtp, $otpRecord->otp_hash);
         if (!$isValidOtp) {
             $otpRecord->increment('attempts');
             return response()->json([
@@ -360,15 +360,11 @@ class CustomerApiAuthController extends Controller
     {
         $customer = auth('customer_api')->user();
 
-        if (!$customer && $request->filled('email')) {
-            $customer = Customer::where('email', strtolower($request->email))->first();
-        }
-
         if (!$customer) {
             return response()->json([
                 'success' => false,
-                'message' => 'Customer account not found.'
-            ], 404);
+                'message' => 'Unauthenticated. Please log in to update your profile.'
+            ], 401);
         }
 
         $request->validate([
@@ -478,7 +474,7 @@ class CustomerApiAuthController extends Controller
             ], 422);
         }
 
-        $isValidOtp = Hash::check($enteredOtp, $otpRecord->otp_hash) || (config('app.debug') && $enteredOtp === '123456');
+        $isValidOtp = Hash::check($enteredOtp, $otpRecord->otp_hash);
         if (!$isValidOtp) {
             $otpRecord->increment('attempts');
             return response()->json([
