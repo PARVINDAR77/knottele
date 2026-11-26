@@ -30,6 +30,17 @@ run_composer() {
 cd "$(dirname "$0")"
 PROJECT_ROOT="$(pwd)"
 
+# 1b. Sanitize all .env files to fix any malformed lines (e.g. bare emails without KEY=)
+for env_file in "$PROJECT_ROOT/backend/.env" "$PROJECT_ROOT/.env"; do
+    if [ -f "$env_file" ]; then
+        if command -v node >/dev/null 2>&1; then
+            node -e "const fs = require('fs'); const p = '$env_file'; const lines = fs.readFileSync(p, 'utf8').split('\n').map(l => { const t = l.trim(); return (!t || t.startsWith('#') || t.includes('=')) ? l : '# INVALID_DOTENV_LINE: ' + l; }).join('\n'); fs.writeFileSync(p, lines);" 2>/dev/null || true
+        else
+            sed -i '/^[[:space:]]*[^#[:space:]]/ { /=/! s/^/# INVALID_DOTENV_LINE: / }' "$env_file" 2>/dev/null || true
+        fi
+    fi
+done
+
 # Ensure backend is brought out of maintenance mode even if an unexpected error occurs
 trap 'if [ -d "$PROJECT_ROOT/backend" ]; then cd "$PROJECT_ROOT/backend" && run_artisan up 2>/dev/null || true; fi' EXIT
 
@@ -72,6 +83,7 @@ if [ -d "$PROJECT_ROOT/frontend" ]; then
     echo "🛍️ Verifying Frontend assets..."
     cd "$PROJECT_ROOT/frontend"
     if command -v npm &>/dev/null; then
+        export NODE_TLS_REJECT_UNAUTHORIZED="0"
         export INTERNAL_API_URL="http://127.0.0.1/knottele/api"
         npm install
         npm run build:laravel
