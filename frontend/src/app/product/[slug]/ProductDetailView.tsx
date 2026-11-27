@@ -11,7 +11,6 @@ import {
   Truck,
   ShieldCheck,
   RotateCcw,
-  Check,
   Plus,
   Minus,
   ArrowRight,
@@ -19,7 +18,6 @@ import {
   Ruler,
 } from "lucide-react";
 import { PRODUCTS } from "@/data/products";
-import { ProductColor } from "@/types/product";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { useToast } from "@/context/ToastContext";
@@ -131,12 +129,6 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
   const { showToast } = useToast();
 
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const [selectedColor, setSelectedColor] = useState<ProductColor>(
-    product?.colors?.[0] || { name: "Default", hex: "#FFF" }
-  );
-  const [selectedSize, setSelectedSize] = useState<string>(
-    product?.sizes?.[0] || "Standard"
-  );
   const [customText, setCustomText] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState<"desc" | "specs" | "reviews">("desc");
@@ -175,12 +167,6 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
             setSelectedImageIndex(0);
             if (apiProd.name && typeof document !== "undefined") {
               document.title = `${apiProd.name} | Knotelle`;
-            }
-            if (apiProd.colors && apiProd.colors[0]) {
-              setSelectedColor(apiProd.colors[0]);
-            }
-            if (apiProd.sizes && apiProd.sizes[0]) {
-              setSelectedSize(apiProd.sizes[0]);
             }
             fetchRelatedProducts(apiProd.id)
               .then((rel) => {
@@ -311,8 +297,6 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
       return;
     }
     addItem(product, quantity, {
-      color: selectedColor,
-      size: selectedSize,
       customText: customText.trim() || undefined,
     });
     setIsCartOpen(true);
@@ -328,8 +312,6 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
       return;
     }
     addItem(product, quantity, {
-      color: selectedColor,
-      size: selectedSize,
       customText: customText.trim() || undefined,
     });
     router.push("/checkout");
@@ -514,66 +496,6 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
                 content={product.description}
                 className="text-sm text-[#786864] leading-relaxed space-y-2 [&_p]:mb-2 [&_p:last-child]:mb-0 [&_strong]:text-[#2E211E] [&_strong]:font-semibold [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-1"
               />
-
-              {/* Color Selection */}
-              {product.colors && product.colors.length > 0 && (
-                <div className="space-y-2 pt-2 border-t border-[#E7D1CC]">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-[#2E211E]">
-                      Yarn Color:{" "}
-                      <strong className="text-[#913638]">{selectedColor?.name || "Default"}</strong>
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-2.5">
-                    {product.colors.map((color) => (
-                      <button
-                        key={color.name}
-                        onClick={() => setSelectedColor(color)}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-medium transition-all active:scale-[0.98] cursor-pointer ${
-                          selectedColor?.name === color.name
-                            ? "border-[#913638] bg-[#FCE9E5] text-[#913638] ring-1 ring-[#913638]"
-                            : "border-[#E7D1CC] bg-white hover:bg-[#FFF9F6] text-[#2E211E]"
-                        }`}
-                      >
-                        <span
-                          className="w-3.5 h-3.5 rounded-full border border-black/10 shrink-0"
-                          style={{ backgroundColor: color.hex }}
-                        />
-                        <span>{color.name}</span>
-                        {selectedColor?.name === color.name && (
-                          <Check className="w-3 h-3 text-[#913638]" />
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Size Selection (if available) */}
-              {product.sizes && product.sizes.length > 0 && (
-                <div className="space-y-2 pt-2">
-                  <span className="text-xs font-semibold text-[#2E211E] block">
-                    Size / Variant:
-                  </span>
-                  <div className="flex flex-wrap gap-2">
-                    {product.sizes.map((size) => (
-                      <button
-                        key={size}
-                        onClick={() => setSelectedSize(size)}
-                        className={`px-3.5 py-1.5 rounded-full border text-xs font-medium transition-all active:scale-[0.98] cursor-pointer ${
-                          selectedSize === size
-                            ? "border-[#913638] bg-[#913638] text-white shadow-xs"
-                            : "border-[#E7D1CC] bg-white hover:bg-[#FCE9E5] hover:text-[#913638] text-[#2E211E]"
-                        }`}
-                      >
-                        {size}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-
 
               {/* Quantity Selector & Action Buttons */}
               <div className="space-y-3 pt-2">
