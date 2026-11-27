@@ -74,7 +74,11 @@ export function AuthCard({ defaultMode = "login", onSuccessRedirect = "/account"
       });
 
       if (res.success) {
-        showToast("OTP Sent! 🌸", `We've sent a 6-digit verification code to +91 ${cleanMobile}`, "success");
+        if (res.sms_gateway === 'timeout' || res.sms_gateway === 'failed') {
+          showToast("OTP Generated 🌸", res.message || "OTP generated. (If SMS is delayed, check Admin Panel > OTP Logs)", "info");
+        } else {
+          showToast("OTP Sent! 🌸", `We've sent a 6-digit verification code to +91 ${cleanMobile}`, "success");
+        }
         setStep("otp");
         setCountdown(res.cooldown || 60);
       } else {

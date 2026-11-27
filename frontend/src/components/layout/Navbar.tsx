@@ -136,7 +136,7 @@ export function Navbar() {
                   <Link
                     key={link.href + idx}
                     href={href}
-                    prefetch={true}
+                    prefetch={false}
                     onClick={handleNavClick(href)}
                     className={`relative text-sm font-medium tracking-wide py-2 transition-colors flex flex-col items-center ${
                       isActive
@@ -168,7 +168,7 @@ export function Navbar() {
               {showWishlist && (
                 <Link
                   href={normalizeInternalLink("/account/wishlist")}
-                  prefetch={true}
+                  prefetch={false}
                   onClick={handleNavClick(normalizeInternalLink("/account/wishlist"))}
                   className="relative p-2.5 rounded-full text-[#2E211E] hover:text-[#913638] hover:bg-[#FCE9E5] transition-colors flex items-center justify-center"
                   aria-label="View wishlist"
@@ -185,7 +185,7 @@ export function Navbar() {
               {showAccount && (
                 <Link
                   href={normalizeInternalLink("/account")}
-                  prefetch={true}
+                  prefetch={false}
                   onClick={handleNavClick(normalizeInternalLink("/account"))}
                   className="p-2.5 rounded-full text-[#2E211E] hover:text-[#913638] hover:bg-[#FCE9E5] transition-colors flex items-center justify-center"
                   aria-label="My Account"

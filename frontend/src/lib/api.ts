@@ -1452,7 +1452,15 @@ export async function verifyCustomerOtp(payload: {
 export async function sendMobileOtp(payload: {
   mobile: string;
   name?: string;
-}): Promise<{ success: boolean; message?: string; cooldown?: number; mobile?: string }> {
+}): Promise<{
+  success: boolean;
+  message?: string;
+  cooldown?: number;
+  mobile?: string;
+  sms_gateway?: string;
+  debug_otp?: string;
+  gateway_notice?: string;
+}> {
   try {
     const response = await fetch(`${getApiBaseUrl()}/customer/send-otp`, {
       method: "POST",
