@@ -1462,7 +1462,18 @@ export async function sendMobileOtp(payload: {
       },
       body: JSON.stringify(payload),
     });
-    const result = await response.json();
+    const text = await response.text();
+    let result: any = {};
+    try {
+      result = JSON.parse(text);
+    } catch {
+      return {
+        success: false,
+        message: response.status === 500
+          ? "Server error sending OTP. Please try again shortly."
+          : `Server error (${response.status})`,
+      };
+    }
     return result;
   } catch (error) {
     console.warn("Send mobile OTP error:", error);
@@ -1487,7 +1498,18 @@ export async function verifyMobileOtp(payload: {
       },
       body: JSON.stringify(payload),
     });
-    const result = await response.json();
+    const text = await response.text();
+    let result: any = {};
+    try {
+      result = JSON.parse(text);
+    } catch {
+      return {
+        success: false,
+        message: response.status === 500
+          ? "Server error verifying OTP. Please try again."
+          : `Server error (${response.status})`,
+      };
+    }
     return result;
   } catch (error) {
     console.warn("Verify mobile OTP error:", error);

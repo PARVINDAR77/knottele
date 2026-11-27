@@ -67,7 +67,7 @@ export function Navbar() {
           {announcement.link ? (
             <Link
               href={normalizeInternalLink(announcement.link)}
-              prefetch={true}
+              prefetch={false}
               onClick={handleNavClick(normalizeInternalLink(announcement.link))}
               className="inline-flex items-center justify-center gap-1.5 hover:underline decoration-white/60 underline-offset-4"
             >
@@ -97,7 +97,7 @@ export function Navbar() {
 
               <Link
                 href={normalizeInternalLink("/")}
-                prefetch={true}
+                prefetch={false}
                 onClick={handleNavClick(normalizeInternalLink("/"))}
                 className="flex items-center group py-1"
                 aria-label="KNOTELLE Home"
@@ -118,7 +118,7 @@ export function Navbar() {
                     <Link
                       key={link.href + idx}
                       href={href}
-                      prefetch={true}
+                      prefetch={false}
                       onClick={handleNavClick(href)}
                       className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all shadow-xs active:scale-95 ${
                         isActive

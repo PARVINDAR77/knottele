@@ -507,20 +507,33 @@ class CustomerApiAuthController extends Controller
      */
     public function sendMobileOtp(Request $request)
     {
-        $request->validate([
-            'mobile' => 'required|string',
-            'name' => 'nullable|string|max:50',
-        ]);
+        try {
+            $request->validate([
+                'mobile' => 'required|string',
+                'name' => 'nullable|string|max:50',
+            ]);
 
-        $result = \App\Services\SmsService::sendOtp(
-            $request->input('mobile'),
-            $request->input('name') ?: 'Customer',
-            'login',
-            $request->ip()
-        );
+            $result = \App\Services\SmsService::sendOtp(
+                $request->input('mobile'),
+                $request->input('name') ?: 'Customer',
+                'login',
+                $request->ip()
+            );
 
-        $statusCode = $result['success'] ? 200 : 422;
-        return response()->json($result, $statusCode);
+            $statusCode = !empty($result['success']) ? 200 : 422;
+            return response()->json($result, $statusCode);
+        } catch (\Illuminate\Validation\ValidationException $ve) {
+            return response()->json([
+                'success' => false,
+                'message' => $ve->validator->errors()->first() ?: 'Please enter a valid mobile number.',
+            ], 422);
+        } catch (\Throwable $e) {
+            \Log::error("sendMobileOtp error: " . $e->getMessage() . " at " . $e->getFile() . ":" . $e->getLine());
+            return response()->json([
+                'success' => false,
+                'message' => 'Unable to send OTP: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**
@@ -528,19 +541,32 @@ class CustomerApiAuthController extends Controller
      */
     public function verifyMobileOtp(Request $request)
     {
-        $request->validate([
-            'mobile' => 'required|string',
-            'otp' => 'required|string|size:6',
-            'name' => 'nullable|string|max:50',
-        ]);
+        try {
+            $request->validate([
+                'mobile' => 'required|string',
+                'otp' => 'required|string|size:6',
+                'name' => 'nullable|string|max:50',
+            ]);
 
-        $result = \App\Services\SmsService::verifyOtp(
-            $request->input('mobile'),
-            $request->input('otp'),
-            $request->input('name')
-        );
+            $result = \App\Services\SmsService::verifyOtp(
+                $request->input('mobile'),
+                $request->input('otp'),
+                $request->input('name')
+            );
 
-        $statusCode = $result['success'] ? 200 : 422;
-        return response()->json($result, $statusCode);
+            $statusCode = !empty($result['success']) ? 200 : 422;
+            return response()->json($result, $statusCode);
+        } catch (\Illuminate\Validation\ValidationException $ve) {
+            return response()->json([
+                'success' => false,
+                'message' => $ve->validator->errors()->first() ?: 'Invalid OTP code.',
+            ], 422);
+        } catch (\Throwable $e) {
+            \Log::error("verifyMobileOtp error: " . $e->getMessage() . " at " . $e->getFile() . ":" . $e->getLine());
+            return response()->json([
+                'success' => false,
+                'message' => 'Verification error: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 }
