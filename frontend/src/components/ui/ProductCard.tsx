@@ -35,7 +35,7 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
   }, [initialImg]);
 
   const maxStock = typeof product.stock === "number" ? product.stock : 99;
-  const isOutOfStock = maxStock <= 0 || product.inStock === false;
+  const isOutOfStock = maxStock <= 0 || (product.inStock === false && (typeof product.stock !== "number" || product.stock <= 0));
 
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.preventDefault();

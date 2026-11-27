@@ -4,6 +4,7 @@
  */
 
 import { Product } from "@/types/product";
+import { PRODUCTS } from "@/data/products";
 
 export function normalizeInternalLink(url?: string | null): string {
   if (!url) return "/";
@@ -547,6 +548,7 @@ export interface ApiProduct {
   is_bestseller?: boolean;
   rating?: number;
   review_count?: number;
+  colors?: Array<{ name: string; hex: string }>;
   variants_count?: number;
   variants?: Array<{
     id: number;
@@ -610,45 +612,57 @@ export function transformApiProductToProduct(apiProduct: ApiProduct): Product {
       )
       : ["Standard Size"];
 
+  // Match against curated static products for authentic attributes, colors and specifications
+  const matchedProduct = PRODUCTS.find(
+    (p) =>
+      p.slug === apiProduct.slug ||
+      (apiProduct.slug && (p.slug === apiProduct.slug.trim().toLowerCase().replace(/[\s_]+/g, "-"))) ||
+      p.id === String(apiProduct.id)
+  );
+
   return {
     id: String(apiProduct.id),
     slug: apiProduct.slug,
     name: apiProduct.name,
     category: categoryName,
     categorySlug: categorySlug,
-    price: Number(apiProduct.price) || 0,
-    comparePrice: apiProduct.compare_price ? Number(apiProduct.compare_price) : undefined,
-    images: allImages.length > 0 ? allImages : [mainImage],
-    description: apiProduct.description || apiProduct.short_description || "",
-    shortDescription: apiProduct.short_description || "",
-    materials: [
+    price: Number(apiProduct.price) || (matchedProduct?.price ?? 0),
+    comparePrice: apiProduct.compare_price
+      ? Number(apiProduct.compare_price)
+      : matchedProduct?.comparePrice,
+    images: allImages.length > 0 ? allImages : (matchedProduct?.images ?? [mainImage]),
+    description: apiProduct.description || apiProduct.short_description || matchedProduct?.description || "",
+    shortDescription: apiProduct.short_description || matchedProduct?.shortDescription || "",
+    materials: matchedProduct?.materials || [
       "100% Pure Natural Cotton",
       "Hypoallergenic Fiberfill",
       "Artisan Hand-stitched",
     ],
-    dimensions: "Standard Artisan Craft Size",
-    craftTime: "2-4 hours of meticulous handcrafting",
-    colors: [
-      { name: "Artisan Natural", hex: "#FFFDF9" },
-      { name: "Blush Rose", hex: "#F8C8C8" },
-      { name: "Sage Garden", hex: "#D8E2DC" },
-      { name: "Dusty Terracotta", hex: "#E8B4B8" },
-    ],
-    sizes: sizes.length > 0 ? sizes : ["Standard Size"],
+    dimensions: matchedProduct?.dimensions || "Standard Artisan Craft Size",
+    craftTime: matchedProduct?.craftTime || "2-4 hours of meticulous handcrafting",
+    colors:
+      matchedProduct?.colors && matchedProduct.colors.length > 0
+        ? matchedProduct.colors
+        : (Array.isArray(apiProduct.colors) && apiProduct.colors.length > 0
+            ? apiProduct.colors
+            : [{ name: "Artisan Natural", hex: "#FFFDF9" }]),
+    sizes: sizes.length > 0 ? sizes : (matchedProduct?.sizes || ["Standard Size"]),
     isCustomizable: false,
-    isFeatured: Boolean(apiProduct.is_featured),
-    isBestSeller: Boolean(apiProduct.is_bestseller),
-    isNew: Boolean(apiProduct.is_new),
-    rating: apiProduct.rating ? Number(apiProduct.rating) : 4.9,
-    reviewCount: apiProduct.review_count ? Number(apiProduct.review_count) : 16,
+    isFeatured: Boolean(apiProduct.is_featured ?? matchedProduct?.isFeatured),
+    isBestSeller: Boolean(apiProduct.is_bestseller ?? matchedProduct?.isBestSeller),
+    isNew: Boolean(apiProduct.is_new ?? matchedProduct?.isNew),
+    rating: apiProduct.rating ? Number(apiProduct.rating) : (matchedProduct?.rating || 4.9),
+    reviewCount: apiProduct.review_count ? Number(apiProduct.review_count) : (matchedProduct?.reviewCount || 16),
     stock:
       apiProduct.stock_quantity !== undefined && apiProduct.stock_quantity !== null
         ? Number(apiProduct.stock_quantity)
-        : (apiProduct.is_in_stock === false ? 0 : 25),
+        : (apiProduct.is_in_stock === false ? 0 : (matchedProduct?.stock ?? 25)),
     inStock:
       apiProduct.is_in_stock !== undefined
         ? Boolean(apiProduct.is_in_stock)
-        : ((apiProduct.stock_quantity ?? 0) > 0),
+        : (apiProduct.stock_quantity !== undefined && apiProduct.stock_quantity !== null
+            ? Number(apiProduct.stock_quantity) > 0
+            : (matchedProduct?.stock !== undefined ? matchedProduct.stock > 0 : true)),
     tags: [categorySlug, "handmade", "crochet", "boutique", "gift"],
     reviews:
       apiProduct.reviews_data && apiProduct.reviews_data.length > 0

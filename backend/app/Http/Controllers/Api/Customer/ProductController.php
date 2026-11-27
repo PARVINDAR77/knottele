@@ -624,7 +624,7 @@ public function show($slug): JsonResponse
         try {
             $product = Product::findOrFail($productId);
 
-            $relatedProducts = Product::with(['brand', 'defaultVariant.images'])
+            $relatedProducts = Product::with(['brand', 'mainCategory', 'defaultVariant.images'])
                 ->where('status', 'active')
                 ->where('id', '!=', $productId)
                 ->where(function ($query) use ($product) {
@@ -653,6 +653,9 @@ public function show($slug): JsonResponse
                         $mainImage = asset('images/placeholder-product.jpg');
                     }
 
+                    $isInStock = $defaultVariant ? ((int) $defaultVariant->stock_quantity > 0) : true;
+                    $stockQty = $defaultVariant ? (int) $defaultVariant->stock_quantity : 25;
+
                     return [
                         'id' => $relatedProduct->id,
                         'slug' => $relatedProduct->slug,
@@ -661,6 +664,11 @@ public function show($slug): JsonResponse
                         'price' => $defaultVariant ? (float) $defaultVariant->price : 0,
                         'compare_price' => $defaultVariant ? (float) $defaultVariant->compare_price : null,
                         'brand' => $relatedProduct->brand ? $relatedProduct->brand->name : null,
+                        'category' => $relatedProduct->mainCategory ? $relatedProduct->mainCategory->name : 'Handmade',
+                        'category_slug' => $relatedProduct->mainCategory ? $relatedProduct->mainCategory->slug : 'all',
+                        'is_in_stock' => $isInStock,
+                        'stock_quantity' => $stockQty,
+                        'stock' => $stockQty,
                     ];
                 });
 

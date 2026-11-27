@@ -113,15 +113,12 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
   // Deterministic fallback matching SSR static build to ensure zero hydration mismatch (#418)
   const fallbackProduct = isFallbackTemplateMismatch
     ? PRODUCTS.find((p) => p.slug === slug)
-    : PRODUCTS.find(
-        (p) =>
-          p.slug === slug ||
-          p.slug === rawSlug ||
-          (slug === "cute-bunny-amigurumi-keychain" && p.slug === "cute-bunny-keychain") ||
-          (slug === "cute-bunny-keychain" && p.slug === "cute-bunny-amigurumi-keychain") ||
-          (slug === "crochet-gift-box" && p.slug === "red-love-crochet-gift-box") ||
-          (slug === "red-love-crochet-gift-box" && p.slug === "crochet-gift-box")
-      );
+    : (PRODUCTS.find((p) => p.slug === slug || p.slug === rawSlug) ||
+       PRODUCTS.find(
+         (p) =>
+           (slug === "cute-bunny-amigurumi-keychain" && p.slug === "cute-bunny-keychain") ||
+           (slug === "cute-bunny-keychain" && p.slug === "cute-bunny-amigurumi-keychain")
+       ));
 
   const [liveProduct, setLiveProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(!fallbackProduct);
@@ -155,9 +152,7 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
             p.slug === slug ||
             p.slug === rawSlug ||
             (slug === "cute-bunny-amigurumi-keychain" && p.slug === "cute-bunny-keychain") ||
-            (slug === "cute-bunny-keychain" && p.slug === "cute-bunny-amigurumi-keychain") ||
-            (slug === "crochet-gift-box" && p.slug === "red-love-crochet-gift-box") ||
-            (slug === "red-love-crochet-gift-box" && p.slug === "crochet-gift-box")
+            (slug === "cute-bunny-keychain" && p.slug === "cute-bunny-amigurumi-keychain")
         );
         if (cached && isMounted) {
           setLiveProduct(cached);
@@ -173,16 +168,6 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
     }
     fetchProductBySlug(slug)
       .then(async (apiProd) => {
-        // Fallback: If not found under normalized slug, check common alias
-        if (!apiProd && slug === "crochet-gift-box") {
-          try {
-            apiProd = await fetchProductBySlug("red-love-crochet-gift-box");
-          } catch {}
-        } else if (!apiProd && slug === "red-love-crochet-gift-box") {
-          try {
-            apiProd = await fetchProductBySlug("crochet-gift-box");
-          } catch {}
-        }
 
         if (isMounted) {
           if (apiProd) {
@@ -379,12 +364,12 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
 
         {/* Product Showcase: Left Gallery, Right Details */}
         <div
-          className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start bg-white rounded-3xl border border-[#E7D1CC] p-6 sm:p-8 lg:p-10 shadow-boutique mb-16"
-          style={{ columnGap: "3rem", rowGap: "2rem" }}
+          className="flex flex-col lg:flex-row gap-8 lg:gap-12 xl:gap-14 items-start bg-white rounded-3xl border border-[#E7D1CC] p-6 sm:p-8 lg:p-10 shadow-boutique mb-16"
+          style={{ gap: "3.5rem" }}
         >
           
-          {/* Left Gallery (Spans 5 cols on lg for boutique elegance and zero overlap) */}
-          <div className="lg:col-span-5 w-full min-w-0 space-y-4">
+          {/* Left Gallery (strictly constrained width on desktop, guarantees zero overlap) */}
+          <div className="w-full lg:w-[42%] lg:max-w-[460px] shrink-0 space-y-4">
             {/* Main Stage Image with Zoom feel */}
             <div className="relative aspect-[4/4.5] w-full max-w-full rounded-2xl overflow-hidden bg-[#FFF9F6] border border-[#E7D1CC]">
               {(() => {
@@ -465,8 +450,8 @@ export default function ProductDetailView({ slug: propSlug }: ProductDetailViewP
             })()}
           </div>
 
-          {/* Right Product Info (Spans 7 cols on lg for ample typography space) */}
-          <div className="lg:col-span-7 w-full min-w-0 flex flex-col justify-between space-y-6">
+          {/* Right Product Info (expands cleanly to fill remaining space) */}
+          <div className="w-full lg:flex-1 min-w-0 flex flex-col justify-between space-y-6">
             <div className="space-y-4">
               
               {/* Category & Rating */}
