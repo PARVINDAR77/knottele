@@ -62,4 +62,17 @@ return [
         'overnight_cost' => env('OVERNIGHT_SHIPPING_COST', 499),
     ],
 
+    'dlt' => [
+        'uri' => env('DLT_SMS_URI', 'https://allsmssolution.in/sms-panel/api/http/index.php'),
+        'username' => env('DLT_SMS_USERNAME', 'EMPEROR'),
+        'apikey' => env('DLT_SMS_APIKEY', '62CEF-9A446'),
+        'sender_id' => env('DLT_SMS_SENDER_ID', 'TXXTOO'),
+        'template_id' => env('DLT_SMS_TEMPLATE_ID', '1607100000000313742'),
+        'entity_id' => env('DLT_SMS_ENTITY_ID', '1401805350000060162'),
+        'route' => env('DLT_SMS_ROUTE', 'TRANS'),
+        'apirequest' => env('DLT_SMS_APIREQUEST', 'Text'),
+        'format' => env('DLT_SMS_FORMAT', 'JSON'),
+        'template_pattern' => "Dear {#var#} Your OTP for verification is {#var#}. Please enter this code to complete the process.\nRegards {#var#}\nTEXT2",
+    ],
+
 ];

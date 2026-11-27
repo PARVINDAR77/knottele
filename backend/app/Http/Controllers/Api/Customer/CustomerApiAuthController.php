@@ -501,4 +501,46 @@ class CustomerApiAuthController extends Controller
             'message' => 'Password reset successfully! You can now log in with your new password.'
         ]);
     }
+
+    /**
+     * Send OTP to customer's mobile number via DLT SMS
+     */
+    public function sendMobileOtp(Request $request)
+    {
+        $request->validate([
+            'mobile' => 'required|string',
+            'name' => 'nullable|string|max:50',
+        ]);
+
+        $result = \App\Services\SmsService::sendOtp(
+            $request->input('mobile'),
+            $request->input('name') ?: 'Customer',
+            'login',
+            $request->ip()
+        );
+
+        $statusCode = $result['success'] ? 200 : 422;
+        return response()->json($result, $statusCode);
+    }
+
+    /**
+     * Verify mobile OTP and log in / auto-register customer
+     */
+    public function verifyMobileOtp(Request $request)
+    {
+        $request->validate([
+            'mobile' => 'required|string',
+            'otp' => 'required|string|size:6',
+            'name' => 'nullable|string|max:50',
+        ]);
+
+        $result = \App\Services\SmsService::verifyOtp(
+            $request->input('mobile'),
+            $request->input('otp'),
+            $request->input('name')
+        );
+
+        $statusCode = $result['success'] ? 200 : 422;
+        return response()->json($result, $statusCode);
+    }
 }

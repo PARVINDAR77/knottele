@@ -15,6 +15,10 @@ Route::prefix('customer')->group(function () {
     Route::post('media/video/{id}/view', [\App\Http\Controllers\Api\Customer\MediaController::class, 'incrementView']);
     Route::post('login', [CustomerApiAuthController::class, 'login'])->middleware('throttle:auth');
     Route::post('register', [CustomerApiAuthController::class, 'register'])->middleware('throttle:auth');
+    Route::post('send-otp', [CustomerApiAuthController::class, 'sendMobileOtp'])->middleware('throttle:auth');
+    Route::post('verify-mobile-otp', [CustomerApiAuthController::class, 'verifyMobileOtp'])->middleware('throttle:auth');
+    Route::post('auth/send-otp', [CustomerApiAuthController::class, 'sendMobileOtp'])->middleware('throttle:auth');
+    Route::post('auth/verify-otp', [CustomerApiAuthController::class, 'verifyMobileOtp'])->middleware('throttle:auth');
     Route::post('verify-otp', [CustomerApiAuthController::class, 'verifyOtp'])->middleware('throttle:auth');
     Route::post('resend-otp', [CustomerApiAuthController::class, 'resendOtp'])->middleware('throttle:auth');
     Route::post('forgot-password', [CustomerApiAuthController::class, 'forgotPassword'])->middleware('throttle:auth');

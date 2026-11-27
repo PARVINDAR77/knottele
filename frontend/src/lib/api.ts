@@ -1447,6 +1447,55 @@ export async function verifyCustomerOtp(payload: {
 }
 
 /**
+ * Send OTP via Mobile SMS (DLT Gateway)
+ */
+export async function sendMobileOtp(payload: {
+  mobile: string;
+  name?: string;
+}): Promise<{ success: boolean; message?: string; cooldown?: number; mobile?: string }> {
+  try {
+    const response = await fetch(`${getApiBaseUrl()}/customer/send-otp`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.warn("Send mobile OTP error:", error);
+    return { success: false, message: "Connection error. Please try again." };
+  }
+}
+
+/**
+ * Verify Mobile OTP and Login/Register Customer
+ */
+export async function verifyMobileOtp(payload: {
+  mobile: string;
+  otp: string;
+  name?: string;
+}): Promise<{ success: boolean; token?: string; user?: any; message?: string; is_new_user?: boolean }> {
+  try {
+    const response = await fetch(`${getApiBaseUrl()}/customer/verify-mobile-otp`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.warn("Verify mobile OTP error:", error);
+    return { success: false, message: "Connection error. Please try again." };
+  }
+}
+
+/**
  * Resend Customer Email OTP
  */
 export async function resendCustomerOtp(payload: {

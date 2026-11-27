@@ -161,10 +161,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user, refetchOrders, refetchAddresses]);
 
   const login = (email: string, userData?: Partial<UserProfile>, token?: string) => {
-    const nameToUse = userData?.name || email.split("@")[0].replace(".", " ").replace(/(^\w|\s\w)/g, (m) => m.toUpperCase());
+    const nameToUse = userData?.name || (email && email.includes("@") ? email.split("@")[0].replace(".", " ").replace(/(^\w|\s\w)/g, (m) => m.toUpperCase()) : "Customer");
     const newUser: UserProfile = {
       name: nameToUse,
-      email: email,
+      email: email || "",
       phone: userData?.phone || (userData as any)?.mobile || "",
       avatar: userData?.avatar || "",
       addresses: userData?.addresses || [],

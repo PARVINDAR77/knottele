@@ -107,6 +107,12 @@ $navItems = [
         'route' => 'admin.users.index',
     ],
 
+    'otp_logs' => [
+        'title' => 'OTP & SMS Logs',
+        'icon' => 'fas fa-sms',
+        'route' => 'admin.otp_logs.index',
+    ],
+
     'media' => [
         'title' => 'Media',
         'icon' => 'fas fa-images',

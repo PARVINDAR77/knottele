@@ -337,6 +337,16 @@ $adminRoutes = function () {
             Route::get('/{user}', [AdminUser::class, 'show'])->name('show');
         });
 
+        /*
+        |--------------------------------------------------------------------------
+        | OTP & SMS TRACKING
+        |--------------------------------------------------------------------------
+        */
+        Route::prefix('otp-logs')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Admin\OtpLogController::class, 'index'])->name('admin.otp_logs.index');
+            Route::post('/test', [\App\Http\Controllers\Admin\OtpLogController::class, 'sendTestSms'])->name('admin.otp_logs.test');
+        });
+
 
 
         /*
