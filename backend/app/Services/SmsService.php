@@ -106,41 +106,53 @@ class SmsService
     }
 
     /**
-     * Dispatch HTTP POST with multi-endpoint fallback (HTTPS -> HTTP)
+     * Dispatch HTTP request with multi-endpoint and multi-method fallback (HTTPS POST -> HTTPS GET -> HTTP POST -> HTTP GET)
      */
     protected static function executeGatewayPost(array $postData, string $preferredUri): array
     {
-        // Candidate URIs in order of reliability for Docker / Linux VPS networking
-        $candidateEndpoints = [
-            'https://allsmssolution.in/sms-panel/api/http/index.php',
-            'http://allsmssolution.in/sms-panel/api/http/index.php',
-        ];
+        $queryString = http_build_query($postData);
 
-        // Put configured URI first if different
-        if (!in_array($preferredUri, $candidateEndpoints)) {
-            array_unshift($candidateEndpoints, $preferredUri);
-        }
+        // Candidate configurations to try in sequence
+        $attempts = [
+            ['uri' => 'https://allsmssolution.in/sms-panel/api/http/index.php', 'method' => 'POST'],
+            ['uri' => 'https://allsmssolution.in/sms-panel/api/http/index.php', 'method' => 'GET'],
+            ['uri' => 'http://allsmssolution.in/sms-panel/api/http/index.php', 'method' => 'POST'],
+            ['uri' => 'http://allsmssolution.in/sms-panel/api/http/index.php', 'method' => 'GET'],
+        ];
 
         $lastError = 'No response';
         $lastHttpCode = 0;
         $totalDuration = 0;
 
-        foreach ($candidateEndpoints as $targetUri) {
+        foreach ($attempts as $attempt) {
+            $baseUri = $attempt['uri'];
+            $method = $attempt['method'];
+            $targetUri = $method === 'GET' ? ($baseUri . '?' . $queryString) : $baseUri;
+
             $startTime = microtime(true);
             $ch = curl_init($targetUri);
 
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_POST, 1);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Expect:']);
+            if ($method === 'POST') {
+                curl_setopt($ch, CURLOPT_POST, 1);
+                curl_setopt($ch, CURLOPT_POSTFIELDS, $queryString);
+                curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                    'Content-Type: application/x-www-form-urlencoded',
+                    'Expect:',
+                ]);
+            } else {
+                curl_setopt($ch, CURLOPT_HTTPGET, 1);
+                curl_setopt($ch, CURLOPT_HTTPHEADER, ['Expect:']);
+            }
+
             curl_setopt($ch, CURLOPT_FAILONERROR, false);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 5);
-            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 6);
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
             curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
             curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
             curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
-            curl_setopt($ch, CURLOPT_USERAGENT, 'Knotelle-DLT/1.0');
+            curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
 
             $rawResponse = curl_exec($ch);
             $curlError = curl_error($ch);
@@ -174,7 +186,7 @@ class SmsService
                     ];
                 }
 
-                // If gateway responded with an application-level response (not timeout)
+                // Application-level error from gateway
                 return [
                     'success'     => false,
                     'raw'         => $rawResponse,
@@ -185,10 +197,9 @@ class SmsService
                 ];
             }
 
-            $lastError = $curlError ?: "HTTP {$httpCode} connection failed on {$targetUri}";
+            $lastError = $curlError ?: "HTTP {$httpCode} on {$targetUri}";
             $lastHttpCode = $httpCode;
-            Log::warning("SMS Gateway attempt on {$targetUri} failed: {$lastError}");
-            break; // Stop after primary timeout to keep UX fast
+            Log::warning("SMS Gateway attempt on {$targetUri} ({$method}) failed: {$lastError}");
         }
 
         return [
@@ -373,27 +384,20 @@ class SmsService
             if ($isSuccess) {
                 Log::info("KNOTELLE Mobile OTP sent for +91 {$cleanMobile}: MsgID {$messageId} in {$durationMs}ms");
                 return [
-                    'success'     => true,
-                    'message'     => "OTP has been sent to +91 {$cleanMobile}",
-                    'mobile'      => $cleanMobile,
-                    'cooldown'    => 60,
-                    'sms_gateway' => 'delivered',
+                    'success'  => true,
+                    'message'  => "OTP has been sent via SMS to +91 {$cleanMobile}",
+                    'mobile'   => $cleanMobile,
+                    'cooldown' => 60,
                 ];
             }
 
-            // Gateway timeout / IP whitelist pending:
-            // Since OTP is already saved in database and visible in Admin Panel > OTP & SMS Logs,
-            // transition smoothly so user/admin can verify without being blocked by 422 errors.
-            Log::warning("KNOTELLE SMS gateway connection delayed for +91 {$cleanMobile}: {$statusDesc} (Server IP 95.111.242.173)");
+            // Gateway dispatch failed (e.g. gateway timeout or pending IP whitelist)
+            Log::error("KNOTELLE SMS gateway failed for +91 {$cleanMobile}: {$statusDesc} ({$durationMs}ms)");
 
             return [
-                'success'        => true,
-                'message'        => "OTP generated! (If SMS is delayed, check Admin Panel > OTP Logs)",
-                'mobile'         => $cleanMobile,
-                'cooldown'       => 60,
-                'sms_gateway'    => 'timeout',
-                'debug_otp'      => $otpCode,
-                'gateway_notice' => 'Server IP 95.111.242.173 requires whitelisting in allsmssolution.in portal.',
+                'success' => false,
+                'message' => 'Unable to send SMS: ' . $statusDesc . '. Please ensure server IP 95.111.242.173 is whitelisted in your SMS panel.',
+                'mobile'  => $cleanMobile,
             ];
         } catch (\Throwable $e) {
             Log::error("SmsService::sendOtp unexpected exception: " . $e->getMessage() . " at " . $e->getFile() . ":" . $e->getLine());
