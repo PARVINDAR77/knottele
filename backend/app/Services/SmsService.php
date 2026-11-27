@@ -166,13 +166,14 @@ class SmsService
             $cleanName = preg_replace('/[^a-zA-Z\s]/', '', $customerName);
             $cleanName = trim(substr($cleanName, 0, 20)) ?: 'Customer';
 
-            // Approved TRAI DLT template text:
+            $dltConfig = config('services.dlt', []);
+            $var3 = $dltConfig['var3'] ?? 'Team Emperor';
+
+            // Approved TRAI DLT template text (matching entity EMPEROR / TXXTOO):
             // Dear {#var#} Your OTP for verification is {#var#}. Please enter this code to complete the process.
             // Regards {#var#}
             // TEXT2
-            $finalMessage = "Dear {$cleanName} Your OTP for verification is {$otpCode}. Please enter this code to complete the process.\nRegards Knotelle\nTEXT2";
-
-            $dltConfig = config('services.dlt', []);
+            $finalMessage = "Dear {$cleanName} Your OTP for verification is {$otpCode}. Please enter this code to complete the process.\nRegards {$var3}\nTEXT2";
             $uri = $dltConfig['uri'] ?? 'https://allsmssolution.in/sms-panel/api/http/index.php';
             $username = $dltConfig['username'] ?? 'EMPEROR';
             $apikey = $dltConfig['apikey'] ?? '62CEF-9A446';
@@ -302,12 +303,18 @@ class SmsService
 
             Log::info("KNOTELLE Mobile OTP generated for +91 {$cleanMobile}: " . ($isSuccess ? "Sent (MsgID: {$messageId})" : "Failed: {$statusDesc}"));
 
-            return [
+            $returnPayload = [
                 'success'  => true,
                 'message'  => "OTP has been sent to +91 {$cleanMobile}",
                 'mobile'   => $cleanMobile,
                 'cooldown' => 60,
             ];
+
+            if (config('app.debug')) {
+                $returnPayload['debug_otp'] = $otpCode;
+            }
+
+            return $returnPayload;
         } catch (\Throwable $e) {
             Log::error("SmsService::sendOtp unexpected exception: " . $e->getMessage() . " at " . $e->getFile() . ":" . $e->getLine());
             return [
