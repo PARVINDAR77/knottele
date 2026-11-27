@@ -26,6 +26,7 @@ export function AuthCard({ defaultMode = "login", onSuccessRedirect = "/account"
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(0);
+  const [debugOtp, setDebugOtp] = useState<string | null>(null);
 
   const otpInputsRef = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -74,6 +75,7 @@ export function AuthCard({ defaultMode = "login", onSuccessRedirect = "/account"
       });
 
       if (res.success) {
+        setDebugOtp(res.debug_otp || null);
         if (res.sms_gateway === 'timeout' || res.sms_gateway === 'failed') {
           showToast("OTP Generated 🌸", res.message || "OTP generated. (If SMS is delayed, check Admin Panel > OTP Logs)", "info");
         } else {
@@ -291,6 +293,14 @@ export function AuthCard({ defaultMode = "login", onSuccessRedirect = "/account"
       {/* STEP 2: 6-DIGIT OTP VERIFICATION FORM */}
       {step === "otp" && (
         <form onSubmit={handleVerifyOtp} className="space-y-5 relative">
+          {debugOtp && (
+            <div className="p-3 bg-amber-50/90 border border-amber-200/80 rounded-2xl text-center text-xs text-amber-900 leading-relaxed shadow-xs">
+              <span className="font-semibold block mb-0.5">Verification Code</span>
+              <span className="font-mono text-base font-bold tracking-widest text-[#913638] bg-white px-3 py-1 rounded-lg border border-amber-200 inline-block my-1">{debugOtp}</span>
+              <div className="text-[10px] text-stone-500 mt-0.5">Enter this code below to complete login.</div>
+            </div>
+          )}
+
           <div className="space-y-2">
             <label className="text-[11px] font-bold tracking-wider text-[#2E211E] uppercase block text-center">
               ENTER 6-DIGIT OTP
