@@ -106,18 +106,18 @@ class SmsService
     }
 
     /**
-     * Dispatch HTTP request with multi-endpoint and multi-method fallback (HTTPS POST -> HTTPS GET -> HTTP POST -> HTTP GET)
+     * Dispatch HTTP request with multi-endpoint and multi-method fallback (HTTP POST -> HTTP GET -> HTTPS POST -> HTTPS GET)
      */
     protected static function executeGatewayPost(array $postData, string $preferredUri): array
     {
         $queryString = http_build_query($postData);
 
-        // Candidate configurations to try in sequence
+        // Candidate configurations to try in sequence: prefer HTTP port 80 first (standard DLT gateway), then HTTPS
         $attempts = [
-            ['uri' => 'https://allsmssolution.in/sms-panel/api/http/index.php', 'method' => 'POST'],
-            ['uri' => 'https://allsmssolution.in/sms-panel/api/http/index.php', 'method' => 'GET'],
             ['uri' => 'http://allsmssolution.in/sms-panel/api/http/index.php', 'method' => 'POST'],
             ['uri' => 'http://allsmssolution.in/sms-panel/api/http/index.php', 'method' => 'GET'],
+            ['uri' => 'https://allsmssolution.in/sms-panel/api/http/index.php', 'method' => 'POST'],
+            ['uri' => 'https://allsmssolution.in/sms-panel/api/http/index.php', 'method' => 'GET'],
         ];
 
         $lastError = 'No response';
@@ -146,8 +146,8 @@ class SmsService
             }
 
             curl_setopt($ch, CURLOPT_FAILONERROR, false);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 6);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
             curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
             curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);

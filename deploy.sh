@@ -238,6 +238,7 @@ if command -v systemctl >/dev/null 2>&1; then
     if [ -d "/etc/nginx" ]; then
         sed -i "s|script-src [^;]*|script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://code.jquery.com https://connect.facebook.net|g" /etc/nginx/sites-available/* /etc/nginx/sites-enabled/* /etc/nginx/conf.d/* 2>/dev/null || true
         sed -i "s|connect-src [^;]*|connect-src 'self' https://api.razorpay.com https://lumberjack.razorpay.com https://checkout.razorpay.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://code.jquery.com https://connect.facebook.net https://www.facebook.com|g" /etc/nginx/sites-available/* /etc/nginx/sites-enabled/* /etc/nginx/conf.d/* 2>/dev/null || true
+        sed -i "s|img-src [^;]*|img-src 'self' data: https: blob: https://www.facebook.com|g" /etc/nginx/sites-available/* /etc/nginx/sites-enabled/* /etc/nginx/conf.d/* 2>/dev/null || true
         nginx -t 2>/dev/null && systemctl reload nginx 2>/dev/null || true
     fi
     systemctl reload nginx 2>/dev/null || true
