@@ -63,7 +63,7 @@ return [
     ],
 
     'dlt' => [
-        'uri' => env('DLT_SMS_URI', 'https://allsmssolution.in/sms-panel/api/http/index.php'),
+        'uri' => env('DLT_SMS_URI', 'http://allsmssolution.in/sms-panel/api/http/index.php'),
         'username' => env('DLT_SMS_USERNAME', 'EMPEROR'),
         'apikey' => env('DLT_SMS_APIKEY', '62CEF-9A446'),
         'sender_id' => env('DLT_SMS_SENDER_ID', 'TXXTOO'),

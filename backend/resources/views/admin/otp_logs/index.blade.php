@@ -206,9 +206,16 @@
                                     <i class="fas fa-paper-plane text-[10px]"></i> Sent
                                 </span>
                             @elseif ($log->status === 'failed')
-                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-100 text-rose-800" title="{{ $log->error_message }}">
-                                    <i class="fas fa-times-circle text-[10px]"></i> Failed
-                                </span>
+                                <div>
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-100 text-rose-800" title="{{ $log->error_message }}">
+                                        <i class="fas fa-times-circle text-[10px]"></i> Failed
+                                    </span>
+                                    @if ($log->error_message)
+                                        <div class="text-[10px] text-rose-600 mt-1 max-w-[180px] truncate" title="{{ $log->error_message }}">
+                                            {{ $log->error_message }}
+                                        </div>
+                                    @endif
+                                </div>
                             @else
                                 <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-stone-100 text-stone-800">
                                     {{ ucfirst($log->status) }}

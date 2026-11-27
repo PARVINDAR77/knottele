@@ -106,6 +106,107 @@ class SmsService
     }
 
     /**
+     * Dispatch HTTP POST with multi-endpoint fallback (HTTP port 80 -> Direct IP -> HTTPS port 443)
+     */
+    protected static function executeGatewayPost(array $postData, string $preferredUri): array
+    {
+        // Candidate URIs in order of reliability for Docker / Linux VPS networking
+        $candidateEndpoints = [
+            'http://allsmssolution.in/sms-panel/api/http/index.php',
+            'http://123.108.46.13/sms-panel/api/http/index.php',
+            'https://allsmssolution.in/sms-panel/api/http/index.php',
+        ];
+
+        // Put configured URI first if different
+        if (!in_array($preferredUri, $candidateEndpoints)) {
+            array_unshift($candidateEndpoints, $preferredUri);
+        }
+
+        $lastError = 'No response';
+        $lastHttpCode = 0;
+        $totalDuration = 0;
+
+        foreach ($candidateEndpoints as $targetUri) {
+            $startTime = microtime(true);
+            $ch = curl_init($targetUri);
+
+            $headers = ['Expect:'];
+            if (str_contains($targetUri, '123.108.46.13')) {
+                $headers[] = 'Host: allsmssolution.in';
+            }
+
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_POST, 1);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+            curl_setopt($ch, CURLOPT_FAILONERROR, false);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 6);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+            curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+            curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
+            curl_setopt($ch, CURLOPT_USERAGENT, 'Knotelle-DLT/1.0');
+
+            $rawResponse = curl_exec($ch);
+            $curlError = curl_error($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $durationMs = round((microtime(true) - $startTime) * 1000, 2);
+            $totalDuration += $durationMs;
+            curl_close($ch);
+
+            if (!empty($rawResponse)) {
+                $parsed = json_decode($rawResponse, true);
+                if (is_array($parsed)) {
+                    $statusField = strtolower((string)($parsed['status'] ?? $parsed['status_code'] ?? ''));
+                    if (in_array($statusField, ['success', 'queued', 'submitted', '1', '200', 'ok', 'sent']) || isset($parsed['message-id'])) {
+                        return [
+                            'success'     => true,
+                            'raw'         => $rawResponse,
+                            'parsed'      => $parsed,
+                            'http_code'   => $httpCode,
+                            'duration_ms' => $durationMs,
+                            'error'       => null,
+                        ];
+                    }
+                } elseif (stripos($rawResponse, 'success') !== false || stripos($rawResponse, 'msgid') !== false) {
+                    return [
+                        'success'     => true,
+                        'raw'         => $rawResponse,
+                        'parsed'      => null,
+                        'http_code'   => $httpCode,
+                        'duration_ms' => $durationMs,
+                        'error'       => null,
+                    ];
+                }
+
+                // If gateway responded with an application-level response (not timeout)
+                return [
+                    'success'     => false,
+                    'raw'         => $rawResponse,
+                    'parsed'      => $parsed ?? null,
+                    'http_code'   => $httpCode,
+                    'duration_ms' => $durationMs,
+                    'error'       => $parsed['message'] ?? 'Gateway rejected SMS',
+                ];
+            }
+
+            $lastError = $curlError ?: "HTTP {$httpCode} connection failed on {$targetUri}";
+            $lastHttpCode = $httpCode;
+            Log::warning("SMS Gateway attempt on {$targetUri} failed: {$lastError}");
+        }
+
+        return [
+            'success'     => false,
+            'raw'         => null,
+            'parsed'      => null,
+            'http_code'   => $lastHttpCode,
+            'duration_ms' => $totalDuration,
+            'error'       => $lastError,
+        ];
+    }
+
+    /**
      * Send OTP SMS via DLT Gateway
      */
     public static function sendOtp(string $rawMobile, string $customerName = 'Customer', string $purpose = 'login', ?string $clientIp = null): array
@@ -169,12 +270,13 @@ class SmsService
             $dltConfig = config('services.dlt', []);
             $var3 = $dltConfig['var3'] ?? 'Team Emperor';
 
-            // Approved TRAI DLT template text (matching entity EMPEROR / TXXTOO):
+            // Approved TRAI DLT template text (registered to EMPEROR / TXXTOO):
             // Dear {#var#} Your OTP for verification is {#var#}. Please enter this code to complete the process.
             // Regards {#var#}
             // TEXT2
             $finalMessage = "Dear {$cleanName} Your OTP for verification is {$otpCode}. Please enter this code to complete the process.\nRegards {$var3}\nTEXT2";
-            $uri = $dltConfig['uri'] ?? 'https://allsmssolution.in/sms-panel/api/http/index.php';
+
+            $uri = $dltConfig['uri'] ?? 'http://allsmssolution.in/sms-panel/api/http/index.php';
             $username = $dltConfig['username'] ?? 'EMPEROR';
             $apikey = $dltConfig['apikey'] ?? '62CEF-9A446';
             $senderId = $dltConfig['sender_id'] ?? 'TXXTOO';
@@ -197,54 +299,26 @@ class SmsService
                 'PE_ID'      => $entityId,
             ];
 
-            // Execute cURL request to SMS gateway
-            $startTime = microtime(true);
-            $ch = curl_init($uri);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_POST, 1);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
-            curl_setopt($ch, CURLOPT_FAILONERROR, false);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 15);
-            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+            // Execute robust multi-fallback request
+            $execResult = self::executeGatewayPost($postData, $uri);
 
-            $rawResponse = curl_exec($ch);
-            $curlError = curl_error($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            $durationMs = round((microtime(true) - $startTime) * 1000, 2);
-            curl_close($ch);
-
-            $isSuccess = false;
+            $isSuccess = $execResult['success'];
+            $rawResponse = $execResult['raw'];
+            $parsed = $execResult['parsed'];
+            $httpCode = $execResult['http_code'];
+            $durationMs = $execResult['duration_ms'];
             $messageId = null;
             $statusDesc = 'Queued';
 
-            if (!empty($rawResponse)) {
-                $parsed = json_decode($rawResponse, true);
-                if (is_array($parsed)) {
-                    if (isset($parsed['message-id'])) {
-                        $messageId = is_array($parsed['message-id']) ? implode(', ', $parsed['message-id']) : (string)$parsed['message-id'];
-                    } elseif (isset($parsed['msgid'])) {
-                        $messageId = (string)$parsed['msgid'];
-                    }
-
-                    $statusField = strtolower((string)($parsed['status'] ?? $parsed['status_code'] ?? $parsed['response'] ?? ''));
-                    if (in_array($statusField, ['success', 'queued', 'submitted', '1', '200', 'ok', 'sent'])) {
-                        $isSuccess = true;
-                        $statusDesc = $parsed['message'] ?? 'OTP Sent successfully';
-                    } else {
-                        $statusDesc = $parsed['message'] ?? $parsed['desc'] ?? $parsed['error'] ?? 'Gateway returned an error';
-                    }
-                } else {
-                    if (stripos($rawResponse, 'success') !== false || stripos($rawResponse, 'msgid') !== false || stripos($rawResponse, 'submitted') !== false) {
-                        $isSuccess = true;
-                        $statusDesc = 'OTP Sent successfully';
-                    } else {
-                        $statusDesc = $rawResponse;
-                    }
+            if ($parsed && is_array($parsed)) {
+                if (isset($parsed['message-id'])) {
+                    $messageId = is_array($parsed['message-id']) ? implode(', ', $parsed['message-id']) : (string)$parsed['message-id'];
+                } elseif (isset($parsed['msgid'])) {
+                    $messageId = (string)$parsed['msgid'];
                 }
-            } else {
-                $statusDesc = 'SMS Gateway timed out: ' . ($curlError ?: 'No response received');
+                $statusDesc = $parsed['message'] ?? ($isSuccess ? 'OTP Sent successfully' : 'Gateway rejected SMS');
+            } elseif ($execResult['error']) {
+                $statusDesc = $execResult['error'];
             }
 
             // Record SMS log for admin dashboard & tracking (non-blocking)
@@ -271,6 +345,16 @@ class SmsService
                 ]);
             } catch (\Throwable $logErr) {
                 Log::error("Failed to record SMS log: " . $logErr->getMessage());
+            }
+
+            // Only store OTP if successfully accepted by SMS gateway
+            if (!$isSuccess) {
+                Log::error("KNOTELLE SMS dispatch failed for +91 {$cleanMobile}: {$statusDesc} ({$durationMs}ms, HTTP {$httpCode})");
+                return [
+                    'success' => false,
+                    'message' => 'Unable to send SMS: ' . $statusDesc,
+                    'mobile'  => $cleanMobile,
+                ];
             }
 
             // Store OTP hash for verification (with resilient column fallback)
@@ -301,7 +385,7 @@ class SmsService
                 Log::error("Failed to store CustomerOtp: " . $saveErr->getMessage());
             }
 
-            Log::info("KNOTELLE Mobile OTP generated for +91 {$cleanMobile}: " . ($isSuccess ? "Sent (MsgID: {$messageId})" : "Failed: {$statusDesc}"));
+            Log::info("KNOTELLE Mobile OTP sent for +91 {$cleanMobile}: MsgID {$messageId} in {$durationMs}ms");
 
             $returnPayload = [
                 'success'  => true,
