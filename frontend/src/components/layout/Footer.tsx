@@ -166,7 +166,7 @@ export function Footer() {
 
           {/* Left Block: Brand Identity + Socials */}
           <div className="flex flex-col items-start space-y-4 lg:pr-10 lg:border-r lg:border-[#E7D1CC]/90 shrink-0 w-full lg:w-auto">
-            <Link href={normalizeInternalLink("/")} className="inline-block group" aria-label="KNOTELLE Home">
+            <Link href={normalizeInternalLink("/")} prefetch={false} className="inline-block group" aria-label="KNOTELLE Home">
               <KnotelleCrownLogo className="h-24 sm:h-28 w-auto drop-shadow-xs" />
             </Link>
 

@@ -394,6 +394,27 @@ class SmsService
             // Gateway dispatch failed (e.g. gateway timeout or pending IP whitelist)
             Log::error("KNOTELLE SMS gateway failed for +91 {$cleanMobile}: {$statusDesc} ({$durationMs}ms)");
 
+            // Check if customer has an existing registered email to receive OTP fallback
+            try {
+                $existingCust = Customer::where('mobile', $cleanMobile)
+                    ->orWhere('mobile', "+91 {$cleanMobile}")
+                    ->first();
+                if ($existingCust && !empty($existingCust->email) && !str_ends_with($existingCust->email, '@knotelleindia.com') && !str_ends_with($existingCust->email, '@phone.knotelle.internal')) {
+                    \Illuminate\Support\Facades\Mail::to($existingCust->email)->queue(
+                        new \App\Mail\VerifyAccountMail($existingCust->name ?: 'Customer', $otpCode)
+                    );
+                    Log::info("KNOTELLE dispatched email OTP fallback to {$existingCust->email}");
+                    return [
+                        'success'  => true,
+                        'message'  => "SMS gateway delayed. We sent your 6-digit verification code to {$existingCust->email}",
+                        'mobile'   => $cleanMobile,
+                        'cooldown' => 60,
+                    ];
+                }
+            } catch (\Throwable $mEx) {
+                Log::warning("Email OTP fallback failed: " . $mEx->getMessage());
+            }
+
             return [
                 'success' => false,
                 'message' => 'Unable to send SMS: ' . $statusDesc . '. Please ensure server IP 95.111.242.173 is whitelisted in your SMS panel.',

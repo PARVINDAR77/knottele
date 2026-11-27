@@ -520,8 +520,8 @@ class CustomerApiAuthController extends Controller
                 $request->ip()
             );
 
-            $statusCode = !empty($result['success']) ? 200 : 422;
-            return response()->json($result, $statusCode);
+            // Always return HTTP 200 with result payload so fetch handles gracefully without 422 red console errors
+            return response()->json($result, 200);
         } catch (\Illuminate\Validation\ValidationException $ve) {
             return response()->json([
                 'success' => false,
@@ -554,8 +554,8 @@ class CustomerApiAuthController extends Controller
                 $request->input('name')
             );
 
-            $statusCode = !empty($result['success']) ? 200 : 422;
-            return response()->json($result, $statusCode);
+            // Always return HTTP 200 with result payload so fetch handles gracefully without 422 red console errors
+            return response()->json($result, 200);
         } catch (\Illuminate\Validation\ValidationException $ve) {
             return response()->json([
                 'success' => false,

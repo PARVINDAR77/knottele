@@ -232,17 +232,36 @@ if command -v pm2 >/dev/null 2>&1; then
     pm2 restart all --update-env 2>/dev/null || pm2 reload all --update-env 2>/dev/null || true
 fi
 
-if command -v systemctl >/dev/null 2>&1; then
-    echo "🔄 Updating Nginx Content-Security-Policy & Reloading..."
-    # Update host Nginx CSP to allow code.jquery.com, cdnjs, jsdelivr
-    if [ -d "/etc/nginx" ]; then
-        sed -i "s|script-src [^;]*|script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://code.jquery.com https://connect.facebook.net|g" /etc/nginx/sites-available/* /etc/nginx/sites-enabled/* /etc/nginx/conf.d/* 2>/dev/null || true
-        sed -i "s|connect-src [^;]*|connect-src 'self' https://api.razorpay.com https://lumberjack.razorpay.com https://checkout.razorpay.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://code.jquery.com https://connect.facebook.net https://www.facebook.com|g" /etc/nginx/sites-available/* /etc/nginx/sites-enabled/* /etc/nginx/conf.d/* 2>/dev/null || true
-        sed -i "s|img-src [^;]*|img-src 'self' data: https: blob: https://www.facebook.com|g" /etc/nginx/sites-available/* /etc/nginx/sites-enabled/* /etc/nginx/conf.d/* 2>/dev/null || true
-        nginx -t 2>/dev/null && systemctl reload nginx 2>/dev/null || true
+# Determine sudo wrapper if running as non-root
+SUDO_CMD=""
+if [ "$(id -u)" -ne 0 ]; then
+    if command -v sudo >/dev/null 2>&1; then
+        SUDO_CMD="sudo"
     fi
-    systemctl reload nginx 2>/dev/null || true
-    systemctl reload php-fpm 2>/dev/null || systemctl restart php-fpm 2>/dev/null || true
+fi
+
+if [ -d "/etc/nginx" ]; then
+    echo "🔄 Updating Nginx Content-Security-Policy across all configurations..."
+    # Update host Nginx CSP to allow connect.facebook.net and www.facebook.com
+    for conf_file in $(grep -rl "script-src" /etc/nginx/ 2>/dev/null || true); do
+        echo "Updating CSP in $conf_file..."
+        $SUDO_CMD sed -i "s|script-src [^;]*|script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://code.jquery.com https://connect.facebook.net|g" "$conf_file" 2>/dev/null || true
+        $SUDO_CMD sed -i "s|connect-src [^;]*|connect-src 'self' https://api.razorpay.com https://lumberjack.razorpay.com https://checkout.razorpay.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://code.jquery.com https://connect.facebook.net https://www.facebook.com|g" "$conf_file" 2>/dev/null || true
+        $SUDO_CMD sed -i "s|img-src [^;]*|img-src 'self' data: https: blob: https://www.facebook.com|g" "$conf_file" 2>/dev/null || true
+    done
+
+    # Fallback blanket replacement
+    $SUDO_CMD sed -i "s|script-src [^;]*|script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://code.jquery.com https://connect.facebook.net|g" /etc/nginx/sites-available/* /etc/nginx/sites-enabled/* /etc/nginx/conf.d/* /etc/nginx/nginx.conf 2>/dev/null || true
+    $SUDO_CMD sed -i "s|connect-src [^;]*|connect-src 'self' https://api.razorpay.com https://lumberjack.razorpay.com https://checkout.razorpay.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://code.jquery.com https://connect.facebook.net https://www.facebook.com|g" /etc/nginx/sites-available/* /etc/nginx/sites-enabled/* /etc/nginx/conf.d/* /etc/nginx/nginx.conf 2>/dev/null || true
+    $SUDO_CMD sed -i "s|img-src [^;]*|img-src 'self' data: https: blob: https://www.facebook.com|g" /etc/nginx/sites-available/* /etc/nginx/sites-enabled/* /etc/nginx/conf.d/* /etc/nginx/nginx.conf 2>/dev/null || true
+
+    if command -v nginx >/dev/null 2>&1; then
+        $SUDO_CMD nginx -t && $SUDO_CMD systemctl reload nginx && echo "✅ Host Nginx reloaded successfully with Meta Pixel CSP!" || true
+    fi
+fi
+
+if command -v systemctl >/dev/null 2>&1; then
+    $SUDO_CMD systemctl reload php*-fpm 2>/dev/null || $SUDO_CMD systemctl restart php*-fpm 2>/dev/null || true
 fi
 
 echo "=========================================="
