@@ -49,6 +49,6 @@ COPY docker/supervisord.conf /etc/supervisord.conf
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
     && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
-EXPOSE 8095
+EXPOSE 8090
 
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]

@@ -1,18 +1,4 @@
 services:
-  knotelle-db:
-    image: mariadb:10.11
-    container_name: knotelle-db
-    restart: always
-    ports:
-      - "127.0.0.1:3306:3306"
-    environment:
-      MYSQL_DATABASE: knottele
-      MYSQL_USER: knottele_user
-      MYSQL_PASSWORD: KnotelleLive2026!
-      MYSQL_ROOT_PASSWORD: KnotelleLive2026!
-    volumes:
-      - knotelle_mysql_data:/var/lib/mysql
-
   knotelle:
     build:
       context: .
@@ -20,8 +6,6 @@ services:
     container_name: knotelle-app
     restart: always
     network_mode: "host"
-    depends_on:
-      - knotelle-db
     volumes:
       - ./docker/nginx.conf:/etc/nginx/http.d/default.conf
       - ./docker/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini
@@ -37,6 +21,3 @@ services:
       - ./backend/.env:/var/www/html/.env
     environment:
       - APP_ENV=production
-
-volumes:
-  knotelle_mysql_data:
