@@ -72,7 +72,7 @@ return [
         'route' => env('DLT_SMS_ROUTE', 'TRANS'),
         'apirequest' => env('DLT_SMS_APIREQUEST', 'Text'),
         'format' => env('DLT_SMS_FORMAT', 'JSON'),
-        'var3' => env('DLT_SMS_VAR3', 'Team Emperor'),
+        'var3' => env('DLT_SMS_VAR3', 'Team Knotelleindia'),
         'template_pattern' => "Dear {#var#} Your OTP for verification is {#var#}. Please enter this code to complete the process.\nRegards {#var#}\nTEXT2",
     ],
 

@@ -274,7 +274,7 @@ class SmsService
             $cleanName = trim(substr($cleanName, 0, 20)) ?: 'Customer';
 
             $dltConfig = config('services.dlt', []);
-            $var3 = $dltConfig['var3'] ?? 'Team Emperor';
+            $var3 = $dltConfig['var3'] ?? 'Team Knotelleindia';
 
             // Approved TRAI DLT template text (registered to EMPEROR / TXXTOO):
             // Dear {#var#} Your OTP for verification is {#var#}. Please enter this code to complete the process.
